@@ -50,13 +50,13 @@
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-dark-950 text-zinc-100 font-sans antialiased min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
+<body class="bg-dark-950 text-zinc-100 font-sans antialiased h-screen overflow-hidden flex selection:bg-emerald-500 selection:text-black">
 
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-dark-900 border-r border-zinc-800/80 flex flex-col z-30 shrink-0 select-none">
+    <div class="flex flex-1 h-screen w-full overflow-hidden">
+        <!-- Sidebar (Fixed & Persistent) -->
+        <aside class="w-64 bg-dark-900 border-r border-zinc-800/80 flex flex-col h-full z-30 shrink-0 select-none">
             <!-- Brand Header -->
-            <div class="h-16 flex items-center px-6 border-b border-zinc-800/80 gap-3">
+            <div class="h-16 flex items-center px-6 border-b border-zinc-800/80 gap-3 shrink-0">
                 <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-zinc-950 shadow-lg shadow-emerald-500/20">
                     <i data-lucide="play" class="w-5 h-5 fill-current"></i>
                 </div>
@@ -69,7 +69,7 @@
                 </div>
             </div>
 
-            <!-- Navigation Links -->
+            <!-- Navigation Links (Scrollable independently if tall) -->
             <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
                 <div class="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Main Menu</div>
                 
@@ -144,28 +144,28 @@
                 {% endif %}
             </nav>
 
-            <!-- Bottom User Card -->
-            <div class="p-3 border-t border-zinc-800/80 bg-dark-950/40">
-                <div class="flex items-center justify-between p-2 rounded-lg bg-dark-800/50 border border-zinc-800/50">
-                    <div class="flex items-center gap-2.5 overflow-hidden">
-                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/30">
+            <!-- Bottom User Card (Fixed & Permanently Pinned) -->
+            <div class="p-3 border-t border-zinc-800/80 bg-dark-950/60 shrink-0 mt-auto">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-dark-800/60 border border-zinc-800/60 hover:border-zinc-700/80 transition-all">
+                    <a href="{% url 'profile' %}" class="flex items-center gap-2.5 overflow-hidden flex-1 group" title="Manage Profile">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/30 group-hover:scale-105 transition-transform">
                             {{ user.first_name|default:user.username|slice:":1"|upper }}
                         </div>
                         <div class="truncate">
-                            <p class="text-xs font-medium text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-xs font-medium text-white truncate group-hover:text-emerald-400 transition-colors">{{ user.get_full_name|default:user.username }}</p>
                             <p class="text-[10px] text-zinc-400 truncate">{{ user.get_role_display }}</p>
                         </div>
-                    </div>
-                    <a href="{% url 'logout' %}" class="p-1.5 text-zinc-400 hover:text-red-400 transition-colors" title="Logout">
+                    </a>
+                    <a href="{% url 'logout' %}" class="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-all ml-1 shrink-0" title="Logout">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
                     </a>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            <!-- Top Header Bar -->
+        <!-- Main Content Area (Independent scroll) -->
+        <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+            <!-- Top Header Bar (Fixed at top of main area) -->
             <header class="h-16 bg-dark-900 border-b border-zinc-800/80 px-6 flex items-center justify-between shrink-0 z-20">
                 <!-- Search Button -->
                 <button onclick="openSearchModal()" class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all text-xs w-72">
@@ -320,6 +320,8 @@
             }, 250);
         });
     </script>
+    <!-- Daily Quota & Notification Reminders Engine -->
+    <script src="/static/js/daily_reminders.js"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

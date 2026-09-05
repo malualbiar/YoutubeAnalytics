@@ -1,5 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.contrib import messages
 from django.http import JsonResponse
 from apps.artists.models import Artist, YouTubeChannel
 from apps.videos.models import Video
@@ -9,6 +11,8 @@ from .services import AnalyticsService
 def dashboard_view(request):
     AnalyticsService.update_video_growth_metrics()
     summary = AnalyticsService.get_dashboard_summary()
+    daily_posting = AnalyticsService.get_daily_posting_status()
+    active_artists = Artist.objects.filter(status=Artist.Status.ACTIVE).order_by('stage_name')
     
     range_days_param = request.GET.get('days', '30')
     if range_days_param == 'all':
@@ -27,6 +31,8 @@ def dashboard_view(request):
 
     return render(request, 'dashboard/index.html', {
         'summary': summary,
+        'daily_posting': daily_posting,
+        'active_artists': active_artists,
         'chart_data': chart_data,
         'range_days': range_days,
         'top_videos': top_videos,
@@ -116,3 +122,73 @@ def global_search_view(request):
         'channels': channels_data,
         'videos': videos_data
     })
+
+@login_required
+def daily_posting_status_api(request):
+    """API endpoint for fetching live daily posting status and reminder configuration"""
+    status = AnalyticsService.get_daily_posting_status()
+    uploads_serialized = []
+    for u in status['today_uploads']:
+        uploads_serialized.append({
+            'id': u['id'],
+            'raw_id': u['raw_id'],
+            'is_manual': u['is_manual'],
+            'title': u['title'],
+            'platform': u['platform'],
+            'platform_display': u['platform_display'],
+            'artist_name': u['artist_name'],
+            'artist_image': u['artist_image'],
+            'url': u['url'],
+            'posted_at': u['posted_at'].strftime('%H:%M') if hasattr(u['posted_at'], 'strftime') else str(u['posted_at']),
+            'notes': u['notes'],
+            'thumbnail': u['thumbnail'],
+        })
+
+    return JsonResponse({
+        'target': status['target'],
+        'today_count': status['today_count'],
+        'remaining': status['remaining'],
+        'progress_pct': status['progress_pct'],
+        'is_goal_met': status['is_goal_met'],
+        'current_streak': status['current_streak'],
+        'best_streak': status['best_streak'],
+        'reminders_enabled': status['reminders_enabled'],
+        'reminder_frequency_hours': status['reminder_frequency_hours'],
+        'reminder_start_hour': status['reminder_start_hour'],
+        'reminder_end_hour': status['reminder_end_hour'],
+        'history_30d': status['history_30d'],
+        'today_uploads': uploads_serialized,
+    })
+
+@login_required
+@require_POST
+def log_content_upload_view(request):
+    """Form handler to log a manual content upload (Shorts, TikTok, Reels, etc.)"""
+    title = request.POST.get('title', '').strip()
+    platform = request.POST.get('platform', 'youtube_short')
+    artist_id = request.POST.get('artist_id')
+    url = request.POST.get('url', '').strip()
+    notes = request.POST.get('notes', '').strip()
+
+    if not title:
+        messages.error(request, "Content title is required.")
+        return redirect('dashboard')
+
+    AnalyticsService.log_content_upload(
+        title=title,
+        platform=platform,
+        artist_id=artist_id if (artist_id and artist_id.isdigit()) else None,
+        url=url,
+        notes=notes
+    )
+    messages.success(request, f"Logged upload: '{title}' (+1 towards today's goal!)")
+    return redirect('dashboard')
+
+@login_required
+@require_POST
+def delete_content_upload_view(request, pk):
+    """Remove a manual content upload log"""
+    AnalyticsService.delete_content_upload(pk)
+    messages.info(request, "Content upload record removed.")
+    return redirect('dashboard')
+

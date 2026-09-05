@@ -67,6 +67,13 @@ class SystemSettings(models.Model):
     default_reporting_period = models.CharField(max_length=50, default='30d')
     spike_alert_threshold = models.IntegerField(default=10000, help_text="Views gained in 24h to trigger spike alert")
     
+    # Daily Posting Target & Reminder Preferences
+    daily_posting_target = models.IntegerField(default=10, help_text="Daily content upload target (e.g. 10 contents/day)")
+    posting_reminders_enabled = models.BooleanField(default=True, help_text="Enable desktop notification reminders")
+    reminder_frequency_hours = models.IntegerField(default=3, help_text="Interval in hours between desktop reminders if target not met")
+    reminder_start_hour = models.IntegerField(default=9, help_text="Earliest hour to send reminders (0-23, e.g. 9 for 9 AM)")
+    reminder_end_hour = models.IntegerField(default=21, help_text="Latest hour to send reminders (0-23, e.g. 21 for 9 PM)")
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

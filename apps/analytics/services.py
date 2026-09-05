@@ -4,6 +4,8 @@ from django.db.models import Sum, Count, Avg, Max, Min, F, Q
 from apps.artists.models import Artist, YouTubeChannel
 from apps.videos.models import Video, VideoStatisticSnapshot, ChannelStatisticSnapshot
 from apps.milestones.models import VideoMilestone, NotificationLog
+from apps.youtube.models import SystemSettings
+from .models import ContentUploadLog
 
 class AnalyticsService:
 
@@ -429,3 +431,194 @@ class AnalyticsService:
             'chart_labels': labels,
             'chart_datasets': datasets,
         }
+
+    @staticmethod
+    def get_daily_posting_status(target_date=None):
+        """
+        Calculate daily content upload metrics, streak history, and 30-day activity heatmap.
+        """
+        now = timezone.now()
+        local_now = timezone.localtime(now)
+        today = target_date or local_now.date()
+        
+        settings = SystemSettings.get_settings()
+        target = max(1, settings.daily_posting_target)
+
+        # 1. Fetch manual upload logs for today
+        manual_logs = list(ContentUploadLog.objects.filter(
+            posted_at__date=today
+        ).select_related('artist', 'video'))
+
+        # 2. Fetch videos released today
+        videos_today = list(Video.objects.filter(
+            published_at__date=today,
+            is_active=True
+        ).select_related('artist', 'channel'))
+
+        # Track linked video IDs in manual logs to avoid double-counting
+        linked_video_ids = {log.video_id for log in manual_logs if log.video_id}
+
+        today_uploads = []
+        # Add manual logs
+        for log in manual_logs:
+            today_uploads.append({
+                'id': f"log-{log.id}",
+                'raw_id': log.id,
+                'is_manual': True,
+                'title': log.title,
+                'platform': log.platform,
+                'platform_display': log.get_platform_display(),
+                'artist_name': log.artist.stage_name if log.artist else (log.video.artist.stage_name if log.video else 'General'),
+                'artist_image': log.artist.profile_image if (log.artist and log.artist.profile_image) else '',
+                'url': log.url or (log.video.video_url if log.video else ''),
+                'posted_at': log.posted_at,
+                'notes': log.notes,
+                'thumbnail': log.video.thumbnail_url if (log.video and log.video.thumbnail_url) else '',
+            })
+
+        # Add auto-detected videos not already manually logged
+        for v in videos_today:
+            if v.id not in linked_video_ids:
+                is_short = v.duration_seconds > 0 and v.duration_seconds <= 60
+                platform = 'youtube_short' if is_short else 'youtube_video'
+                platform_display = 'YouTube Shorts' if is_short else 'YouTube Video'
+                today_uploads.append({
+                    'id': f"vid-{v.id}",
+                    'raw_id': v.id,
+                    'is_manual': False,
+                    'title': v.title,
+                    'platform': platform,
+                    'platform_display': platform_display,
+                    'artist_name': v.artist.stage_name if v.artist else 'YouTube Channel',
+                    'artist_image': v.artist.profile_image if (v.artist and v.artist.profile_image) else '',
+                    'url': v.video_url,
+                    'posted_at': v.published_at,
+                    'notes': 'Auto-synced from YouTube',
+                    'thumbnail': v.thumbnail_url,
+                })
+
+        # Sort today's uploads newest first
+        today_uploads.sort(key=lambda x: x['posted_at'], reverse=True)
+
+        today_count = len(today_uploads)
+        remaining = max(0, target - today_count)
+        progress_pct = min(100, int((today_count / target) * 100))
+        is_goal_met = today_count >= target
+
+        # 3. Calculate 30-Day Activity Heatmap & Historic Daily Counts
+        # Pre-query past 60 days of data for streak calculations
+        window_days = 60
+        start_date = today - timedelta(days=window_days)
+
+        historic_videos = Video.objects.filter(
+            published_at__date__gte=start_date,
+            published_at__date__lte=today,
+            is_active=True
+        ).values('published_at__date').annotate(cnt=Count('id'))
+        video_counts_by_date = {item['published_at__date']: item['cnt'] for item in historic_videos}
+
+        historic_logs = ContentUploadLog.objects.filter(
+            posted_at__date__gte=start_date,
+            posted_at__date__lte=today,
+            video__isnull=True  # Avoid double counting
+        ).values('posted_at__date').annotate(cnt=Count('id'))
+        log_counts_by_date = {item['posted_at__date']: item['cnt'] for item in historic_logs}
+
+        # Build daily totals map
+        daily_totals = {}
+        for d_offset in range(window_days + 1):
+            d = start_date + timedelta(days=d_offset)
+            if d == today:
+                daily_totals[d] = today_count
+            else:
+                daily_totals[d] = video_counts_by_date.get(d, 0) + log_counts_by_date.get(d, 0)
+
+        # 4. Calculate Current Streak & Best Streak
+        # Current streak:
+        current_streak = 0
+        check_date = today
+        if is_goal_met:
+            current_streak += 1
+            check_date = today - timedelta(days=1)
+        else:
+            # Check if yesterday met goal to maintain streak in progress
+            check_date = today - timedelta(days=1)
+
+        while check_date in daily_totals and daily_totals[check_date] >= target:
+            current_streak += 1
+            check_date -= timedelta(days=1)
+
+        # Best streak over recorded window:
+        best_streak = 0
+        run_streak = 0
+        sorted_dates = sorted(daily_totals.keys())
+        for d in sorted_dates:
+            if daily_totals[d] >= target:
+                run_streak += 1
+                if run_streak > best_streak:
+                    best_streak = run_streak
+            else:
+                run_streak = 0
+
+        best_streak = max(best_streak, current_streak)
+
+        # 5. Build 30-Day Activity Heatmap list
+        heatmap_30d = []
+        for i in range(29, -1, -1):
+            d = today - timedelta(days=i)
+            cnt = daily_totals.get(d, 0)
+            heatmap_30d.append({
+                'date': d.isoformat(),
+                'display_date': d.strftime('%b %d'),
+                'day_name': d.strftime('%a'),
+                'count': cnt,
+                'target': target,
+                'met_goal': cnt >= target,
+                'is_today': d == today,
+            })
+
+        return {
+            'target': target,
+            'today_count': today_count,
+            'remaining': remaining,
+            'progress_pct': progress_pct,
+            'is_goal_met': is_goal_met,
+            'current_streak': current_streak,
+            'best_streak': best_streak,
+            'history_30d': heatmap_30d,
+            'today_uploads': today_uploads,
+            'reminders_enabled': settings.posting_reminders_enabled,
+            'reminder_frequency_hours': settings.reminder_frequency_hours,
+            'reminder_start_hour': settings.reminder_start_hour,
+            'reminder_end_hour': settings.reminder_end_hour,
+        }
+
+    @staticmethod
+    def log_content_upload(title, platform='youtube_short', artist_id=None, url='', notes='', posted_at=None):
+        """
+        Record a manual content upload log.
+        """
+        artist = None
+        if artist_id:
+            artist = Artist.objects.filter(id=artist_id).first()
+
+        posted_time = posted_at or timezone.now()
+
+        log = ContentUploadLog.objects.create(
+            title=title,
+            platform=platform,
+            artist=artist,
+            url=url,
+            notes=notes,
+            posted_at=posted_time,
+            is_auto_synced=False
+        )
+        return log
+
+    @staticmethod
+    def delete_content_upload(log_id):
+        """
+        Delete a manual content upload log.
+        """
+        return ContentUploadLog.objects.filter(id=log_id, is_auto_synced=False).delete()
+

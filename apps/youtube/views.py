@@ -74,6 +74,14 @@ def system_settings_view(request):
         settings_obj.app_timezone = request.POST.get('app_timezone', settings_obj.app_timezone).strip()
         settings_obj.default_reporting_period = request.POST.get('default_reporting_period', settings_obj.default_reporting_period)
         settings_obj.spike_alert_threshold = int(request.POST.get('spike_alert_threshold', settings_obj.spike_alert_threshold))
+
+        # Daily Posting & Reminders
+        settings_obj.daily_posting_target = max(1, int(request.POST.get('daily_posting_target', settings_obj.daily_posting_target)))
+        settings_obj.posting_reminders_enabled = request.POST.get('posting_reminders_enabled') == 'on'
+        settings_obj.reminder_frequency_hours = max(1, int(request.POST.get('reminder_frequency_hours', settings_obj.reminder_frequency_hours)))
+        settings_obj.reminder_start_hour = int(request.POST.get('reminder_start_hour', settings_obj.reminder_start_hour))
+        settings_obj.reminder_end_hour = int(request.POST.get('reminder_end_hour', settings_obj.reminder_end_hour))
+
         settings_obj.save()
 
         messages.success(request, "System settings updated successfully.")
