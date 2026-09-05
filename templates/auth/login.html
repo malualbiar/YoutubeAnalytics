@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - YT Quid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md space-y-6">
+        <!-- Brand Header -->
+        <div class="text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 mx-auto flex items-center justify-center text-zinc-950 shadow-xl shadow-emerald-500/20">
+                <i data-lucide="play" class="w-6 h-6 fill-current"></i>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">YT Quid</h1>
+            <p class="text-xs text-zinc-400">Sign in to monitor channel performance, views, and milestones</p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+            <div class="p-3 rounded-lg text-xs font-medium border {% if message.tags == 'error' %}bg-red-500/10 border-red-500/20 text-red-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-400{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Login Card -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-5">
+            <form method="POST" action="{% url 'login' %}" class="space-y-4">
+                {% csrf_token %}
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-zinc-300">Email Address</label>
+                    <input type="email" name="email" required placeholder="name@label.com" class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-emerald-500 transition-colors">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-zinc-300">Password</label>
+                    <input type="password" name="password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-emerald-500 transition-colors">
+                </div>
+
+                <button type="submit" class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-semibold text-sm rounded-lg shadow-lg shadow-emerald-500/20 transition-all">
+                    Sign In
+                </button>
+            </form>
+
+
+        </div>
+
+        <p class="text-center text-xs text-zinc-400">
+            Powered by YouTube Data API v3 • Independent of DistroKid
+        </p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Artists - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-tight">Monitored Artists</h2>
+            <p class="text-xs text-zinc-400">Artists and their linked official YouTube channels</p>
+        </div>
+
+        {% if user.can_manage_artists %}
+        <a href="{% url 'artist_create' %}" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all self-start">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Add Artist
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filter Bar -->
+    <form method="GET" class="glass-panel p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+            <i data-lucide="search" class="w-4 h-4 text-zinc-400"></i>
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Filter by artist name or channel..." class="w-full bg-transparent border-none text-white focus:outline-none placeholder-zinc-400 text-xs">
+        </div>
+
+        <div class="flex items-center gap-2">
+            <select name="genre" onchange="this.form.submit()" class="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none">
+                <option value="">All Genres</option>
+                {% for g in genres %}
+                {% if g %}
+                <option value="{{ g }}" {% if genre_filter == g %}selected{% endif %}>{{ g }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+
+            <select name="status" onchange="this.form.submit()" class="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none">
+                <option value="">All Statuses</option>
+                <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
+                <option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+            </select>
+
+            {% if search_query or genre_filter or status_filter %}
+            <a href="{% url 'artist_list' %}" class="px-2.5 py-1.5 text-zinc-400 hover:text-white">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- Artists Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {% for artist in artists %}
+        <div class="glass-panel rounded-2xl border border-zinc-800 overflow-hidden hover:border-emerald-500/40 transition-all flex flex-col group">
+            <!-- Artist Card Header with Image -->
+            <div class="p-5 flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-14 h-14 rounded-2xl bg-zinc-800 overflow-hidden shrink-0 border border-zinc-700/50">
+                        {% if artist.profile_image %}
+                        <img src="{{ artist.profile_image }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        {% else %}
+                        <div class="w-full h-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold">
+                            {{ artist.stage_name|slice:":1" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{% url 'artist_detail' artist.id %}" class="text-sm font-bold text-white hover:text-emerald-400 transition-colors">
+                            {{ artist.stage_name }}
+                        </a>
+                        <p class="text-[11px] text-zinc-400">{{ artist.genre }}</p>
+                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] font-medium {% if artist.status == 'ACTIVE' %}text-emerald-400{% else %}text-zinc-400{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full {% if artist.status == 'ACTIVE' %}bg-emerald-400{% else %}bg-zinc-400{% endif %}"></span>
+                            {{ artist.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+
+                {% if artist.channel %}
+                <span class="p-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20" title="YouTube Channel Connected">
+                    <i data-lucide="youtube" class="w-4 h-4"></i>
+                </span>
+                {% else %}
+                <span class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400" title="No Channel Linked">
+                    <i data-lucide="link-2-off" class="w-4 h-4"></i>
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="px-5 py-3.5 bg-zinc-950/50 border-t border-b border-zinc-800/80 grid grid-cols-3 gap-2 text-center text-xs">
+                <div>
+                    <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Subscribers</span>
+                    <span class="font-bold text-white mt-0.5 block">
+                        {% if artist.channel %}{{ artist.channel.subscriber_count|intcomma }}{% else %}—{% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Total Views</span>
+                    <span class="font-bold text-white mt-0.5 block">
+                        {% if artist.total_views_agg %}{{ artist.total_views_agg|intcomma }}{% elif artist.channel %}{{ artist.channel.total_views|intcomma }}{% else %}0{% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Videos</span>
+                    <span class="font-bold text-white mt-0.5 block">{{ artist.video_count_agg }}</span>
+                </div>
+            </div>
+
+            <!-- Footer / Action -->
+            <div class="p-4 flex items-center justify-between mt-auto">
+                {% if artist.channel %}
+                <span class="text-[11px] text-zinc-400 flex items-center gap-1.5 truncate max-w-[180px]">
+                    <i data-lucide="tv" class="w-3.5 h-3.5 shrink-0 text-zinc-400"></i>
+                    <span class="truncate">{{ artist.channel.channel_name }}</span>
+                </span>
+                {% else %}
+                <span class="text-[11px] text-amber-400/80 italic">Channel not connected</span>
+                {% endif %}
+
+                <a href="{% url 'artist_detail' artist.id %}" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-colors flex items-center gap-1">
+                    Analytics <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full glass-panel p-12 text-center rounded-2xl space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-zinc-800 mx-auto flex items-center justify-center text-zinc-400">
+                <i data-lucide="mic-off" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">No artists found</h3>
+            <p class="text-xs text-zinc-400">Start by creating an artist and connecting their YouTube channel.</p>
+            {% if user.can_manage_artists %}
+            <a href="{% url 'artist_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm">
+                Add Artist
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

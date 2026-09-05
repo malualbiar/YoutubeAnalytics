@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Sync Logs - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-tight">Synchronization Execution Logs</h2>
+            <p class="text-xs text-zinc-400">Audit trail of YouTube Data API synchronization runs, durations, and status</p>
+        </div>
+
+        {% if user.can_manage_channels %}
+        <a href="{% url 'sync_all_channels' %}" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all self-start">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            Run Sync Now
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-dark-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50">
+                    <th class="py-3.5 px-6">Timestamp</th>
+                    <th class="py-3.5 px-6">Channel</th>
+                    <th class="py-3.5 px-6">Status</th>
+                    <th class="py-3.5 px-6 text-right">Videos Found</th>
+                    <th class="py-3.5 px-6 text-right">New Tracks</th>
+                    <th class="py-3.5 px-6 text-right">Snapshots Stored</th>
+                    <th class="py-3.5 px-6 text-right">Duration</th>
+                    <th class="py-3.5 px-6">Error Notes</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60 text-xs">
+                {% for log in logs %}
+                <tr class="hover:bg-zinc-800/30 transition-colors">
+                    <td class="py-3.5 px-6 text-zinc-400 font-mono text-[11px]">
+                        {{ log.started_at|date:"M d, H:i:s" }}
+                    </td>
+                    <td class="py-3.5 px-6 font-semibold text-white">
+                        {{ log.channel_name_cached|default:"All Channels" }}
+                    </td>
+                    <td class="py-3.5 px-6">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {% if log.status == 'SUCCESS' %}bg-emerald-500/10 border-emerald-500/20 text-emerald-400{% elif log.status == 'FAILED' %}bg-red-500/10 border-red-500/20 text-red-400{% else %}bg-amber-500/10 border-amber-500/20 text-amber-400{% endif %}">
+                            {{ log.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-6 text-right text-zinc-300">
+                        {{ log.videos_found }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right font-semibold {% if log.new_videos > 0 %}text-emerald-400{% else %}text-zinc-400{% endif %}">
+                        {% if log.new_videos > 0 %}+{{ log.new_videos }}{% else %}0{% endif %}
+                    </td>
+                    <td class="py-3.5 px-6 text-right font-semibold text-zinc-200">
+                        {{ log.snapshots_created }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right font-mono text-[11px] text-zinc-400">
+                        {{ log.duration_seconds }}s
+                    </td>
+                    <td class="py-3.5 px-6 text-red-400 text-[11px] max-w-xs truncate">
+                        {{ log.error_message|default:"—" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="p-8 text-center text-zinc-400 text-xs">
+                        No synchronization runs recorded yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

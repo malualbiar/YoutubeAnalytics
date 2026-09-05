@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Reports & Export - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-tight">Analytics Reports & Data Export</h2>
+            <p class="text-xs text-zinc-400">Generate structured performance summaries for custom date ranges and export to CSV or Printable PDF</p>
+        </div>
+
+        <div class="flex items-center gap-2 self-start">
+            <a href="{% url 'export_report_csv' %}?period={{ period }}&type={{ report_type }}{% if selected_artist %}&artist={{ selected_artist }}{% endif %}" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                Export CSV
+            </a>
+            <a href="{% url 'printable_report' %}?period={{ period }}&type={{ report_type }}{% if selected_artist %}&artist={{ selected_artist }}{% endif %}" target="_blank" class="flex items-center gap-2 px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                Printable Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Settings -->
+    <form method="GET" class="glass-panel p-5 rounded-2xl border border-zinc-800 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div class="space-y-1.5">
+            <label class="font-semibold text-zinc-300">Reporting Entity Type</label>
+            <select name="type" onchange="this.form.submit()" class="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                <option value="artists" {% if report_type == 'artists' %}selected{% endif %}>Artist Performance Summary</option>
+                <option value="videos" {% if report_type == 'videos' %}selected{% endif %}>Video Catalog Performance</option>
+            </select>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="font-semibold text-zinc-300">Reporting Time Period</label>
+            <select name="period" onchange="this.form.submit()" class="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                <option value="7d" {% if period == '7d' %}selected{% endif %}>Last 7 Days</option>
+                <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 Days</option>
+                <option value="90d" {% if period == '90d' %}selected{% endif %}>Last 90 Days</option>
+                <option value="all" {% if period == 'all' %}selected{% endif %}>All Time</option>
+            </select>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="font-semibold text-zinc-300">Artist Filter (Optional)</label>
+            <select name="artist" onchange="this.form.submit()" class="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                <option value="">All Monitored Artists</option>
+                {% for a in artists %}
+                <option value="{{ a.id }}" {% if selected_artist == a.id %}selected{% endif %}>{{ a.stage_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <!-- Report Summary Metadata -->
+    <div class="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
+        <div>
+            <span>Reporting Interval: <strong class="text-zinc-200">{{ start_date|date:"M d, Y" }}</strong> to <strong class="text-zinc-200">{{ end_date|date:"M d, Y" }}</strong></span>
+        </div>
+        <div>
+            <span>Total Records: <strong class="text-white">{{ rows|length }}</strong></span>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-dark-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50">
+                    <th class="py-3.5 px-6">{% if report_type == 'artists' %}Artist{% else %}Song Title{% endif %}</th>
+                    <th class="py-3.5 px-6">{% if report_type == 'artists' %}Genre{% else %}Artist{% endif %}</th>
+                    {% if report_type == 'artists' %}
+                    <th class="py-3.5 px-6 text-right">Subscribers</th>
+                    <th class="py-3.5 px-6 text-right">Tracks</th>
+                    {% endif %}
+                    <th class="py-3.5 px-6 text-right">Total Cumulative Views</th>
+                    <th class="py-3.5 px-6 text-right">Views Gained ({{ period|upper }})</th>
+                    <th class="py-3.5 px-6 text-right">Likes</th>
+                    <th class="py-3.5 px-6 text-right">{% if report_type == 'artists' %}Comments{% else %}Like Rate{% endif %}</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60 text-xs">
+                {% for row in rows %}
+                <tr class="hover:bg-zinc-800/30 transition-colors">
+                    <td class="py-4 px-6 font-bold text-white">
+                        {{ row.title }}
+                    </td>
+                    <td class="py-4 px-6 text-zinc-400">
+                        {{ row.subtitle }}
+                    </td>
+                    {% if report_type == 'artists' %}
+                    <td class="py-4 px-6 text-right font-semibold text-zinc-200">
+                        {{ row.subscribers|intcomma }}
+                    </td>
+                    <td class="py-4 px-6 text-right text-zinc-300">
+                        {{ row.videos_count }}
+                    </td>
+                    {% endif %}
+                    <td class="py-4 px-6 text-right font-bold text-purple-400">
+                        {{ row.total_views|intcomma }}
+                    </td>
+                    <td class="py-4 px-6 text-right font-bold text-emerald-400">
+                        +{{ row.views_gained|intcomma }}
+                    </td>
+                    <td class="py-4 px-6 text-right text-zinc-300">
+                        {{ row.total_likes|intcomma }}
+                    </td>
+                    <td class="py-4 px-6 text-right text-zinc-300">
+                        {% if report_type == 'artists' %}{{ row.total_comments|intcomma }}{% else %}{{ row.like_rate }}%{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="p-10 text-center text-zinc-400 text-xs">
+                        No report records found for this selection.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}YouTube API Quota Usage - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h2 class="text-xl font-bold text-white tracking-tight">YouTube Data API v3 Quota & Usage</h2>
+        <p class="text-xs text-zinc-400">Monitor daily Google API quota usage to prevent rate limiting and quota exhaustion</p>
+    </div>
+
+    <!-- Quota Meter Card -->
+    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Today's Quota Consumption</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span class="text-3xl font-bold text-white tracking-tight">{{ quota_used_today|intcomma }}</span>
+                    <span class="text-xs text-zinc-400">/ {{ quota_limit|intcomma }} units ({{ quota_percent }}%)</span>
+                </div>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs font-bold {% if quota_percent < 75 %}bg-emerald-500/10 border border-emerald-500/20 text-emerald-400{% elif quota_percent < 90 %}bg-amber-500/10 border border-amber-500/20 text-amber-400{% else %}bg-red-500/10 border border-red-500/20 text-red-400{% endif %}">
+                {% if quota_percent < 75 %}● Healthy Usage{% elif quota_percent < 90 %}● Caution{% else %}● High Usage{% endif %}
+            </span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full h-3 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+            <div class="h-full {% if quota_percent < 75 %}bg-emerald-500{% elif quota_percent < 90 %}bg-amber-500{% else %}bg-red-500{% endif %} transition-all duration-500" style="width: {{ quota_percent }}%;"></div>
+        </div>
+
+        <p class="text-[11px] text-zinc-400">
+            Standard Google Cloud YouTube Data API v3 projects receive a complimentary 10,000 units/day. Video statistics batch calls consume only 1 unit per 50 videos.
+        </p>
+    </div>
+
+    <!-- Usage History Table -->
+    <div class="bg-dark-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-zinc-800">
+            <h3 class="text-sm font-bold text-white">Daily Quota History (Last 30 Days)</h3>
+        </div>
+
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50">
+                    <th class="py-3 px-6">Date</th>
+                    <th class="py-3 px-6 text-right">Quota Units Used</th>
+                    <th class="py-3 px-6 text-right">API Requests Executed</th>
+                    <th class="py-3 px-6 text-right">% of 10,000 Daily Limit</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60 text-xs">
+                {% for u in usages %}
+                <tr class="hover:bg-zinc-800/30 transition-colors">
+                    <td class="py-3.5 px-6 font-medium text-white">
+                        {{ u.date|date:"F j, Y" }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right font-bold text-emerald-400">
+                        {{ u.quota_used|intcomma }} units
+                    </td>
+                    <td class="py-3.5 px-6 text-right text-zinc-300">
+                        {{ u.request_count }} requests
+                    </td>
+                    <td class="py-3.5 px-6 text-right text-zinc-400">
+                        {{ u.quota_used|floatformat:1 }}%
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-zinc-400 text-xs">
+                        No API calls logged today yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

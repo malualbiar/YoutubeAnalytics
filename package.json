@@ -1,0 +1,44 @@
+{
+  "name": "yt-quid",
+  "productName": "YT Quid",
+  "version": "1.0.0",
+  "description": "YouTube Artist Analytics & Monitoring Desktop App",
+  "main": "main.js",
+  "author": "Malual Biar",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.ytquid.analytics",
+    "productName": "YT Quid",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "**/*",
+      "!dist-electron/**",
+      "!node_modules/**/.bin",
+      "!**/*.pyc",
+      "!**/__pycache__/**"
+    ]
+  }
+}

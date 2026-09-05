@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Video Library - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-tight">Monitored Music Videos & Songs</h2>
+            <p class="text-xs text-zinc-400">Total catalog of {{ total_count }} monitored songs across all channels</p>
+        </div>
+
+        <a href="{% url 'artist_comparison' %}" class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-lg transition-colors self-start">
+            <i data-lucide="columns-2" class="w-3.5 h-3.5 text-zinc-400"></i>
+            Compare Tracks
+        </a>
+    </div>
+
+    <!-- Filter & Sort Bar -->
+    <form method="GET" class="glass-panel p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 flex-1 min-w-[220px]">
+            <i data-lucide="search" class="w-4 h-4 text-zinc-400"></i>
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search by song title, artist, or channel..." class="w-full bg-transparent border-none text-white focus:outline-none placeholder-zinc-400 text-xs">
+        </div>
+
+        <div class="flex items-center gap-2.5">
+            <!-- Artist Filter -->
+            <select name="artist" onchange="this.form.submit()" class="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none">
+                <option value="">All Artists</option>
+                {% for a in artists %}
+                <option value="{{ a.id }}" {% if selected_artist == a.id %}selected{% endif %}>{{ a.stage_name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Sort By -->
+            <select name="sort" onchange="this.form.submit()" class="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none">
+                <option value="total_views" {% if sort_by == 'total_views' %}selected{% endif %}>Most Total Views</option>
+                <option value="views_today" {% if sort_by == 'views_today' %}selected{% endif %}>Most Views Today</option>
+                <option value="views_this_week" {% if sort_by == 'views_this_week' %}selected{% endif %}>Most Views This Week</option>
+                <option value="views_this_month" {% if sort_by == 'views_this_month' %}selected{% endif %}>Most Views This Month</option>
+                <option value="likes" {% if sort_by == 'likes' %}selected{% endif %}>Most Likes</option>
+                <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>Most Comments</option>
+                <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Most Recent Upload</option>
+            </select>
+
+            {% if search_query or selected_artist or sort_by != 'total_views' %}
+            <a href="{% url 'video_list' %}" class="px-2.5 py-1.5 text-zinc-400 hover:text-white">Reset</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- Video Table -->
+    <div class="bg-dark-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50">
+                    <th class="py-3.5 px-6">Song Title</th>
+                    <th class="py-3.5 px-6">Artist / Channel</th>
+                    <th class="py-3.5 px-6">Published</th>
+                    <th class="py-3.5 px-6 text-right">Total Views</th>
+                    <th class="py-3.5 px-6 text-right">Views Today</th>
+                    <th class="py-3.5 px-6 text-right">Likes</th>
+                    <th class="py-3.5 px-6 text-right">Like Rate</th>
+                    <th class="py-3.5 px-6 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60 text-xs">
+                {% for video in page_obj %}
+                <tr class="hover:bg-zinc-800/30 transition-colors group">
+                    <td class="py-3.5 px-6">
+                        <div class="flex items-center gap-3">
+                            <img src="{{ video.thumbnail_url }}" class="w-16 h-10 object-cover rounded-lg bg-zinc-800 shrink-0 group-hover:ring-1 group-hover:ring-emerald-500/50 transition-all">
+                            <div class="truncate max-w-xs">
+                                <a href="{% url 'video_detail' video.id %}" class="font-semibold text-white hover:text-emerald-400 transition-colors block truncate">
+                                    {{ video.title }}
+                                </a>
+                                <span class="text-[10px] text-zinc-400 font-mono">{{ video.duration }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-6">
+                        <p class="font-medium text-white">{{ video.artist.stage_name }}</p>
+                        <p class="text-[10px] text-zinc-400">{{ video.channel.channel_name }}</p>
+                    </td>
+                    <td class="py-3.5 px-6 text-zinc-400 text-[11px]">
+                        {{ video.published_at|date:"M d, Y" }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right font-bold text-white">
+                        {{ video.current_views|intcomma }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right font-semibold text-emerald-400">
+                        +{{ video.views_today|intcomma }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right text-zinc-300">
+                        {{ video.current_likes|intcomma }}
+                    </td>
+                    <td class="py-3.5 px-6 text-right text-zinc-300">
+                        {{ video.like_rate }}%
+                    </td>
+                    <td class="py-3.5 px-6 text-right">
+                        <a href="{% url 'video_detail' video.id %}" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-medium transition-colors">
+                            Analytics
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="p-12 text-center text-zinc-400 text-xs">
+                        No videos matching your filter criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="p-4 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400 bg-zinc-950/40">
+            <span>Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <div class="flex items-center gap-1.5">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_artist %}&artist={{ selected_artist }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white">Previous</a>
+                {% endif %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_artist %}&artist={{ selected_artist }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

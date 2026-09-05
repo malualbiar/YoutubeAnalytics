@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Milestones - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-tight">Catalog Milestones Feed</h2>
+            <p class="text-xs text-zinc-400">Automatic milestone achievements unlocked by your artists' songs and videos</p>
+        </div>
+
+        <!-- Filter by Milestone Type -->
+        <form method="GET" class="self-start">
+            <select name="type" onchange="this.form.submit()" class="bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 rounded-lg px-3 py-1.5 focus:border-emerald-500 focus:outline-none">
+                <option value="">All Milestone Thresholds</option>
+                {% for val, label in types %}
+                <option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Milestones Timeline Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for m in milestones %}
+        <div class="glass-panel p-5 rounded-2xl border border-zinc-800 hover:border-purple-500/40 transition-all flex flex-col space-y-3 group">
+            <div class="flex items-start justify-between gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                    <i data-lucide="award" class="w-5 h-5"></i>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    {{ m.get_milestone_type_display }}
+                </span>
+            </div>
+
+            <div>
+                <a href="{% url 'video_detail' m.video.id %}" class="text-sm font-bold text-white hover:text-emerald-400 transition-colors block truncate">
+                    {{ m.video.title }}
+                </a>
+                <p class="text-xs text-zinc-400 mt-0.5">{{ m.video.artist.stage_name }}</p>
+            </div>
+
+            <div class="pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400 mt-auto">
+                <span>Threshold: <strong class="text-white">{{ m.threshold|intcomma }}</strong></span>
+                <span class="text-[11px] text-zinc-400">{{ m.reached_at|date:"M d, Y" }}</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full glass-panel p-12 text-center rounded-2xl">
+            <i data-lucide="award" class="w-8 h-8 text-zinc-400 mx-auto mb-2"></i>
+            <h3 class="text-sm font-bold text-white">No milestones recorded yet</h3>
+            <p class="text-xs text-zinc-400 mt-1">Milestones trigger automatically when videos cross 10K, 50K, 100K, 1M, or 5M views.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

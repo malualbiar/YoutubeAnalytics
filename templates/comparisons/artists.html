@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Artist Comparisons - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-tight">Artist Benchmarking & Comparisons</h2>
+            <p class="text-xs text-zinc-400">Select multiple artists to compare growth trajectories, total views, and audience reach</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'artist_comparison' %}" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-semibold text-xs">Artists</a>
+            <a href="{% url 'video_comparison' %}" class="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold">Videos</a>
+        </div>
+    </div>
+
+    <!-- Artist Selector Form -->
+    <div class="glass-panel p-5 rounded-2xl border border-zinc-800 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Artists to Benchmark:</h3>
+        <form method="GET" class="flex flex-wrap items-center gap-3">
+            {% for a in all_artists %}
+            <label class="flex items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer text-xs font-medium transition-all {% if a.id in selected_ids %}bg-emerald-500/10 border-emerald-500 text-emerald-300{% else %}bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700{% endif %}">
+                <input type="checkbox" name="artists" value="{{ a.id }}" {% if a.id in selected_ids %}checked{% endif %} class="hidden" onchange="this.form.submit()">
+                <span>{{ a.stage_name }}</span>
+            </label>
+            {% endfor %}
+        </form>
+    </div>
+
+    <!-- Comparative Multi-line Chart -->
+    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">Comparative 30-Day Views Trajectory</h3>
+            <span class="text-xs text-zinc-400">Cumulative total views over time</span>
+        </div>
+        <div class="h-80 w-full">
+            <canvas id="artistComparisonChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Side-by-Side Comparison Matrix -->
+    <div class="bg-dark-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-zinc-800">
+            <h3 class="text-sm font-bold text-white">Performance Metrics Matrix</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50">
+                        <th class="py-3 px-6">Artist</th>
+                        <th class="py-3 px-6 text-right">Subscribers</th>
+                        <th class="py-3 px-6 text-right">Total Views</th>
+                        <th class="py-3 px-6 text-right">Views Gained (30D)</th>
+                        <th class="py-3 px-6 text-right">Monitored Tracks</th>
+                        <th class="py-3 px-6 text-right">Total Likes</th>
+                        <th class="py-3 px-6 text-right">Total Comments</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-800/60 text-xs">
+                    {% for row in comparison_matrix %}
+                    <tr class="hover:bg-zinc-800/30 transition-colors">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                                    {{ row.artist.stage_name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <a href="{% url 'artist_detail' row.artist.id %}" class="font-bold text-white hover:text-emerald-400">
+                                        {{ row.artist.stage_name }}
+                                    </a>
+                                    <p class="text-[10px] text-zinc-400">{{ row.artist.genre }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-right font-bold text-white">
+                            {{ row.subscribers|intcomma }}
+                        </td>
+                        <td class="py-4 px-6 text-right font-bold text-purple-400">
+                            {{ row.video_views|intcomma }}
+                        </td>
+                        <td class="py-4 px-6 text-right font-bold text-emerald-400">
+                            +{{ row.views_30d|intcomma }}
+                        </td>
+                        <td class="py-4 px-6 text-right text-zinc-300">
+                            {{ row.video_count }}
+                        </td>
+                        <td class="py-4 px-6 text-right text-zinc-300">
+                            {{ row.total_likes|intcomma }}
+                        </td>
+                        <td class="py-4 px-6 text-right text-zinc-300">
+                            {{ row.total_comments|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-zinc-400 text-xs">
+                            Select at least one artist above to display comparison metrics.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const ctx = document.getElementById('artistComparisonChart').getContext('2d');
+    const labels = {{ chart_labels|safe }};
+    const datasets = {{ chart_datasets|safe }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets.map(d => ({
+                ...d,
+                borderWidth: 2.5,
+                tension: 0.35,
+                pointRadius: 2,
+                pointHoverRadius: 6,
+                fill: false,
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, labels: { color: '#a1a1aa', font: { size: 11 } } },
+                tooltip: {
+                    backgroundColor: '#18181b',
+                    borderColor: '#27272a',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return (context.dataset.label || '') + ': ' + Number(context.parsed.y).toLocaleString() + ' views';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' }, 
+                    ticks: { color: '#71717a', font: { size: 10 }, maxTicksLimit: 12 } 
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                    ticks: {
+                        precision: 0,
+                        color: '#71717a',
+                        font: { size: 10 },
+                        callback: function(v) {
+                            if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+                            if (v >= 1000) return (v / 1000) + 'K';
+                            return Number.isInteger(v) ? v : '';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

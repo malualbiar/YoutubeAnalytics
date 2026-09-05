@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings - YT Quid{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div>
+        <h2 class="text-xl font-bold text-white tracking-tight">System & Synchronization Settings</h2>
+        <p class="text-xs text-zinc-400">Configure global sync intervals, timezones, and spike notification thresholds</p>
+    </div>
+
+    <!-- Health Status Card -->
+    <div class="glass-panel p-5 rounded-2xl border border-zinc-800 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400">System Component Health</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80">
+                <span class="text-zinc-400 block text-[10px]">Backend</span>
+                <span class="text-emerald-400 font-bold flex items-center gap-1.5 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Online
+                </span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80">
+                <span class="text-zinc-400 block text-[10px]">Database</span>
+                <span class="text-emerald-400 font-bold flex items-center gap-1.5 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Connected
+                </span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80">
+                <span class="text-zinc-400 block text-[10px]">YouTube API</span>
+                <span class="text-emerald-400 font-bold flex items-center gap-1.5 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Healthy
+                </span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80">
+                <span class="text-zinc-400 block text-[10px]">Last Sync</span>
+                <span class="text-zinc-200 font-semibold block mt-1 truncate">
+                    {{ last_sync_log.started_at|timesince|default:"Never" }} ago
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="bg-dark-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            
+            <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-zinc-300">Synchronization Frequency (Hours)</label>
+                <select name="sync_interval_hours" class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white focus:border-emerald-500 focus:outline-none">
+                    <option value="1" {% if settings.sync_interval_hours == 1 %}selected{% endif %}>Every 1 hour</option>
+                    <option value="3" {% if settings.sync_interval_hours == 3 %}selected{% endif %}>Every 3 hours</option>
+                    <option value="6" {% if settings.sync_interval_hours == 6 %}selected{% endif %}>Every 6 hours (Recommended)</option>
+                    <option value="12" {% if settings.sync_interval_hours == 12 %}selected{% endif %}>Every 12 hours</option>
+                    <option value="24" {% if settings.sync_interval_hours == 24 %}selected{% endif %}>Daily (Every 24 hours)</option>
+                </select>
+                <p class="text-[10px] text-zinc-400">Interval for automated background polling of uploads playlists and video stats.</p>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-zinc-300">Application Timezone</label>
+                <input type="text" name="app_timezone" value="{{ settings.app_timezone }}" class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white focus:border-emerald-500 focus:outline-none">
+                <p class="text-[10px] text-zinc-400">Standard IANA timezone name (e.g. UTC, America/New_York, Europe/London).</p>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-zinc-300">Default Analytics Date Range</label>
+                <select name="default_reporting_period" class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white focus:border-emerald-500 focus:outline-none">
+                    <option value="7d" {% if settings.default_reporting_period == '7d' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30d" {% if settings.default_reporting_period == '30d' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="90d" {% if settings.default_reporting_period == '90d' %}selected{% endif %}>Last 90 Days</option>
+                </select>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-zinc-300">Growth Spike Alert Threshold (Views in 24h)</label>
+                <input type="number" name="spike_alert_threshold" value="{{ settings.spike_alert_threshold }}" class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white focus:border-emerald-500 focus:outline-none">
+                <p class="text-[10px] text-zinc-400">Triggers an immediate notification when any song gains more than this view threshold in a single day.</p>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm">
+                    Save System Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
