@@ -34,8 +34,9 @@ function getPythonExecutable() {
     if (app.isPackaged) {
         const bundledBackend = path.join(process.resourcesPath, 'backend', 'server.exe');
         if (require('fs').existsSync(bundledBackend)) {
-            return { cmd: bundledBackend, args: [] };
+            return { cmd: bundledBackend, args: [], cwd: path.dirname(bundledBackend) };
         }
+        throw new Error(`Bundled backend executable not found at: ${bundledBackend}`);
     }
 
     // Check local virtual environments in project directory
@@ -44,17 +45,17 @@ function getPythonExecutable() {
     const venvUnix = path.join(__dirname, 'venv', 'bin', 'python');
 
     if (require('fs').existsSync(venvWindows)) {
-        return { cmd: venvWindows, args: [path.join(__dirname, 'server.py')] };
+        return { cmd: venvWindows, args: [path.join(__dirname, 'server.py')], cwd: __dirname };
     }
     if (require('fs').existsSync(dotVenvWindows)) {
-        return { cmd: dotVenvWindows, args: [path.join(__dirname, 'server.py')] };
+        return { cmd: dotVenvWindows, args: [path.join(__dirname, 'server.py')], cwd: __dirname };
     }
     if (require('fs').existsSync(venvUnix)) {
-        return { cmd: venvUnix, args: [path.join(__dirname, 'server.py')] };
+        return { cmd: venvUnix, args: [path.join(__dirname, 'server.py')], cwd: __dirname };
     }
 
     // System Python fallback
-    return { cmd: 'python', args: [path.join(__dirname, 'server.py')] };
+    return { cmd: 'python', args: [path.join(__dirname, 'server.py')], cwd: __dirname };
 }
 
 /**
@@ -62,12 +63,17 @@ function getPythonExecutable() {
  */
 function startPythonServer() {
     return new Promise((resolve, reject) => {
-        const py = getPythonExecutable();
+        let py;
+        try {
+            py = getPythonExecutable();
+        } catch (err) {
+            return reject(err);
+        }
         console.log(`[YT Quid] Launching backend: ${py.cmd} ${py.args.join(' ')}`);
 
         pythonProcess = spawn(py.cmd, py.args, {
-            cwd: __dirname,
-            env: { ...process.env, PYTHONUNBUFFERED: '1' }
+            cwd: py.cwd,
+            env: { ...process.env, PYTHONUNBUFFERED: '1', YT_QUID_DESKTOP: '1' }
         });
 
         let serverReady = false;

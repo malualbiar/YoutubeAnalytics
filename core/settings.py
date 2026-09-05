@@ -7,7 +7,12 @@ import os
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+import sys
+
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(getattr(sys, '_MEIPASS', os.path.dirname(sys.executable)))
+else:
+    BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / '.env')
@@ -74,10 +79,28 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database: SQLite for simple, lightweight local setup
+import sys
+import shutil
+
+if getattr(sys, 'frozen', False) or os.getenv('YT_QUID_DESKTOP') == '1':
+    DATA_DIR = Path(os.getenv('APPDATA', os.path.expanduser('~'))) / 'YTQuid' if os.name == 'nt' else Path.home() / '.config' / 'ytquid'
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH = DATA_DIR / 'db.sqlite3'
+    # Seed from local db if first run
+    if not DB_PATH.exists() and (BASE_DIR / 'db.sqlite3').exists():
+        try:
+            shutil.copy2(BASE_DIR / 'db.sqlite3', DB_PATH)
+        except Exception:
+            pass
+    if (DATA_DIR / '.env').exists():
+        load_dotenv(DATA_DIR / '.env')
+else:
+    DB_PATH = BASE_DIR / 'db.sqlite3'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_PATH,
     }
 }
 

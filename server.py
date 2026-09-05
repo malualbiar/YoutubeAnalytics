@@ -70,10 +70,13 @@ def main():
 
     logger.info(f"YT Quid desktop backend serving at {server_url}")
 
-    # 5. Start Waitress production WSGI server
+    # 5. Start Waitress production WSGI server with static file handling
+    from django.contrib.staticfiles.handlers import StaticFilesHandler
+    wsgi_app = StaticFilesHandler(application)
+
     try:
         waitress.serve(
-            application,
+            wsgi_app,
             host='127.0.0.1',
             port=port,
             threads=6,
