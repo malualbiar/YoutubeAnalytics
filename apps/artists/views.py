@@ -69,7 +69,10 @@ def artist_detail_view(request, pk):
         total_views=Sum('current_views'),
         total_likes=Sum('current_likes'),
         total_comments=Sum('current_comments'),
-        total_count=Count('id')
+        total_count=Count('id'),
+        views_this_month=Sum('views_this_month'),
+        views_today=Sum('views_today'),
+        views_this_week=Sum('views_this_week'),
     )
 
     # Channel stats
@@ -83,6 +86,9 @@ def artist_detail_view(request, pk):
         'total_views': stats['total_views'] or (channel.total_views if channel else 0),
         'total_likes': stats['total_likes'] or 0,
         'total_comments': stats['total_comments'] or 0,
+        'views_this_month': stats['views_this_month'] or 0,
+        'views_today': stats['views_today'] or 0,
+        'views_this_week': stats['views_this_week'] or 0,
         'chart_data': chart_data,
         'range_days': range_days,
     })

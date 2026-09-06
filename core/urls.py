@@ -12,6 +12,8 @@ urlpatterns = [
     path('', include('apps.milestones.urls')),
     path('', include('apps.reports.urls')),
     path('', include('apps.youtube.urls')),
+    path('', include('apps.studio.urls')),
+    path('', include('apps.radar.urls')),
 ]
 
 if settings.DEBUG:

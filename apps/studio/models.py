@@ -1,0 +1,167 @@
+from django.db import models
+
+class VideoProject(models.Model):
+    class VideoFormat(models.TextChoices):
+        ONE_HOUR_LOOP = '1HOUR_LOOP', '1-Hour Study/Chill Loop (60 Min)'
+        VISUALIZER = 'VISUALIZER', '1080p Official Visualizer (Full Song)'
+        SHORT = 'SHORT', '15s YouTube Shorts Hook (9:16 Vertical)'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        RENDERING = 'RENDERING', 'Rendering'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+
+    title = models.CharField(max_length=255, default='My 1-Hour Chill Loop')
+    audio_file = models.FileField(upload_to='studio/audio/')
+    cover_image = models.ImageField(upload_to='studio/covers/')
+    video_format = models.CharField(
+        max_length=20,
+        choices=VideoFormat.choices,
+        default=VideoFormat.ONE_HOUR_LOOP
+    )
+    output_video = models.FileField(upload_to='studio/videos/', blank=True, null=True)
+    duration_seconds = models.IntegerField(default=3600)
+    render_status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    error_message = models.TextField(blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Video Studio Project'
+        verbose_name_plural = 'Video Studio Projects'
+
+    def __str__(self):
+        return f"{self.title} ({self.get_video_format_display()})"
+
+    @property
+    def youtube_title(self):
+        if self.video_format == self.VideoFormat.ONE_HOUR_LOOP:
+            return f"1 HOUR of {self.title} [Study / Deep Focus / Chill Beats Loop]"
+        elif self.video_format == self.VideoFormat.SHORT:
+            return f"{self.title} 🔥 #shorts #chillbeats #newmusic"
+        else:
+            return f"{self.title} (Official Audio / Visualizer)"
+
+    @property
+    def youtube_description(self):
+        return (
+            f"🎧 Listen to '{self.title}' on repeat!\n\n"
+            f"✨ Perfect for studying, coding, gaming, relaxing, or sleeping.\n\n"
+            f"⏱️ Chapters:\n"
+            f"00:00 - {self.title} (Start)\n"
+            f"15:00 - Deep Focus Phase\n"
+            f"30:00 - Concentration Zone\n"
+            f"45:00 - Final Session\n\n"
+            f"👍 Leave a like & subscribe to support the channel!\n"
+            f"#studybeats #chillvibes #1hourloop #focusmusic #ambient"
+        )
+
+
+class LongMixProject(models.Model):
+    class TransitionCurve(models.TextChoices):
+        QSIN = 'qsin', 'Smooth Quarter-Sine / Equal-Power (Recommended)'
+        TRI = 'tri', 'Triangular Linear Fade'
+        LIN = 'lin', 'Linear Crossfade'
+        EXP = 'exp', 'Exponential Fade (Smooth Fade-Out)'
+        FAST = 'fast', 'Quick Club Cut (1.5s Overlap)'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        RENDERING = 'RENDERING', 'Rendering'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+
+    title = models.CharField(max_length=255, default='My Non-Stop Music Mix')
+    description = models.TextField(blank=True, default='')
+    cover_image = models.ImageField(upload_to='studio/mix_covers/', blank=True, null=True)
+    transition_curve = models.CharField(
+        max_length=20,
+        choices=TransitionCurve.choices,
+        default=TransitionCurve.QSIN
+    )
+    crossfade_seconds = models.IntegerField(default=6)
+    render_video = models.BooleanField(default=True)
+    output_audio = models.FileField(upload_to='studio/mix_audio/', blank=True, null=True)
+    output_video = models.FileField(upload_to='studio/mix_videos/', blank=True, null=True)
+    duration_seconds = models.IntegerField(default=0)
+    track_count = models.IntegerField(default=0)
+    tracklist_data = models.JSONField(default=list, blank=True)
+    render_status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    error_message = models.TextField(blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Non-Stop Long Mix Project'
+        verbose_name_plural = 'Non-Stop Long Mix Projects'
+
+    def __str__(self):
+        return f"{self.title} ({self.track_count} tracks • {self.duration_formatted})"
+
+    @property
+    def duration_formatted(self):
+        secs = int(self.duration_seconds or 0)
+        hours = secs // 3600
+        minutes = (secs % 3600) // 60
+        seconds = secs % 60
+        if hours > 0:
+            return f"{hours}h {minutes:02d}m {seconds:02d}s"
+        return f"{minutes:02d}m {seconds:02d}s"
+
+    @property
+    def youtube_chapters_text(self):
+        """
+        Formats tracklist_data into standard YouTube chapters with timestamps.
+        Example:
+        00:00 Track 1 - Artist A
+        03:42 Track 2 - Artist B
+        """
+        lines = []
+        for track in (self.tracklist_data or []):
+            start_sec = int(track.get('start_seconds', 0))
+            hours = start_sec // 3600
+            minutes = (start_sec % 3600) // 60
+            seconds = start_sec % 60
+            
+            if hours > 0:
+                time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            else:
+                time_str = f"{minutes:02d}:{seconds:02d}"
+            
+            title = track.get('title', 'Unknown Track')
+            artist = track.get('artist', '')
+            if artist:
+                lines.append(f"{time_str} - {title} ({artist})")
+            else:
+                lines.append(f"{time_str} - {title}")
+
+        if not lines:
+            return "00:00 - Continuous Mix Start"
+        return "\n".join(lines)
+
+    @property
+    def youtube_description(self):
+        chapters = self.youtube_chapters_text
+        return (
+            f"🎵 {self.title}\n\n"
+            f"Enjoy this seamless non-stop continuous music mix! Perfect for study sessions, driving, gaming, and relaxing.\n\n"
+            f"⏱️ Tracklist & Chapters:\n"
+            f"{chapters}\n\n"
+            f"🎧 Mixed with smooth equal-power crossfades.\n"
+            f"👍 Like and subscribe for more non-stop DJ mixes!\n\n"
+            f"#nonstopmix #longmix #chillmix #djmix #studybeats #continuousmix"
+        )
+

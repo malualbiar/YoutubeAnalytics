@@ -67,16 +67,22 @@
     </div>
 
     <!-- Stats Matrix -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <div class="glass-panel p-4 rounded-2xl">
             <span class="text-[11px] font-medium text-zinc-400 block">Subscribers</span>
             <span class="text-xl font-bold text-white mt-1 block">{% if channel %}{{ channel.subscriber_count|intcomma }}{% else %}—{% endif %}</span>
             <span class="text-[10px] text-zinc-400">YouTube reported</span>
         </div>
 
+        <div class="glass-panel p-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/10">
+            <span class="text-[11px] font-medium text-emerald-400 block">This Month's Views</span>
+            <span class="text-xl font-bold text-emerald-400 mt-1 block">+{{ views_this_month|intcomma }}</span>
+            <span class="text-[10px] text-zinc-400">Past 30 days gained</span>
+        </div>
+
         <div class="glass-panel p-4 rounded-2xl">
             <span class="text-[11px] font-medium text-zinc-400 block">Total Catalog Views</span>
-            <span class="text-xl font-bold text-emerald-400 mt-1 block">{{ total_views|intcomma }}</span>
+            <span class="text-xl font-bold text-white mt-1 block">{{ total_views|intcomma }}</span>
             <span class="text-[10px] text-zinc-400">Lifetime video views</span>
         </div>
 

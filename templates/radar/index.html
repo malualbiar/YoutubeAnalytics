@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}AI Music Radar | YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6 pb-12">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-xl font-bold tracking-tight text-white">AI Music Radar</h1>
+                <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    Scanner
+                </span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1">
+                Discover recently posted AI music, filter by upload time, duration, and channel reach, or download lossless WAVs.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'studio_home' %}" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-colors">
+                Video Studio
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Control Panel -->
+    <div class="bg-dark-900 rounded-xl border border-zinc-800 p-4 space-y-4">
+        <form method="GET" action="{% url 'radar_feed' %}" class="space-y-3" id="radarFilterForm">
+            <!-- Search & Filter Controls Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                <!-- Search -->
+                <div class="lg:col-span-4">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search AI keywords..." 
+                           class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors">
+                </div>
+
+                <!-- Posted Time Window -->
+                <div class="lg:col-span-2">
+                    <select name="time" onchange="document.getElementById('radarFilterForm').submit()"
+                            class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600 transition-colors cursor-pointer">
+                        {% for tw in time_windows %}
+                        <option value="{{ tw.id }}" {% if current_time == tw.id %}selected{% endif %}>{{ tw.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Track Length / Duration -->
+                <div class="lg:col-span-2">
+                    <select name="duration" onchange="document.getElementById('radarFilterForm').submit()"
+                            class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600 transition-colors cursor-pointer">
+                        {% for d in duration_options %}
+                        <option value="{{ d.id }}" {% if current_duration == d.id %}selected{% endif %}>{{ d.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Channel Popularity -->
+                <div class="lg:col-span-2">
+                    <select name="popularity" onchange="document.getElementById('radarFilterForm').submit()"
+                            class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600 transition-colors cursor-pointer">
+                        {% for p in popularity_options %}
+                        <option value="{{ p.id }}" {% if current_popularity == p.id %}selected{% endif %}>{{ p.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sort By -->
+                <div class="lg:col-span-2 flex gap-2">
+                    <select name="sort" onchange="document.getElementById('radarFilterForm').submit()"
+                            class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600 transition-colors cursor-pointer">
+                        {% for s in sort_options %}
+                        <option value="{{ s.id }}" {% if current_sort == s.id %}selected{% endif %}>{{ s.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium border border-zinc-700 transition-colors shrink-0">
+                        Apply
+                    </button>
+                </div>
+            </div>
+
+            <!-- Genre Tabs -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pt-1 no-scrollbar">
+                <input type="hidden" name="genre" id="selectedGenreInput" value="{{ current_genre }}">
+                {% for g in genres %}
+                <button type="button" onclick="selectGenre('{{ g.id }}')"
+                        class="px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors {% if current_genre == g.id %}bg-violet-600 text-white{% else %}bg-dark-950 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800/80{% endif %}">
+                    {{ g.label }}
+                </button>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Count & Status -->
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 px-1">
+        <div class="flex items-center gap-3">
+            <span>Showing <strong class="text-zinc-200">{{ total_tracks }}</strong> tracks</span>
+            <span class="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                Quota-Safe (0 API Units)
+            </span>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="?q={{ query }}&genre={{ current_genre }}&time={{ current_time }}&duration={{ current_duration }}&popularity={{ current_popularity }}&sort={{ current_sort }}&refresh=1" class="text-zinc-300 hover:text-white underline text-xs">
+                Refresh Live
+            </a>
+            {% if query or current_time != '48h' or current_duration != 'all' or current_popularity != 'all' %}
+            <a href="{% url 'radar_feed' %}" class="text-violet-400 hover:underline">Reset filters</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tracks Grid -->
+    {% if tracks %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for track in tracks %}
+        <div class="bg-dark-900 rounded-xl border border-zinc-800 overflow-hidden flex flex-col justify-between hover:border-zinc-700 transition-colors">
+            <div>
+                <!-- Thumbnail -->
+                <div class="relative aspect-video w-full bg-dark-950 overflow-hidden group">
+                    <img src="{{ track.thumbnail_url }}" alt="{{ track.title }}" class="w-full h-full object-cover" loading="lazy">
+                    
+                    <!-- Top Left Generator -->
+                    <div class="absolute top-2.5 left-2.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-black/80 text-zinc-200 border border-white/10">
+                            {{ track.generator }}
+                        </span>
+                    </div>
+
+                    <!-- Top Right Relative Time -->
+                    <div class="absolute top-2.5 right-2.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-black/80 text-zinc-300 border border-white/10">
+                            {{ track.relative_time }}
+                        </span>
+                    </div>
+
+                    <!-- Bottom Right Duration -->
+                    <div class="absolute bottom-2.5 right-2.5">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/80 text-zinc-300">
+                            {{ track.duration }}
+                        </span>
+                    </div>
+
+                    <!-- Bottom Left Velocity -->
+                    <div class="absolute bottom-2.5 left-2.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/90 text-emerald-400 border border-emerald-500/30">
+                            {{ track.velocity_vph|floatformat:0|intcomma }} views/hr
+                        </span>
+                    </div>
+
+                    <!-- Clean Hover Play Overlay -->
+                    <a href="{{ track.youtube_url }}" target="_blank" rel="noopener noreferrer" 
+                       class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                        <span class="px-3 py-1.5 rounded-lg bg-white/90 text-black text-xs font-semibold shadow-md">
+                            Preview on YouTube
+                        </span>
+                    </a>
+                </div>
+
+                <!-- Info -->
+                <div class="p-4 space-y-2">
+                    <h3 class="text-sm font-semibold text-zinc-100 line-clamp-2 leading-snug" title="{{ track.title }}">
+                        {{ track.title }}
+                    </h3>
+
+                    <div class="flex items-center justify-between text-xs text-zinc-400">
+                        <span class="truncate max-w-[180px]">{{ track.channel_title }}</span>
+                        {% if track.is_popular %}
+                        <span class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                            Popular
+                        </span>
+                        {% else %}
+                        <span class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-violet-950/60 text-violet-300 border border-violet-500/20">
+                            Rising
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Metrics -->
+                    <div class="flex items-center gap-4 text-xs text-zinc-400 pt-1">
+                        <span><strong>{{ track.views|intcomma }}</strong> views</span>
+                        <span><strong>{{ track.likes|intcomma }}</strong> likes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="p-4 pt-0 space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Download WAV -->
+                    <a href="{% url 'radar_download_audio' %}?video_id={{ track.video_id }}&format=wav&title={{ track.title|urlencode }}" 
+                       onclick="showDownloadFeedback(this, 'WAV')"
+                       class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition-colors">
+                        <span>Download WAV</span>
+                    </a>
+
+                    <!-- Download MP3 -->
+                    <a href="{% url 'radar_download_audio' %}?video_id={{ track.video_id }}&format=mp3&title={{ track.title|urlencode }}" 
+                       onclick="showDownloadFeedback(this, 'MP3')"
+                       class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-dark-950 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-colors">
+                        <span>MP3</span>
+                    </a>
+                </div>
+
+                <!-- Send to Studio -->
+                <button type="button" onclick="openStudioModal('{{ track.video_id }}', '{{ track.title|escapejs }}', '{{ track.thumbnail_url }}')"
+                        class="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium border border-zinc-700/60 transition-colors">
+                    Send to Video Studio
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-dark-900 rounded-xl border border-zinc-800 p-12 text-center space-y-3">
+        <h3 class="text-sm font-semibold text-white">No tracks match your current filters</h3>
+        <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+            Try adjusting your time window (e.g. Past 7 days), track length, or channel popularity filter.
+        </p>
+        <a href="{% url 'radar_feed' %}" class="inline-block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium border border-zinc-700 transition-colors mt-2">
+            Reset Filters
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Studio Import Modal -->
+<div id="studioImportModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 w-full max-w-md rounded-xl border border-zinc-800 p-6 space-y-4 shadow-2xl relative">
+        <button type="button" onclick="closeStudioModal()" class="absolute right-4 top-4 text-zinc-400 hover:text-white text-sm font-bold">
+            &times;
+        </button>
+
+        <div>
+            <h3 class="text-base font-bold text-white">Send Track to Video Studio</h3>
+            <p class="text-xs text-zinc-400 mt-0.5">Download track audio & artwork and configure project format</p>
+        </div>
+
+        <form method="POST" action="{% url 'radar_import_studio' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="video_id" id="modalVideoId">
+            <input type="hidden" name="thumbnail_url" id="modalThumbnailUrl">
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1">Project Title</label>
+                <input type="text" name="title" id="modalTitle" required
+                       class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1">Target Format</label>
+                <select name="video_format" class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600">
+                    {% for code, label in format_choices %}
+                    <option value="{{ code }}" {% if code == '1HOUR_LOOP' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeStudioModal()" class="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition-colors">
+                    Import & Open Studio
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function selectGenre(genreId) {
+        document.getElementById('selectedGenreInput').value = genreId;
+        document.getElementById('radarFilterForm').submit();
+    }
+
+    function showDownloadFeedback(element, format) {
+        const span = element.querySelector('span');
+        if (span) {
+            const originalText = span.innerText;
+            span.innerText = `Preparing ${format}...`;
+            setTimeout(() => {
+                span.innerText = originalText;
+            }, 5000);
+        }
+    }
+
+    function openStudioModal(videoId, title, thumbnailUrl) {
+        document.getElementById('modalVideoId').value = videoId;
+        document.getElementById('modalTitle').value = title;
+        document.getElementById('modalThumbnailUrl').value = thumbnailUrl;
+        document.getElementById('studioImportModal').classList.remove('hidden');
+    }
+
+    function closeStudioModal() {
+        document.getElementById('studioImportModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

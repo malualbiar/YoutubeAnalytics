@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Non-Stop Long Mix Maker - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                    DJ CONTINUOUS MIX ENGINE
+                </span>
+                <span class="text-xs text-zinc-400">• Seamless Multi-Song Blending</span>
+            </div>
+            <h2 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                <i data-lucide="disc-3" class="w-6 h-6 text-purple-400 animate-spin-slow"></i>
+                Non-Stop Long Mix Maker
+            </h2>
+            <p class="text-xs text-zinc-400">Assemble multiple songs and blend them into a continuous non-stop mix with seamless crossfades, video canvas, and YouTube chapters</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'studio_home' %}" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-300 transition-colors flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Studio
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Mix Builder Form -->
+    <form method="POST" action="{% url 'mix_render' %}" enctype="multipart/form-data" id="mixForm" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Top Section: Multi-Song Ingestion Box -->
+        <div class="glass-panel p-6 rounded-2xl border border-zinc-800 relative overflow-hidden shadow-2xl space-y-6">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="music-4" class="w-4 h-4 text-purple-400"></i>
+                        1. Add Songs & Build Your Tracklist
+                    </h3>
+                    <p class="text-xs text-zinc-400 mt-0.5">Drag & drop multiple audio tracks at once, or search & import songs from your monitored catalog</p>
+                </div>
+
+                <!-- Live Counter Badge -->
+                <div class="flex items-center gap-2">
+                    <span id="trackCountBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        0 Tracks Added
+                    </span>
+                </div>
+            </div>
+
+            <!-- Ingestion Grid: Multi-File Drag & Drop + Catalog Search -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <!-- Drop Zone -->
+                <div id="multiAudioDropZone" class="border-2 border-dashed border-zinc-700 hover:border-purple-500/60 rounded-2xl p-6 text-center cursor-pointer transition-all bg-dark-850/60 hover:bg-purple-500/5 group flex flex-col items-center justify-center min-h-[160px]">
+                    <input type="file" id="trackFilesInput" name="track_files" accept=".mp3,.wav,.flac,.m4a" multiple class="hidden">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <i data-lucide="folder-plus" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-sm font-bold text-white">Click or Drag & Drop Multiple Audio Files</p>
+                    <p class="text-xs text-zinc-400 mt-1">Select 2, 5, 10+ songs (.mp3, .wav, .flac, .m4a) to blend</p>
+                </div>
+
+                <!-- Catalog / YouTube Quick Import Panel -->
+                <div class="bg-zinc-950/70 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+                            Quick Import from Catalog & YouTube
+                        </span>
+                        <p class="text-[11px] text-zinc-400 mt-0.5">Search monitored catalog tracks or paste any YouTube URL to download & append to the mix queue</p>
+                    </div>
+
+                    <!-- Search / URL Input -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="catalogSearchInput" placeholder="Search catalog song title, artist or paste YouTube link..." class="flex-1 bg-dark-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500">
+                            <button type="button" id="searchBtn" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl transition-colors">
+                                Add
+                            </button>
+                        </div>
+                        <div id="searchResults" class="hidden bg-dark-900 border border-zinc-800 rounded-xl p-2 max-h-48 overflow-y-auto space-y-1 text-xs"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ordered Tracklist Queue Table -->
+            <div class="space-y-3 pt-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="list-ordered" class="w-4 h-4 text-purple-400"></i>
+                        Tracklist & Transition Sequence (<span id="queueLength">0</span>)
+                    </span>
+                    <button type="button" id="clearTracksBtn" class="text-xs text-zinc-500 hover:text-red-400 transition-colors hidden">
+                        Clear All
+                    </button>
+                </div>
+
+                <!-- Empty Placeholder -->
+                <div id="emptyTracklistNotice" class="p-8 rounded-2xl border border-zinc-800 bg-zinc-950/40 text-center text-zinc-400 text-xs">
+                    <i data-lucide="disc" class="w-8 h-8 mx-auto mb-2 text-zinc-600"></i>
+                    No songs in queue yet. Upload audio files or import tracks above to start mixing.
+                </div>
+
+                <!-- Dynamic Tracklist Table -->
+                <div id="tracklistContainer" class="hidden space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Middle Section: Transition & Blending Parameters -->
+        <div class="glass-panel p-6 rounded-2xl border border-zinc-800 relative overflow-hidden shadow-xl space-y-6">
+            <div class="border-b border-zinc-800 pb-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
+                    2. DJ Transition & Blending Settings
+                </h3>
+                <p class="text-xs text-zinc-400 mt-0.5">Customize how each song crossfades into the next to ensure smooth continuous listening</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Crossfade Duration Slider -->
+                <div class="space-y-3 bg-zinc-950/60 border border-zinc-800/80 p-5 rounded-xl">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-zinc-200">Crossfade Blend Duration</label>
+                        <span id="crossfadeValDisplay" class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                            6 Seconds Overlap
+                        </span>
+                    </div>
+                    <input type="range" name="crossfade_seconds" id="crossfadeSlider" min="2" max="15" value="6" step="1" class="w-full accent-emerald-500 cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-zinc-400">
+                        <span>2s (Quick Cut)</span>
+                        <span>6s (Recommended)</span>
+                        <span>15s (Extended Ambient Blend)</span>
+                    </div>
+                </div>
+
+                <!-- Transition Curve Style -->
+                <div class="space-y-2 bg-zinc-950/60 border border-zinc-800/80 p-5 rounded-xl">
+                    <label class="text-xs font-bold text-zinc-200 block">Crossfade Curve Algorithm</label>
+                    <select name="transition_curve" class="w-full bg-dark-900 border border-zinc-700/80 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:border-purple-500 focus:outline-none">
+                        <option value="qsin" selected>Equal-Power Quarter-Sine (Recommended - Smooth DJ Blend)</option>
+                        <option value="tri">Triangular Linear Crossfade</option>
+                        <option value="exp">Exponential Fade-Out Blend</option>
+                        <option value="fast">Quick Club Cut (1.5s Fast Drop)</option>
+                    </select>
+                    <p class="text-[10px] text-zinc-400">Equal-Power maintains consistent audio volume throughout the transition so energy doesn't dip.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section: Mix Metadata & Cover Artwork -->
+        <div class="glass-panel p-6 rounded-2xl border border-zinc-800 relative overflow-hidden shadow-xl space-y-6">
+            <div class="border-b border-zinc-800 pb-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="image" class="w-4 h-4 text-rose-400"></i>
+                    3. Mix Title, Cover Artwork & Video Export
+                </h3>
+                <p class="text-xs text-zinc-400 mt-0.5">Brand your nonstop mix with cover artwork and choose whether to generate a 1080p MP4 for YouTube upload</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Title & Description -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1.5">
+                            Mix Title
+                        </label>
+                        <input type="text" name="title" id="mixTitleInput" placeholder="e.g. Late Night Lofi & Chill Beats (1-Hour Non-Stop Mix)" required class="w-full bg-dark-900 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1.5">
+                            Description / Notes (Optional)
+                        </label>
+                        <textarea name="description" rows="3" placeholder="Add custom notes or playlist keywords..." class="w-full bg-dark-900 border border-zinc-700/80 rounded-xl px-4 py-2 text-xs text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <!-- Video Export Toggle -->
+                    <div class="pt-2">
+                        <label class="flex items-start gap-3 p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors">
+                            <input type="checkbox" name="render_video" value="true" checked class="mt-0.5 rounded text-purple-600 focus:ring-purple-500 accent-purple-500">
+                            <div>
+                                <span class="text-xs font-bold text-white block">Generate 1080p YouTube Video (.MP4)</span>
+                                <span class="text-[11px] text-zinc-400 block mt-0.5">Creates a 1920x1080 canvas with your cover artwork, ready to upload directly to YouTube with timestamp chapters</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Cover Artwork Upload -->
+                <div>
+                    <label class="text-xs font-semibold text-zinc-300 block mb-1.5">
+                        Cover Artwork Image
+                    </label>
+                    <div id="mixCoverDropZone" class="border-2 border-dashed border-zinc-700 hover:border-purple-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-dark-850/60 hover:bg-purple-500/5 group min-h-[170px] flex flex-col items-center justify-center">
+                        <input type="file" name="cover_image" id="mixCoverInput" accept="image/*" class="hidden">
+                        <div id="mixCoverEmpty">
+                            <i data-lucide="image-plus" class="w-8 h-8 text-zinc-500 group-hover:text-purple-400 mx-auto mb-2 transition-colors"></i>
+                            <p class="text-xs font-semibold text-zinc-200">Click or Drag Mix Cover Artwork</p>
+                            <p class="text-[10px] text-zinc-400 mt-1">High quality JPEG or PNG recommended</p>
+                        </div>
+                        <div id="mixCoverSelected" class="hidden text-left w-full flex items-center gap-4">
+                            <img id="mixCoverPreview" src="" alt="Cover" class="w-20 h-20 rounded-xl object-cover border border-purple-500/40 shadow-lg shrink-0">
+                            <div class="overflow-hidden">
+                                <p id="mixCoverFileName" class="text-xs font-bold text-white truncate"></p>
+                                <p class="text-[11px] text-purple-400 mt-0.5">Ready for 1080p canvas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Render Action Bar -->
+        <div class="glass-panel p-5 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 text-xs text-zinc-400">
+                <i data-lucide="info" class="w-4 h-4 text-purple-400 shrink-0"></i>
+                <span>FFmpeg will normalize volume, apply smooth crossfades, and generate YouTube chapters.</span>
+            </div>
+
+            <button type="submit" id="submitMixBtn" class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/30 transition-all hover:scale-[1.02] flex items-center justify-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span id="btnText">Blend & Create Non-Stop Mix</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let trackQueue = [];
+    const multiDropZone = document.getElementById('multiAudioDropZone');
+    const trackFilesInput = document.getElementById('trackFilesInput');
+    const tracklistContainer = document.getElementById('tracklistContainer');
+    const emptyNotice = document.getElementById('emptyTracklistNotice');
+    const trackCountBadge = document.getElementById('trackCountBadge');
+    const queueLength = document.getElementById('queueLength');
+    const clearTracksBtn = document.getElementById('clearTracksBtn');
+    const crossfadeSlider = document.getElementById('crossfadeSlider');
+    const crossfadeValDisplay = document.getElementById('crossfadeValDisplay');
+
+    // Crossfade slider update
+    crossfadeSlider.addEventListener('input', (e) => {
+        crossfadeValDisplay.textContent = `${e.target.value} Seconds Overlap`;
+    });
+
+    // Multi-audio file drag and drop
+    multiDropZone.addEventListener('click', () => trackFilesInput.click());
+    multiDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        multiDropZone.classList.add('border-purple-500');
+    });
+    multiDropZone.addEventListener('dragleave', () => {
+        multiDropZone.classList.remove('border-purple-500');
+    });
+    multiDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        multiDropZone.classList.remove('border-purple-500');
+        if (e.dataTransfer.files.length > 0) {
+            handleUploadedFiles(e.dataTransfer.files);
+        }
+    });
+    trackFilesInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleUploadedFiles(e.target.files);
+        }
+    });
+
+    function handleUploadedFiles(files) {
+        Array.from(files).forEach((file) => {
+            const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+            trackQueue.push({
+                type: 'file',
+                file: file,
+                title: cleanTitle,
+                artist: 'Uploaded Track',
+                url: '',
+            });
+        });
+        renderTracklist();
+    }
+
+    function renderTracklist() {
+        tracklistContainer.innerHTML = '';
+        if (trackQueue.length === 0) {
+            emptyNotice.classList.remove('hidden');
+            tracklistContainer.classList.add('hidden');
+            clearTracksBtn.classList.add('hidden');
+            trackCountBadge.textContent = '0 Tracks Added';
+            queueLength.textContent = '0';
+            return;
+        }
+
+        emptyNotice.classList.add('hidden');
+        tracklistContainer.classList.remove('hidden');
+        clearTracksBtn.classList.remove('hidden');
+        trackCountBadge.textContent = `${trackQueue.length} Tracks Added`;
+        queueLength.textContent = trackQueue.length;
+
+        trackQueue.forEach((track, index) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-3.5 bg-zinc-950/80 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-colors gap-3';
+            row.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <span class="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 font-bold text-xs flex items-center justify-center shrink-0 border border-purple-500/20">
+                        ${index + 1}
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 min-w-0">
+                        <input type="text" name="track_titles[]" value="${escapeHtml(track.title)}" placeholder="Track Title" class="bg-dark-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none w-full">
+                        <input type="text" name="track_artists[]" value="${escapeHtml(track.artist)}" placeholder="Artist (Optional)" class="bg-dark-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder-zinc-500 focus:border-purple-500 focus:outline-none w-full">
+                        <input type="hidden" name="track_urls[]" value="${escapeHtml(track.url)}">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="moveTrack(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 p-1 text-zinc-500 cursor-not-allowed"' : 'class="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800"'} title="Move Up">
+                        <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" onclick="moveTrack(${index}, 1)" ${index === trackQueue.length - 1 ? 'disabled class="opacity-30 p-1 text-zinc-500 cursor-not-allowed"' : 'class="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800"'} title="Move Down">
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" onclick="removeTrack(${index})" class="p-1 text-zinc-500 hover:text-red-400 rounded hover:bg-red-500/10 transition-colors" title="Remove Track">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            tracklistContainer.appendChild(row);
+        });
+
+        lucide.createIcons();
+    }
+
+    window.moveTrack = function(index, delta) {
+        const newIndex = index + delta;
+        if (newIndex < 0 || newIndex >= trackQueue.length) return;
+        const temp = trackQueue[index];
+        trackQueue[index] = trackQueue[newIndex];
+        trackQueue[newIndex] = temp;
+        renderTracklist();
+    };
+
+    window.removeTrack = function(index) {
+        trackQueue.splice(index, 1);
+        renderTracklist();
+    };
+
+    clearTracksBtn.addEventListener('click', () => {
+        trackQueue = [];
+        renderTracklist();
+    });
+
+    // Catalog search & YouTube import
+    const searchInput = document.getElementById('catalogSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchBtn = document.getElementById('searchBtn');
+
+    searchBtn.addEventListener('click', () => {
+        const val = searchInput.value.trim();
+        if (!val) return;
+        if (val.startsWith('http')) {
+            // Direct YouTube link
+            trackQueue.push({
+                type: 'url',
+                title: 'Imported YouTube Track',
+                artist: 'YouTube',
+                url: val,
+            });
+            searchInput.value = '';
+            renderTracklist();
+        } else {
+            performSearch(val);
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query.length >= 2 && !query.startsWith('http')) {
+            performSearch(query);
+        } else {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    function performSearch(q) {
+        fetch(`{% url 'mix_import_api' %}?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.results.length === 0) {
+                    searchResults.innerHTML = '<div class="p-3 text-center text-zinc-500">No matching tracks in catalog</div>';
+                } else {
+                    searchResults.innerHTML = data.results.map(t => `
+                        <div onclick="addCatalogTrack(${JSON.stringify(t).replace(/"/g, '&quot;')})" class="flex items-center justify-between p-2 rounded-lg hover:bg-zinc-800/80 cursor-pointer transition-colors">
+                            <div class="truncate">
+                                <p class="font-semibold text-white truncate">${escapeHtml(t.title)}</p>
+                                <p class="text-[10px] text-zinc-400">${escapeHtml(t.artist)} • ${t.duration}</p>
+                            </div>
+                            <span class="text-purple-400 text-[11px] font-bold shrink-0 ml-2">+ Add</span>
+                        </div>
+                    `).join('');
+                }
+                searchResults.classList.remove('hidden');
+            });
+    }
+
+    window.addCatalogTrack = function(track) {
+        trackQueue.push({
+            type: 'url',
+            title: track.title,
+            artist: track.artist,
+            url: track.url,
+        });
+        searchResults.classList.add('hidden');
+        searchInput.value = '';
+        renderTracklist();
+    };
+
+    // Cover Artwork preview
+    const mixCoverDropZone = document.getElementById('mixCoverDropZone');
+    const mixCoverInput = document.getElementById('mixCoverInput');
+    const mixCoverEmpty = document.getElementById('mixCoverEmpty');
+    const mixCoverSelected = document.getElementById('mixCoverSelected');
+    const mixCoverPreview = document.getElementById('mixCoverPreview');
+    const mixCoverFileName = document.getElementById('mixCoverFileName');
+
+    mixCoverDropZone.addEventListener('click', () => mixCoverInput.click());
+    mixCoverInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            mixCoverFileName.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                mixCoverPreview.src = re.target.result;
+                mixCoverEmpty.classList.add('hidden');
+                mixCoverSelected.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Submit state
+    document.getElementById('mixForm').addEventListener('submit', () => {
+        const btn = document.getElementById('submitMixBtn');
+        const text = document.getElementById('btnText');
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-wait');
+        text.textContent = 'Blending & Rendering Non-Stop Mix (Please wait)...';
+    });
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+</script>
+<style>
+    @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+        animation: spin-slow 12s linear infinite;
+    }
+</style>
+{% endblock %}

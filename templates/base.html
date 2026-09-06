@@ -88,9 +88,30 @@
                     Channels
                 </a>
 
-                <a href="{% url 'video_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'video' in request.resolver_match.url_name %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                <a href="{% url 'video_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'video' in request.resolver_match.url_name and 'studio' not in request.resolver_match.url_name %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
                     <i data-lucide="film" class="w-4 h-4"></i>
                     Videos & Songs
+                </a>
+
+                <a href="{% url 'studio_home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'studio_home' %}bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="video" class="w-4 h-4 text-rose-400"></i>
+                    1-Hour Loop Studio
+                </a>
+
+                <a href="{% url 'mix_maker' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'mix' in request.resolver_match.url_name %}bg-purple-500/15 text-purple-300 border border-purple-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="disc-3" class="w-4 h-4 text-purple-400"></i>
+                        Non-Stop Mix Studio
+                    </div>
+                    <span class="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-purple-500/30">DJ</span>
+                </a>
+
+                <a href="{% url 'radar_feed' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'radar' in request.resolver_match.url_name %}bg-violet-500/15 text-violet-300 border border-violet-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="radio" class="w-4 h-4 text-violet-400"></i>
+                        AI Music Radar
+                    </div>
+                    <span class="bg-violet-500/20 text-violet-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-violet-500/30">NEW</span>
                 </a>
 
                 <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Intelligence</div>
@@ -176,6 +197,11 @@
 
                 <!-- Action Controls -->
                 <div class="flex items-center gap-3">
+                    <a href="{% url 'studio_home' %}" class="flex items-center gap-2 px-3 py-1.5 bg-dark-850 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-xs font-semibold rounded-lg shadow-sm transition-all hover:border-rose-500/50">
+                        <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
+                        1-Hr Video Studio
+                    </a>
+
                     {% if user.can_manage_channels %}
                     <a href="{% url 'sync_all_channels' %}" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>

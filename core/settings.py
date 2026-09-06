@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'apps.milestones.apps.MilestonesConfig',
     'apps.reports.apps.ReportsConfig',
     'apps.youtube.apps.YoutubeConfig',
+    'apps.studio.apps.StudioConfig',
+    'apps.radar.apps.RadarConfig',
 ]
 
 MIDDLEWARE = [
