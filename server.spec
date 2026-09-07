@@ -1,14 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
+from PyInstaller.utils.hooks import collect_all
+
+imageio_datas, imageio_binaries, imageio_hiddenimports = collect_all('imageio_ffmpeg')
 
 datas = [
     ('apps', 'apps'),
     ('core', 'core'),
     ('templates', 'templates'),
     ('static', 'static'),
-    ('bin', 'bin'),
-]
+] + imageio_datas
+
+if os.path.exists('bin'):
+    datas.append(('bin', 'bin'))
 
 if os.path.exists('.env'):
     datas.append(('.env', '.'))
@@ -17,6 +22,7 @@ elif os.path.exists('.env.example'):
 
 if os.path.exists('db.sqlite3'):
     datas.append(('db.sqlite3', '.'))
+
 
 hiddenimports = [
     'django',
@@ -64,9 +70,9 @@ hiddenimports = [
 a = Analysis(
     ['server.py'],
     pathex=[],
-    binaries=[],
+    binaries=imageio_binaries,
     datas=datas,
-    hiddenimports=hiddenimports,
+    hiddenimports=hiddenimports + imageio_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
