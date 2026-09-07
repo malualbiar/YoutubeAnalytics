@@ -1,52 +1,47 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}{{ project.title }} - Non-Stop Mix - YT Quid{% endblock %}
+{% block title %}{{ project.title }} - Non-Stop Mix - YT Quid Studio{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-6xl mx-auto">
+<div class="space-y-6 max-w-6xl mx-auto pb-16">
     <!-- Breadcrumb & Top Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-            <a href="{% url 'studio_home' %}" class="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" title="Back to Studio">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <a href="{% url 'studio_home' %}" class="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors" title="Back to Studio">
+                <i data-lucide="arrow-left" class="w-4 h-4 text-white"></i>
             </a>
             <div>
-                <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                        NON-STOP CONTINUOUS MIX
-                    </span>
-                    <span class="text-xs text-zinc-400">{{ project.created_at|date:"M d, Y • H:i" }}</span>
-                </div>
+                <span class="text-xs text-zinc-400">{{ project.created_at|date:"M d, Y • H:i" }}</span>
                 <h2 class="text-xl font-bold text-white tracking-tight mt-0.5">{{ project.title }}</h2>
             </div>
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
             {% if project.output_audio %}
-            <a href="{{ project.output_audio.url }}" download class="flex items-center gap-2 px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-all border border-zinc-700/60 shadow-sm">
-                <i data-lucide="music" class="w-4 h-4 text-purple-400"></i>
+            <a href="{{ project.output_audio.url }}" download class="flex items-center gap-2 px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-all border border-zinc-700">
+                <i data-lucide="music" class="w-4 h-4 text-white"></i>
                 Download MP3
             </a>
             {% endif %}
 
             {% if project.output_video %}
-            <a href="{{ project.output_video.url }}" download class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/20 transition-all">
-                <i data-lucide="download" class="w-4 h-4"></i>
+            <a href="{{ project.output_video.url }}" download class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition-colors">
+                <i data-lucide="download" class="w-4 h-4 text-white"></i>
                 Download 1080p Video (.MP4)
             </a>
             {% endif %}
 
             <form method="POST" action="{% url 'mix_delete' project.id %}" onsubmit="return confirm('Are you sure you want to delete this mix project?');">
                 {% csrf_token %}
-                <button type="submit" class="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors" title="Delete Mix">
+                <button type="submit" class="p-2 rounded-xl bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 border border-zinc-700 transition-colors" title="Delete Mix">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Status Banner if failed / rendering -->
+    <!-- Status Banner if failed -->
     {% if project.render_status == 'FAILED' %}
     <div class="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start gap-3">
         <i data-lucide="alert-circle" class="w-5 h-5 shrink-0 text-red-400 mt-0.5"></i>
@@ -58,15 +53,15 @@
     {% endif %}
 
     <!-- Mix Overview Hero: Artwork + Continuous Interactive Audio Player -->
-    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 relative overflow-hidden shadow-2xl space-y-6">
+    <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-5">
         <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
             <!-- Cover Art -->
-            <div class="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-700/60 shadow-xl relative group">
+            <div class="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-800 relative">
                 {% if project.cover_image %}
                 <img src="{{ project.cover_image.url }}" alt="{{ project.title }}" class="w-full h-full object-cover">
                 {% else %}
-                <div class="w-full h-full flex flex-col items-center justify-center text-purple-400 bg-purple-950/20">
-                    <i data-lucide="disc-3" class="w-12 h-12"></i>
+                <div class="w-full h-full flex flex-col items-center justify-center text-zinc-500">
+                    <i data-lucide="disc" class="w-12 h-12 text-zinc-400"></i>
                     <span class="text-[10px] uppercase font-bold text-zinc-400 mt-2">Continuous Mix</span>
                 </div>
                 {% endif %}
@@ -83,37 +78,37 @@
 
                 <!-- Stats Strip -->
                 <div class="flex items-center gap-3 flex-wrap text-xs">
-                    <div class="px-3 py-1.5 rounded-xl bg-zinc-950/70 border border-zinc-800 flex items-center gap-2">
-                        <i data-lucide="clock" class="w-3.5 h-3.5 text-purple-400"></i>
+                    <div class="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-white"></i>
                         <span class="text-zinc-400">Total Duration:</span>
                         <strong class="text-white">{{ project.duration_formatted }}</strong>
                     </div>
 
-                    <div class="px-3 py-1.5 rounded-xl bg-zinc-950/70 border border-zinc-800 flex items-center gap-2">
-                        <i data-lucide="music-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <div class="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center gap-2">
+                        <i data-lucide="music-2" class="w-3.5 h-3.5 text-white"></i>
                         <span class="text-zinc-400">Tracks Blended:</span>
                         <strong class="text-white">{{ project.track_count }} songs</strong>
                     </div>
 
-                    <div class="px-3 py-1.5 rounded-xl bg-zinc-950/70 border border-zinc-800 flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <div class="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-white"></i>
                         <span class="text-zinc-400">Transition:</span>
                         <strong class="text-white">{{ project.crossfade_seconds }}s ({{ project.get_transition_curve_display }})</strong>
                     </div>
                 </div>
 
                 <!-- Live Track Playing Indicator Banner -->
-                <div id="currentTrackBanner" class="p-3 rounded-xl bg-purple-950/30 border border-purple-500/20 flex items-center justify-between">
+                <div id="currentTrackBanner" class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
                         <div class="truncate">
-                            <span class="text-[10px] text-purple-300 font-bold uppercase tracking-wider block">Now Playing In Mix</span>
+                            <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Now Playing In Mix</span>
                             <p id="nowPlayingText" class="text-xs font-semibold text-white truncate">
                                 {% if project.tracklist_data %}{{ project.tracklist_data.0.title }}{% else %}Mix Ready{% endif %}
                             </p>
                         </div>
                     </div>
-                    <span id="nowPlayingTimestamp" class="text-[11px] font-mono text-purple-300 font-bold ml-2 shrink-0">
+                    <span id="nowPlayingTimestamp" class="text-[11px] font-mono text-amber-400 font-bold ml-2 shrink-0">
                         00:00
                     </span>
                 </div>
@@ -122,8 +117,8 @@
 
         <!-- Built-in Continuous Audio Player -->
         {% if project.output_audio %}
-        <div class="bg-zinc-950/80 border border-zinc-800/90 rounded-2xl p-4 space-y-3">
-            <audio id="mixAudioPlayer" src="{{ project.output_audio.url }}" preload="metadata" class="w-full"></audio>
+        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 space-y-3">
+            <audio id="mixAudioPlayer" src="{{ project.output_audio.url }}" controls preload="metadata" class="w-full"></audio>
             
             <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
                 <span id="currentTimeDisplay">00:00</span>
@@ -137,21 +132,21 @@
     <!-- 2-Column Split: YouTube Description / Chapters & Tracklist Table -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Left: YouTube Metadata Packaging Box -->
-        <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4 flex flex-col">
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 space-y-4 flex flex-col">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>
+                    <i data-lucide="youtube" class="w-5 h-5 text-rose-500"></i>
                     <h3 class="text-sm font-bold text-white">YouTube Description & Chapters</h3>
                 </div>
-                <button type="button" onclick="copyYouTubeDescription()" id="copyDescBtn" class="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold transition-colors flex items-center gap-1.5 border border-red-500/20">
-                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <button type="button" onclick="copyYouTubeDescription()" id="copyDescBtn" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 border border-zinc-700">
+                    <i data-lucide="copy" class="w-3.5 h-3.5 text-white"></i>
                     <span id="copyBtnText">Copy Chapters</span>
                 </button>
             </div>
 
             <p class="text-xs text-zinc-400">Paste directly into your YouTube video description to enable clickable timeline chapters:</p>
 
-            <textarea id="youtubeDescriptionText" readonly rows="12" class="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl p-3.5 text-xs text-zinc-200 font-mono focus:outline-none focus:border-red-500/50 resize-none flex-1 selection:bg-red-500/30">{{ project.youtube_description }}</textarea>
+            <textarea id="youtubeDescriptionText" readonly rows="12" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500 resize-none flex-1">{{ project.youtube_description }}</textarea>
 
             <div class="text-[11px] text-zinc-500 flex items-center gap-2 pt-1">
                 <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
@@ -160,10 +155,10 @@
         </div>
 
         <!-- Right: Ordered Tracklist Table with Chapter Jump Buttons -->
-        <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4 flex flex-col">
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 space-y-4 flex flex-col">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="list-music" class="w-5 h-5 text-purple-400"></i>
+                    <i data-lucide="list-music" class="w-5 h-5 text-white"></i>
                     <h3 class="text-sm font-bold text-white">Blended Tracklist ({{ project.track_count }})</h3>
                 </div>
                 <span class="text-xs text-zinc-400">Click any track to jump</span>
@@ -171,19 +166,19 @@
 
             <div class="space-y-2 overflow-y-auto max-h-[380px] pr-1">
                 {% for track in project.tracklist_data %}
-                <div id="trackItem-{{ forloop.counter0 }}" onclick="seekToTrack({{ track.start_seconds }}, '{{ track.title|escapejs }}', '{{ track.start_time_str }}')" class="flex items-center justify-between p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 hover:border-purple-500/40 hover:bg-purple-950/10 cursor-pointer transition-all group">
+                <div id="trackItem-{{ forloop.counter0 }}" onclick="seekToTrack({{ track.start_seconds }}, '{{ track.title|escapejs }}', '{{ track.start_time_str }}')" class="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-500/60 hover:bg-zinc-800/40 cursor-pointer transition-all group">
                     <div class="flex items-center gap-3 min-w-0">
-                        <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-300 font-bold text-xs flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors shrink-0">
+                        <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-300 font-bold text-xs flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors shrink-0">
                             {{ track.index }}
                         </span>
                         <div class="truncate">
-                            <p class="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors truncate">{{ track.title }}</p>
+                            <p class="text-xs font-semibold text-white group-hover:text-amber-300 transition-colors truncate">{{ track.title }}</p>
                             <p class="text-[10px] text-zinc-400 truncate">{% if track.artist %}{{ track.artist }} • {% endif %}{{ track.duration }}s</p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2 shrink-0 ml-2">
-                        <span class="text-xs font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                        <span class="text-xs font-mono font-bold text-amber-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
                             {{ track.start_time_str }}
                         </span>
                         <div class="p-1 rounded bg-zinc-800 text-zinc-400 group-hover:text-white">
@@ -202,13 +197,13 @@
 
     <!-- Video Preview Section (If video was generated) -->
     {% if project.output_video %}
-    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+    <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 space-y-4">
         <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
             <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i data-lucide="film" class="w-4 h-4 text-purple-400"></i>
+                <i data-lucide="film" class="w-4 h-4 text-white"></i>
                 1080p YouTube Mix Video Preview
             </h3>
-            <a href="{{ project.output_video.url }}" download class="text-xs font-semibold text-purple-400 hover:text-purple-300">
+            <a href="{{ project.output_video.url }}" download class="text-xs font-semibold text-amber-400 hover:text-amber-300">
                 Download MP4 →
             </a>
         </div>
@@ -253,10 +248,10 @@
                     nowPlayingTimestamp.textContent = tracks[i].start_time_str;
                     
                     // Highlight active row
-                    document.querySelectorAll('[id^="trackItem-"]').forEach(el => el.classList.remove('border-purple-500', 'bg-purple-950/20'));
+                    document.querySelectorAll('[id^="trackItem-"]').forEach(el => el.classList.remove('border-amber-500', 'bg-zinc-800/60'));
                     const activeRow = document.getElementById(`trackItem-${i}`);
                     if (activeRow) {
-                        activeRow.classList.add('border-purple-500', 'bg-purple-950/20');
+                        activeRow.classList.add('border-amber-500', 'bg-zinc-800/60');
                     }
                     break;
                 }
@@ -289,3 +284,4 @@
     };
 </script>
 {% endblock %}
+

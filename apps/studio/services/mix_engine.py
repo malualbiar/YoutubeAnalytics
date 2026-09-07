@@ -37,7 +37,7 @@ class MixEngineService:
                 secs = float(match.group(3))
                 total_seconds = hours * 3600 + mins * 60 + secs
                 return max(1.0, total_seconds)
-        except Exception as e:
+        except Exception:
             pass
 
         return 180.0  # Safe fallback 3 minutes
@@ -48,11 +48,11 @@ class MixEngineService:
         Calculates exact start and end timestamps for each track in the blended mix.
         Formula:
         Track 0: start = 0.0, end = dur_0
-        Track k: start = track_{k-1}.end - crossfade, end = start + dur_k
+        Track k: start = track_{k-1}.end - safe_crossfade, end = start + dur_k
         """
         timeline = []
         current_time = 0.0
-        crossfade = max(1.0, float(crossfade_seconds))
+        requested_crossfade = max(0.5, float(crossfade_seconds))
 
         for idx, item in enumerate(track_items):
             title = item.get('title', f"Track {idx + 1}")
@@ -64,7 +64,11 @@ class MixEngineService:
             if idx == 0:
                 start_sec = 0.0
             else:
-                start_sec = max(0.0, current_time - crossfade)
+                prev_dur = float(track_items[idx - 1].get('duration', 180.0))
+                # Safe crossfade cannot exceed 45% of either track duration
+                safe_crossfade = min(requested_crossfade, min(prev_dur, duration) * 0.45)
+                safe_crossfade = max(0.2, safe_crossfade)
+                start_sec = max(0.0, current_time - safe_crossfade)
 
             end_sec = start_sec + duration
             current_time = end_sec
@@ -85,6 +89,7 @@ class MixEngineService:
                 'start_seconds': round(start_sec, 2),
                 'end_seconds': round(end_sec, 2),
                 'start_time_str': time_str,
+                'path': item.get('path', ''),
                 'source_path': item.get('path', ''),
             })
 
@@ -92,10 +97,10 @@ class MixEngineService:
         return timeline, total_mix_duration
 
     @classmethod
-    def render_continuous_mix(cls, audio_paths, output_mp3_path, crossfade_seconds=6, transition_curve='qsin'):
+    def render_continuous_mix(cls, audio_paths, output_mp3_path, crossfade_seconds=6, transition_curve='qsin', normalize_volume=True):
         """
         Takes an ordered list of audio file paths and blends them into a single seamless continuous MP3.
-        Uses FFmpeg 'acrossfade' audio filter with sample rate & channel unification.
+        Uses FFmpeg 'acrossfade' audio filter with sample rate & channel unification and dynamic duration safety.
         """
         ffmpeg = cls.get_ffmpeg_binary()
         output_mp3_path = os.path.abspath(str(output_mp3_path))
@@ -104,13 +109,20 @@ class MixEngineService:
         if not audio_paths:
             raise ValueError("No audio tracks provided for mixing.")
 
+        # Inspect durations of each path to ensure acrossfade does not exceed track length
+        durations = [cls.inspect_audio_duration(p) for p in audio_paths]
+
         if len(audio_paths) == 1:
-            # Single track: simple transcode to MP3
+            # Single track: simple transcode with volume normalization
+            filters = ['aformat=sample_rates=44100:channel_layouts=stereo']
+            if normalize_volume:
+                filters.append('dynaudnorm=f=150:g=15')
             cmd = [
                 ffmpeg, '-y',
                 '-i', os.path.abspath(str(audio_paths[0])),
+                '-af', ','.join(filters),
                 '-c:a', 'libmp3lame',
-                '-b:a', '192k',
+                '-b:a', '256k',
                 output_mp3_path
             ]
             subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -125,11 +137,11 @@ class MixEngineService:
             'fast': ('qsin', 'qsin'),
         }
         c1, c2 = curve_map.get(str(transition_curve).lower(), ('qsin', 'qsin'))
-        xfade_dur = 1.5 if str(transition_curve).lower() == 'fast' else max(1.0, float(crossfade_seconds))
+        base_xfade = 1.5 if str(transition_curve).lower() == 'fast' else max(0.5, float(crossfade_seconds))
 
         # Build FFmpeg command with filter complex
         # Step A: Normalize all inputs to 44.1kHz Stereo
-        # Step B: Chain acrossfade filters
+        # Step B: Chain acrossfade filters with clamped safe fade duration
         input_args = []
         filter_parts = []
 
@@ -142,12 +154,21 @@ class MixEngineService:
         prev_label = "[a_in_0]"
 
         for i in range(1, num_tracks):
+            dur_prev = durations[i - 1]
+            dur_curr = durations[i]
+            # Safety clamp: acrossfade must be strictly less than half of either track duration
+            safe_xfade = min(base_xfade, min(dur_prev, dur_curr) * 0.45)
+            safe_xfade = max(0.2, round(safe_xfade, 2))
+
             next_input = f"[a_in_{i}]"
-            out_label = "[aout]" if i == num_tracks - 1 else f"[mix_{i}]"
+            out_label = "[mix_pre]" if (i == num_tracks - 1 and normalize_volume) else ("[aout]" if i == num_tracks - 1 else f"[mix_{i}]")
             filter_parts.append(
-                f"{prev_label}{next_input}acrossfade=d={xfade_dur}:c1={c1}:c2={c2}{out_label}"
+                f"{prev_label}{next_input}acrossfade=d={safe_xfade}:c1={c1}:c2={c2}{out_label}"
             )
             prev_label = out_label
+
+        if normalize_volume:
+            filter_parts.append("[mix_pre]dynaudnorm=f=150:g=15[aout]")
 
         filter_complex_str = ";".join(filter_parts)
 
@@ -171,37 +192,39 @@ class MixEngineService:
     def render_mix_video(cls, artwork_path, audio_path, output_mp4_path, title="Non-Stop Music Mix"):
         """
         Renders a 1080p 16:9 YouTube video canvas for the continuous mix.
-        Darkened blurred backdrop with centered crisp artwork.
+        Darkened blurred backdrop with centered crisp artwork and explicit duration bounds.
         """
         ffmpeg = cls.get_ffmpeg_binary()
         output_mp4_path = os.path.abspath(str(output_mp4_path))
         audio_path = os.path.abspath(str(audio_path))
         os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
 
+        audio_duration = cls.inspect_audio_duration(audio_path)
         temp_bg = output_mp4_path.replace('.mp4', '_mix_bg.jpg')
 
         try:
             if artwork_path and os.path.exists(str(artwork_path)):
                 VideoStudioRenderer.prepare_16_9_background(str(artwork_path), temp_bg)
             else:
-                # Generate a sleek dark gradient backdrop if no artwork provided
-                img = Image.new('RGB', (1920, 1080), color=(15, 15, 20))
+                # Generate a sleek dark solid backdrop if no artwork provided
+                img = Image.new('RGB', (1920, 1080), color=(18, 18, 24))
                 draw = ImageDraw.Draw(img)
-                # Draw subtle decorative ambient rectangles
-                draw.rectangle([(200, 200), (1720, 880)], outline=(35, 35, 45), width=2)
-                img.save(temp_bg, format='JPEG', quality=90)
+                # Draw subtle crisp bounding box
+                draw.rectangle([(160, 120), (1760, 960)], outline=(38, 38, 48), width=2)
+                img.save(temp_bg, format='JPEG', quality=92)
 
             cmd = [
                 ffmpeg, '-y',
                 '-loop', '1',
                 '-i', temp_bg,
                 '-i', audio_path,
+                '-t', str(round(audio_duration, 2)),
                 '-c:v', 'libx264',
                 '-tune', 'stillimage',
+                '-pix_fmt', 'yuv420p',
+                '-r', '1',
                 '-c:a', 'aac',
                 '-b:a', '192k',
-                '-pix_fmt', 'yuv420p',
-                '-shortest',
                 output_mp4_path
             ]
 

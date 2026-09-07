@@ -172,8 +172,8 @@ def mix_maker_view(request):
 @require_POST
 def mix_render_view(request):
     """
-    Processes multiple audio tracks, calculates timeline, blends via FFmpeg acrossfade,
-    and optionally renders 1080p MP4 long mix video.
+    Processes multiple audio tracks in exact user-configured order, calculates timeline,
+    blends via FFmpeg acrossfade, and optionally renders 1080p MP4 long mix video.
     """
     if not request.user.is_super_admin:
         messages.error(request, "Access denied. Super Admin privileges required.")
@@ -184,16 +184,10 @@ def mix_render_view(request):
     crossfade_seconds = int(request.POST.get('crossfade_seconds', 6))
     transition_curve = request.POST.get('transition_curve', LongMixProject.TransitionCurve.QSIN)
     render_video = request.POST.get('render_video') in ['true', '1', 'on']
+    normalize_volume = request.POST.get('normalize_volume', 'true') in ['true', '1', 'on']
     cover_image = request.FILES.get('cover_image')
 
-    uploaded_files = request.FILES.getlist('track_files')
-    track_titles = request.POST.getlist('track_titles[]')
-    track_artists = request.POST.getlist('track_artists[]')
-    track_urls = request.POST.getlist('track_urls[]')
-
-    if not uploaded_files and not any(track_urls):
-        messages.error(request, "Please add at least 2 audio tracks to create a continuous mix.")
-        return redirect('mix_maker')
+    track_count_str = request.POST.get('track_count')
 
     # Create project entry
     project = LongMixProject.objects.create(
@@ -213,48 +207,87 @@ def mix_render_view(request):
 
     try:
         collected_tracks = []
-        track_idx = 0
 
-        # Process uploaded audio files
-        for f in uploaded_files:
-            dest_path = os.path.join(project_source_dir, f"track_{track_idx + 1}_{f.name}")
-            with open(dest_path, 'wb+') as destination:
-                for chunk in f.chunks():
-                    destination.write(chunk)
+        if track_count_str and track_count_str.isdigit():
+            total_items = int(track_count_str)
+            for idx in range(total_items):
+                t_type = request.POST.get(f'track_type_{idx}', 'file')
+                t_title = request.POST.get(f'track_title_{idx}', '').strip()
+                t_artist = request.POST.get(f'track_artist_{idx}', '').strip()
+                t_file = request.FILES.get(f'track_file_{idx}')
+                t_url = request.POST.get(f'track_url_{idx}', '').strip()
 
-            # Extract title and artist from post lists if provided
-            t_title = track_titles[track_idx] if track_idx < len(track_titles) and track_titles[track_idx] else os.path.splitext(f.name)[0]
-            t_artist = track_artists[track_idx] if track_idx < len(track_artists) else ''
+                if t_type == 'file' and t_file:
+                    safe_name = f"track_{idx + 1}_{t_file.name}"
+                    dest_path = os.path.join(project_source_dir, safe_name)
+                    with open(dest_path, 'wb+') as destination:
+                        for chunk in t_file.chunks():
+                            destination.write(chunk)
 
-            dur = MixEngineService.inspect_audio_duration(dest_path)
-            collected_tracks.append({
-                'title': t_title,
-                'artist': t_artist,
-                'duration': dur,
-                'path': dest_path,
-            })
-            track_idx += 1
-
-        # Process any imported YouTube URLs / Catalog items
-        for url in track_urls:
-            if url and url.strip():
-                try:
-                    dest_path, downloaded_title, dur = MixEngineService.download_youtube_audio(url.strip(), project_source_dir)
-                    t_title = track_titles[track_idx] if track_idx < len(track_titles) and track_titles[track_idx] else downloaded_title
-                    t_artist = track_artists[track_idx] if track_idx < len(track_artists) else ''
+                    if not t_title:
+                        t_title = os.path.splitext(t_file.name)[0]
+                    dur = MixEngineService.inspect_audio_duration(dest_path)
                     collected_tracks.append({
                         'title': t_title,
                         'artist': t_artist,
                         'duration': dur,
                         'path': dest_path,
                     })
-                    track_idx += 1
-                except Exception as dl_err:
-                    # Continue with other tracks if one download fails
-                    pass
+
+                elif (t_type == 'url' or t_url) and t_url:
+                    try:
+                        dest_path, dl_title, dur = MixEngineService.download_youtube_audio(t_url, project_source_dir)
+                        if not t_title:
+                            t_title = dl_title
+                        collected_tracks.append({
+                            'title': t_title,
+                            'artist': t_artist,
+                            'duration': dur,
+                            'path': dest_path,
+                        })
+                    except Exception:
+                        pass
+        else:
+            uploaded_files = request.FILES.getlist('track_files')
+            track_titles = request.POST.getlist('track_titles[]')
+            track_artists = request.POST.getlist('track_artists[]')
+            track_urls = request.POST.getlist('track_urls[]')
+
+            track_idx = 0
+            for f in uploaded_files:
+                dest_path = os.path.join(project_source_dir, f"track_{track_idx + 1}_{f.name}")
+                with open(dest_path, 'wb+') as destination:
+                    for chunk in f.chunks():
+                        destination.write(chunk)
+                t_title = track_titles[track_idx] if track_idx < len(track_titles) and track_titles[track_idx] else os.path.splitext(f.name)[0]
+                t_artist = track_artists[track_idx] if track_idx < len(track_artists) else ''
+                dur = MixEngineService.inspect_audio_duration(dest_path)
+                collected_tracks.append({
+                    'title': t_title,
+                    'artist': t_artist,
+                    'duration': dur,
+                    'path': dest_path,
+                })
+                track_idx += 1
+
+            for url in track_urls:
+                if url and url.strip():
+                    try:
+                        dest_path, dl_title, dur = MixEngineService.download_youtube_audio(url.strip(), project_source_dir)
+                        t_title = track_titles[track_idx] if track_idx < len(track_titles) and track_titles[track_idx] else dl_title
+                        t_artist = track_artists[track_idx] if track_idx < len(track_artists) else ''
+                        collected_tracks.append({
+                            'title': t_title,
+                            'artist': t_artist,
+                            'duration': dur,
+                            'path': dest_path,
+                        })
+                        track_idx += 1
+                    except Exception:
+                        pass
 
         if not collected_tracks:
-            raise ValueError("No valid audio tracks could be processed for mixing.")
+            raise ValueError("No valid audio tracks could be processed for mixing. Please add at least 1 audio track.")
 
         # 1. Calculate timeline and exact start timestamps
         timeline, total_duration = MixEngineService.calculate_track_timeline(
@@ -271,7 +304,8 @@ def mix_render_view(request):
             audio_paths=audio_paths,
             output_mp3_path=out_audio_path,
             crossfade_seconds=crossfade_seconds,
-            transition_curve=transition_curve
+            transition_curve=transition_curve,
+            normalize_volume=normalize_volume
         )
 
         with open(out_audio_path, 'rb') as f:

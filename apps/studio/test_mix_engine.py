@@ -91,7 +91,7 @@ class MixEngineTests(TestCase):
     def test_mix_maker_views(self):
         response = self.client.get(reverse('mix_maker'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Non-Stop Long Mix Maker")
+        self.assertContains(response, "Non-Stop Mix Studio")
         self.assertContains(response, "Crossfade Blend Duration")
 
         project = LongMixProject.objects.create(
@@ -103,6 +103,40 @@ class MixEngineTests(TestCase):
         detail_response = self.client.get(reverse('mix_detail', args=[project.id]))
         self.assertEqual(detail_response.status_code, 200)
         self.assertContains(detail_response, "Test Long Mix")
+
+    def test_indexed_mix_render_view(self):
+        ffmpeg = MixEngineService.get_ffmpeg_binary()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            f1 = os.path.join(tmpdir, "track1.wav")
+            f2 = os.path.join(tmpdir, "track2.wav")
+            subprocess.run([ffmpeg, '-y', '-f', 'lavfi', '-i', 'sine=frequency=300:duration=2', '-c:a', 'pcm_s16le', f1], check=True, capture_output=True)
+            subprocess.run([ffmpeg, '-y', '-f', 'lavfi', '-i', 'sine=frequency=600:duration=2', '-c:a', 'pcm_s16le', f2], check=True, capture_output=True)
+
+            with open(f1, 'rb') as fp1, open(f2, 'rb') as fp2:
+                payload = {
+                    'title': 'Automated Test Non-Stop Mix',
+                    'crossfade_seconds': '1',
+                    'transition_curve': 'qsin',
+                    'render_video': 'false',
+                    'normalize_volume': 'true',
+                    'track_count': '2',
+                    'track_type_0': 'file',
+                    'track_title_0': 'Intro Synth',
+                    'track_artist_0': 'Producer A',
+                    'track_file_0': fp1,
+                    'track_type_1': 'file',
+                    'track_title_1': 'Main Drop',
+                    'track_artist_1': 'Producer B',
+                    'track_file_1': fp2,
+                }
+                response = self.client.post(reverse('mix_render'), payload)
+                self.assertEqual(response.status_code, 302)
+
+                created = LongMixProject.objects.filter(title='Automated Test Non-Stop Mix').first()
+                self.assertIsNotNone(created)
+                self.assertEqual(created.track_count, 2)
+                self.assertEqual(created.render_status, LongMixProject.Status.COMPLETED)
+                self.assertTrue(bool(created.output_audio))
 
     def test_mix_access_denied_for_non_superadmin(self):
         manager = User.objects.create_user(
