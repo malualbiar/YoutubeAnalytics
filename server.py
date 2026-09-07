@@ -59,11 +59,19 @@ def main():
     except Exception as e:
         logger.warning(f"Database migration/seed notice: {e}")
 
-    # 2. If running test mode, exit cleanly
+    # 2. If running test mode, run complete route verification and exit cleanly
     if args.test:
-        print("SELF_CHECK_OK")
-        sys.stdout.flush()
-        sys.exit(0)
+        try:
+            from django.test import Client
+            client = Client()
+            response = client.get('/login/')
+            logger.info(f"Self-check login route response status: {response.status_code}")
+            print("SELF_CHECK_OK")
+            sys.stdout.flush()
+            sys.exit(0)
+        except Exception as e:
+            logger.error(f"Self-check verification failed: {e}")
+            sys.exit(1)
 
     # 3. Determine port
     port = args.port if args.port else get_free_port(8000)

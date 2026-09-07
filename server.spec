@@ -4,13 +4,14 @@ import os
 from PyInstaller.utils.hooks import collect_all
 
 imageio_datas, imageio_binaries, imageio_hiddenimports = collect_all('imageio_ffmpeg')
+pil_datas, pil_binaries, pil_hiddenimports = collect_all('PIL')
 
 datas = [
     ('apps', 'apps'),
     ('core', 'core'),
     ('templates', 'templates'),
     ('static', 'static'),
-] + imageio_datas
+] + imageio_datas + pil_datas
 
 if os.path.exists('bin'):
     datas.append(('bin', 'bin'))
@@ -44,6 +45,8 @@ hiddenimports = [
     'PIL.Image',
     'PIL.ImageFilter',
     'PIL.ImageEnhance',
+    'PIL.ImageDraw',
+    'PIL.ImageFont',
     'yt_dlp',
     'imageio_ffmpeg',
     'apps.authentication',
@@ -65,14 +68,14 @@ hiddenimports = [
     'apps.studio.apps',
     'apps.radar',
     'apps.radar.apps',
-]
+] + pil_hiddenimports + imageio_hiddenimports
 
 a = Analysis(
     ['server.py'],
     pathex=[],
-    binaries=imageio_binaries,
+    binaries=imageio_binaries + pil_binaries,
     datas=datas,
-    hiddenimports=hiddenimports + imageio_hiddenimports,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
