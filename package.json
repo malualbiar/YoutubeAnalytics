@@ -1,8 +1,8 @@
 {
   "name": "yt-quid",
   "productName": "YT Quid",
-  "version": "1.0.0",
-  "description": "YouTube Artist Analytics & Monitoring Desktop App",
+  "version": "1.2.0",
+  "description": "YouTube Artist Analytics, Monitoring & AI Creator Studio Desktop App",
   "main": "main.js",
   "author": "Malual Biar",
   "license": "MIT",
@@ -20,10 +20,12 @@
   "build": {
     "appId": "com.ytquid.analytics",
     "productName": "YT Quid",
+    "icon": "build/icon.ico",
     "directories": {
       "output": "dist-electron"
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis",
         "portable"
@@ -33,7 +35,9 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "extraResources": [
       {

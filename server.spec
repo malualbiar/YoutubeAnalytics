@@ -100,6 +100,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
+    icon='build/icon.ico',
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

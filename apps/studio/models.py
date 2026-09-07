@@ -270,3 +270,105 @@ class ShortVideoProject(models.Model):
             f"👍 Like, Share & Subscribe for more daily shorts!\n\n"
             f"#shorts #shortsvideo #reels #tiktok #viralvideo #trending #fyp"
         )
+
+
+class LyricVideoProject(models.Model):
+    class AnimationStyle(models.TextChoices):
+        KARAOKE_WIPE = 'KARAOKE_WIPE', 'Karaoke Color Wipe & Glow'
+        ROLLING_3LINE = 'ROLLING_3LINE', 'Smooth 3-Line Rolling Display'
+        CYBER_NEON = 'CYBER_NEON', 'Cyber Neon Glow'
+        CINEMATIC = 'CINEMATIC', 'Cinematic Minimal Serif'
+
+    class AspectRatio(models.TextChoices):
+        LANDSCAPE_16_9 = '16:9', '16:9 Landscape (YouTube Full HD 1080p)'
+        VERTICAL_9_16 = '9:16', '9:16 Vertical (Shorts / Reels / TikTok)'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        RENDERING = 'RENDERING', 'Rendering'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+
+    title = models.CharField(max_length=255, default='My Song Lyrics')
+    artist_name = models.CharField(max_length=255, blank=True, default='')
+    audio_file = models.FileField(upload_to='studio/lyrics_audio/')
+    background_image = models.ImageField(upload_to='studio/lyrics_bg/', blank=True, null=True)
+    background_video = models.FileField(upload_to='studio/lyrics_bg_video/', blank=True, null=True)
+
+    lyrics_raw_text = models.TextField(blank=True, default='')
+    lyrics_data = models.JSONField(default=list, blank=True)
+
+    animation_style = models.CharField(
+        max_length=30,
+        choices=AnimationStyle.choices,
+        default=AnimationStyle.KARAOKE_WIPE
+    )
+    aspect_ratio = models.CharField(
+        max_length=10,
+        choices=AspectRatio.choices,
+        default=AspectRatio.LANDSCAPE_16_9
+    )
+    font_family = models.CharField(max_length=50, default='Arial')
+    font_size = models.IntegerField(default=48)
+    highlight_color = models.CharField(max_length=20, default='#00E5FF')
+    text_color = models.CharField(max_length=20, default='#FFFFFF')
+    position_mode = models.CharField(max_length=20, default='CENTER')
+
+    output_video = models.FileField(upload_to='studio/lyrics_output/', blank=True, null=True)
+    duration_seconds = models.FloatField(default=0.0)
+    render_status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    error_message = models.TextField(blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Lyrics Video Project'
+        verbose_name_plural = 'Lyrics Video Projects'
+
+    def __str__(self):
+        artist = f" - {self.artist_name}" if self.artist_name else ""
+        return f"{self.title}{artist} ({self.get_animation_style_display()})"
+
+    @property
+    def duration_formatted(self):
+        secs = int(self.duration_seconds or 0)
+        minutes = (secs % 3600) // 60
+        seconds = secs % 60
+        hours = secs // 3600
+        if hours > 0:
+            return f"{hours}h {minutes:02d}m {seconds:02d}s"
+        return f"{minutes:02d}m {seconds:02d}s"
+
+    @property
+    def lrc_content(self):
+        from .services.lyrics_engine import LyricsEngineService
+        return LyricsEngineService.export_lrc_string(self.lyrics_data or [], self.title, self.artist_name)
+
+    @property
+    def youtube_title(self):
+        artist_str = f"{self.artist_name} - " if self.artist_name else ""
+        if self.aspect_ratio == self.AspectRatio.VERTICAL_9_16:
+            return f"{artist_str}{self.title} (Lyrics) 🔥 #shorts #lyrics #newmusic"
+        return f"{artist_str}{self.title} (Official Lyric Video)"
+
+    @property
+    def youtube_description(self):
+        artist_str = f"Artist: {self.artist_name}\n" if self.artist_name else ""
+        raw_lines = "\n".join([line.get('line', '') for line in (self.lyrics_data or []) if line.get('line')])
+        if not raw_lines and self.lyrics_raw_text:
+            raw_lines = self.lyrics_raw_text
+        return (
+            f"🎵 {self.title}\n"
+            f"{artist_str}\n"
+            f"Official Synced Lyric Video.\n\n"
+            f"📜 Lyrics:\n{raw_lines}\n\n"
+            f"👍 Like, comment and subscribe for more lyrics videos!\n"
+            f"#lyrics #lyricvideo #karaoke #newmusic"
+        )
+

@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}YT Quid{% endblock %}</title>
+
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <meta name="theme-color" content="#09090b">
+
     <!-- Tailwind CSS CDN with configuration -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -67,9 +76,7 @@
         <aside class="w-64 bg-dark-900 border-r border-zinc-800/80 flex flex-col h-full z-30 shrink-0 select-none">
             <!-- Brand Header -->
             <div class="h-16 flex items-center px-6 border-b border-zinc-800/80 gap-3 shrink-0">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-zinc-950 shadow-lg shadow-emerald-500/20">
-                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
-                </div>
+                <img src="/static/img/favicon.svg" class="w-9 h-9 rounded-xl shadow-lg shadow-emerald-500/20 shrink-0" alt="YT Quid Logo">
                 <div>
                     <h1 class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
                         YT Quid
@@ -110,6 +117,14 @@
                     </span>
                     <span class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded border border-amber-500/30">AI SUITE</span>
                 </div>
+
+                <a href="{% url 'lyrics_maker' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'lyrics' in request.resolver_match.url_name %}bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm{% else %}text-zinc-300 hover:text-white hover:bg-zinc-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+                        <span>Lyrics Video Studio</span>
+                    </div>
+                    <span class="bg-cyan-500/20 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-cyan-500/30">NEW</span>
+                </a>
 
                 <a href="{% url 'shorts_maker' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'shorts' in request.resolver_match.url_name %}bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm{% else %}text-zinc-300 hover:text-white hover:bg-zinc-800/60{% endif %}">
                     <div class="flex items-center gap-3">

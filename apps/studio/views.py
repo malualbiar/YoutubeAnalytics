@@ -10,30 +10,33 @@ import zipfile
 from io import BytesIO
 from django.core.files import File
 from django.http import HttpResponse, JsonResponse
-from .models import VideoProject, LongMixProject, ShortVideoProject
+from .models import VideoProject, LongMixProject, ShortVideoProject, LyricVideoProject
 from .services.renderer import VideoStudioRenderer
 from .services.mix_engine import MixEngineService
 from .services.shorts_engine import ShortsEngineService
+from .services.lyrics_engine import LyricsEngineService
 from apps.videos.models import Video
 
 @login_required
 def studio_home_view(request):
     """
-    Main YouTube Video Studio dashboard: displays 1-Hour Loops, Non-Stop Mixes, and Short Clips.
+    Main YouTube Video Studio dashboard: displays Lyrics Videos, Shorts & Chops, 1-Hour Loops, and Non-Stop Mixes.
     """
     if not request.user.is_super_admin:
         messages.error(request, "Access denied. Super Admin privileges required.")
         return redirect('dashboard')
 
-    tab = request.GET.get('tab', 'shorts')
+    tab = request.GET.get('tab', 'lyrics')
     single_loops = VideoProject.objects.all().order_by('-created_at')
     mix_projects = LongMixProject.objects.all().order_by('-created_at')
     short_projects = ShortVideoProject.objects.all().order_by('-created_at')
+    lyric_projects = LyricVideoProject.objects.all().order_by('-created_at')
     
     total_mix_duration = sum(m.duration_seconds for m in mix_projects)
     total_loop_duration = sum(p.duration_seconds for p in single_loops)
     total_shorts_duration = sum(s.duration_seconds for s in short_projects)
-    total_hours_produced = round((total_mix_duration + total_loop_duration + total_shorts_duration) / 3600, 1)
+    total_lyrics_duration = sum(l.duration_seconds for l in lyric_projects)
+    total_hours_produced = round((total_mix_duration + total_loop_duration + total_shorts_duration + total_lyrics_duration) / 3600, 1)
 
     total_shorts_count = sum(s.chop_count for s in short_projects)
 
@@ -42,6 +45,7 @@ def studio_home_view(request):
         'projects': single_loops,
         'mix_projects': mix_projects,
         'short_projects': short_projects,
+        'lyric_projects': lyric_projects,
         'total_shorts_count': total_shorts_count,
         'total_hours_produced': total_hours_produced,
         'format_choices': VideoProject.VideoFormat.choices,
@@ -639,5 +643,256 @@ def shorts_export_zip_view(request, pk):
     response = HttpResponse(zip_buffer.read(), content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename="{safe_title}_Shorts_Package.zip"'
     return response
+
+
+# ==========================================
+# LYRICS VIDEO STUDIO VIEWS
+# ==========================================
+
+@login_required
+def lyrics_maker_view(request):
+    """
+    Interactive Studio for creating synchronized lyric videos:
+    - Audio (.mp3, .wav) + Cover Art / Video Background
+    - Interactive Tap-to-Sync (Spacebar rhythmic capture)
+    - Import / Export .LRC files or paste plain lyrics
+    - Multi-style typography (Karaoke Wipe, Rolling 3-Line, Cyber Neon, Cinematic Minimal)
+    - 16:9 Landscape & 9:16 Vertical formats
+    """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    edit_id = request.GET.get('edit')
+    edit_project = None
+    if edit_id:
+        try:
+            edit_project = LyricVideoProject.objects.get(pk=edit_id)
+        except LyricVideoProject.DoesNotExist:
+            pass
+
+    return render(request, 'studio/lyrics_maker.html', {
+        'edit_project': edit_project,
+        'animation_styles': LyricVideoProject.AnimationStyle.choices,
+        'aspect_ratios': LyricVideoProject.AspectRatio.choices,
+    })
+
+
+@login_required
+@require_POST
+def lyrics_render_view(request):
+    """
+    Handles form submission to render a synchronized lyric video with FFmpeg.
+    """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    title = request.POST.get('title', '').strip() or 'My Song Lyrics'
+    artist_name = request.POST.get('artist_name', '').strip()
+    animation_style = request.POST.get('animation_style', LyricVideoProject.AnimationStyle.KARAOKE_WIPE)
+    aspect_ratio = request.POST.get('aspect_ratio', LyricVideoProject.AspectRatio.LANDSCAPE_16_9)
+    font_family = request.POST.get('font_family', 'Arial').strip()
+    font_size = int(request.POST.get('font_size', 48))
+    highlight_color = request.POST.get('highlight_color', '#00E5FF').strip()
+    text_color = request.POST.get('text_color', '#FFFFFF').strip()
+    position_mode = request.POST.get('position_mode', 'CENTER').strip()
+    lyrics_raw_text = request.POST.get('lyrics_raw_text', '').strip()
+
+    audio_file = request.FILES.get('audio_file')
+    background_image = request.FILES.get('background_image')
+    background_video = request.FILES.get('background_video')
+    lrc_file = request.FILES.get('lrc_file')
+    lyrics_data_raw = request.POST.get('lyrics_data', '').strip()
+
+    if not audio_file:
+        messages.error(request, "Please upload an audio file (.mp3 or .wav).")
+        return redirect('lyrics_maker')
+
+    # Parse or build lyrics data list
+    lyrics_data = []
+    if lyrics_data_raw:
+        try:
+            lyrics_data = json.loads(lyrics_data_raw)
+        except Exception:
+            lyrics_data = []
+
+    if not lyrics_data and lrc_file:
+        try:
+            lrc_text = lrc_file.read().decode('utf-8', errors='ignore')
+            lyrics_data = LyricsEngineService.parse_lrc_file(lrc_text)
+        except Exception:
+            pass
+
+    if not lyrics_data and lyrics_raw_text:
+        # Auto-distribute raw lines across temporary estimation
+        lyrics_data = LyricsEngineService.auto_distribute_raw_lyrics(lyrics_raw_text, total_duration=180.0)
+
+    # Create project record
+    project = LyricVideoProject.objects.create(
+        title=title,
+        artist_name=artist_name,
+        audio_file=audio_file,
+        background_image=background_image,
+        background_video=background_video,
+        lyrics_raw_text=lyrics_raw_text,
+        lyrics_data=lyrics_data,
+        animation_style=animation_style,
+        aspect_ratio=aspect_ratio,
+        font_family=font_family,
+        font_size=font_size,
+        highlight_color=highlight_color,
+        text_color=text_color,
+        position_mode=position_mode,
+        render_status=LyricVideoProject.Status.RENDERING
+    )
+
+    lyrics_output_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'lyrics_output')
+    os.makedirs(lyrics_output_dir, exist_ok=True)
+    out_filename = f"studio_lyrics_{project.id}.mp4"
+    out_path = os.path.join(lyrics_output_dir, out_filename)
+
+    try:
+        audio_path = project.audio_file.path
+        bg_img_path = project.background_image.path if project.background_image else None
+        bg_vid_path = project.background_video.path if project.background_video else None
+
+        # If lyrics_data was auto-estimated, refine with actual audio duration
+        duration = LyricsEngineService.inspect_media_duration(audio_path)
+        if (not lyrics_data_raw and not lrc_file) and lyrics_raw_text:
+            lyrics_data = LyricsEngineService.auto_distribute_raw_lyrics(lyrics_raw_text, total_duration=duration)
+            project.lyrics_data = lyrics_data
+
+        render_res = LyricsEngineService.render_lyrics_video(
+            audio_path=audio_path,
+            background_image_path=bg_img_path,
+            background_video_path=bg_vid_path,
+            lyrics_data=lyrics_data,
+            output_video_path=out_path,
+            aspect_ratio=aspect_ratio,
+            animation_style=animation_style,
+            font_family=font_family,
+            font_size=font_size,
+            highlight_color=highlight_color,
+            text_color=text_color,
+            position_mode=position_mode,
+            title=title,
+            artist=artist_name
+        )
+
+        project.output_video.name = f"studio/lyrics_output/{out_filename}"
+        project.duration_seconds = render_res.get('duration', duration)
+        project.render_status = LyricVideoProject.Status.COMPLETED
+        project.save()
+
+        messages.success(request, f"Successfully rendered 1080p Lyric Video for '{project.title}'!")
+        return redirect('lyrics_detail', pk=project.id)
+
+    except Exception as e:
+        project.render_status = LyricVideoProject.Status.FAILED
+        project.error_message = str(e)
+        project.save()
+        messages.error(request, f"Lyric video generation error: {str(e)}")
+        return redirect('lyrics_detail', pk=project.id)
+
+
+@login_required
+def lyrics_detail_view(request, pk):
+    """
+    Detail page for a Lyric Video project:
+    - HD 1080p Video Player with aspect ratio adaptation
+    - 1-Click Download MP4 & Export Synced .LRC
+    - Ready-to-copy YouTube Title & Description with complete lyrics
+    """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    project = get_object_or_404(LyricVideoProject, pk=pk)
+
+    return render(request, 'studio/lyrics_detail.html', {
+        'project': project,
+        'lrc_content': project.lrc_content,
+        'youtube_title': project.youtube_title,
+        'youtube_description': project.youtube_description,
+    })
+
+
+@login_required
+@require_POST
+def lyrics_delete_view(request, pk):
+    """
+    Deletes a lyric video project and associated media files.
+    """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    project = get_object_or_404(LyricVideoProject, pk=pk)
+    title = project.title
+
+    # Delete output video if exists
+    if project.output_video and os.path.exists(project.output_video.path):
+        try:
+            os.remove(project.output_video.path)
+        except Exception:
+            pass
+
+    project.delete()
+    messages.info(request, f"Deleted lyric video project '{title}'.")
+    return redirect('studio_home')
+
+
+@login_required
+def lyrics_export_lrc_view(request, pk):
+    """
+    Direct download of the synchronized .LRC file.
+    """
+    if not request.user.is_super_admin:
+        return HttpResponse("Access denied", status=403)
+
+    project = get_object_or_404(LyricVideoProject, pk=pk)
+    lrc_content = project.lrc_content
+    safe_title = "".join(c for c in project.title if c.isalnum() or c in (' ', '_', '-')).rstrip().replace(' ', '_')
+    
+    response = HttpResponse(lrc_content, content_type='text/plain; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{safe_title}.lrc"'
+    return response
+
+
+@login_required
+@require_POST
+def lyrics_parse_api(request):
+    """
+    Helper API for client-side Tap-to-Sync: parses raw text or uploaded .LRC file and returns structured JSON.
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    raw_text = request.POST.get('raw_text', '').strip()
+    lrc_file = request.FILES.get('lrc_file')
+    duration = float(request.POST.get('duration', 180.0))
+
+    if lrc_file:
+        try:
+            content = lrc_file.read().decode('utf-8', errors='ignore')
+            parsed = LyricsEngineService.parse_lrc_file(content)
+            return JsonResponse({'success': True, 'lyrics_data': parsed})
+        except Exception as e:
+            return JsonResponse({'error': f"Failed to parse LRC file: {str(e)}"}, status=400)
+
+    if raw_text:
+        # Check if raw text looks like LRC format
+        if '[' in raw_text and ']' in raw_text:
+            parsed = LyricsEngineService.parse_lrc_file(raw_text)
+            if parsed:
+                return JsonResponse({'success': True, 'lyrics_data': parsed})
+
+        # Plain text: auto-distribute lines
+        distributed = LyricsEngineService.auto_distribute_raw_lyrics(raw_text, total_duration=duration)
+        return JsonResponse({'success': True, 'lyrics_data': distributed})
+
+    return JsonResponse({'error': 'No lyrics provided'}, status=400)
+
 
 

@@ -119,15 +119,20 @@ function startPythonServer() {
  * Create the main desktop application window.
  */
 function createMainWindow(url) {
+    const iconPath = process.platform === 'win32'
+        ? path.join(__dirname, 'build', 'icon.ico')
+        : path.join(__dirname, 'build', 'icon.png');
+
     mainWindow = new BrowserWindow({
         width: 1340,
         height: 880,
         minWidth: 1050,
         minHeight: 700,
+        icon: iconPath,
         backgroundColor: '#09090b',
         darkTheme: true,
         show: false,
-        title: 'YT Quid - Artist Analytics',
+        title: 'YT Quid - Artist Analytics & Creator Studio',
         autoHideMenuBar: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),

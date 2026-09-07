@@ -20,4 +20,13 @@ urlpatterns = [
     path('studio/shorts/<int:pk>/', views.shorts_detail_view, name='shorts_detail'),
     path('studio/shorts/<int:pk>/delete/', views.shorts_delete_view, name='shorts_delete'),
     path('studio/shorts/<int:pk>/export-zip/', views.shorts_export_zip_view, name='shorts_export_zip'),
+
+    # AI & Tap-to-Sync Lyrics Video Generator routes
+    path('studio/lyrics/', views.lyrics_maker_view, name='lyrics_maker'),
+    path('studio/lyrics/render/', views.lyrics_render_view, name='lyrics_render'),
+    path('studio/lyrics/<int:pk>/', views.lyrics_detail_view, name='lyrics_detail'),
+    path('studio/lyrics/<int:pk>/delete/', views.lyrics_delete_view, name='lyrics_delete'),
+    path('studio/lyrics/<int:pk>/export-lrc/', views.lyrics_export_lrc_view, name='lyrics_export_lrc'),
+    path('studio/lyrics/api/parse/', views.lyrics_parse_api, name='lyrics_parse_api'),
 ]
+

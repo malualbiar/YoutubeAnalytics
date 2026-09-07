@@ -34,7 +34,17 @@ Get the latest version of YT Quid for Windows directly from the GitHub releases:
 - **Lossless Extraction**: 1-click lossless WAV / MP3 audio downloader powered by `yt-dlp`.
 - **Direct Studio Bridge**: 1-click export from Radar into the Video Studio.
 
-### 3. 🎬 Creator Studio & Viral Shorts Factory (`/studio/`)
+### 3. 🎬 Creator Studio & Automated Video Factory (`/studio/`)
+- **Synced Lyric Video Generator (`/studio/lyrics/`)**:
+  - **Interactive Tap-to-Sync (Karaoke Mode)**: Play any audio file (.mp3, .wav, .flac) and tap the **`Spacebar`** on each lyric hit in real-time to capture rhythmic timestamps.
+  - **Import / Export `.LRC` & `.SRT`**: Full two-way compatibility with standard synchronized lyrics files and auto-distribution for raw text.
+  - **Multi-Style Typography & Karaoke FX**:
+    - *Karaoke Wipe & Glow*: Active left-to-right word-by-word glowing highlight wipes as lyrics are sung.
+    - *Rolling 3-Line*: 3-line rolling teleprompter display with active line illuminated.
+    - *Cyber Neon*: Glowing neon borders and futuristic typography.
+    - *Cinematic Minimal*: Elegant serif fades with ambient zoom backdrop.
+  - **Multi-Format 1080p Export**: Instant 16:9 Landscape (YouTube) and 9:16 Vertical (Shorts/Reels/TikTok).
+  - **100% Free & Unlimited**: Runs locally offline with zero API costs, zero subscriptions, and no watermarks.
 - **Short Video Generator & Multi-Clip Chopper (`/studio/shorts/`)**:
   - **1 Long Video → Multiple Shorts**: Upload any long video (.mp4, .mov, .mkv) or track and chop it into multiple vertical 9:16 clips (15s, 30s, 60s, or custom intervals).
   - **Move & Preview Chops**: Interactive visual timeline to adjust boundaries, reorder chops, and preview segments in the player before rendering.
@@ -53,7 +63,7 @@ Get the latest version of YT Quid for Windows directly from the GitHub releases:
 
 YT Quid runs as a native desktop application with an embedded Python/Django WSGI server powered by **Waitress** and an **Electron** frontend.
 
-👉 **[Download the Latest Windows Release (v1.0.0)](https://github.com/malualbiar/YoutubeAnalytics/releases/latest)**
+👉 **[Download the Latest Windows Release (v1.2.0)](https://github.com/malualbiar/YoutubeAnalytics/releases/latest)**
 
 ### Desktop Architecture
 - **Zero Configuration**: Automatically applies database migrations and seeds initial demo data on first launch.
