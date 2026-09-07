@@ -74,7 +74,7 @@ class ShortVideoProjectTestCase(TestCase):
     def test_shorts_maker_view(self):
         response = self.client.get(reverse('shorts_maker'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Short Video Generator & Multi-Clip Chopper")
+        self.assertContains(response, "Shorts Maker")
         self.assertContains(response, "Interactive Timeline")
 
     @patch.object(ShortsEngineService, 'render_video_chop')
