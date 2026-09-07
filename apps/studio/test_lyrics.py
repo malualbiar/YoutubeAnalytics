@@ -339,3 +339,86 @@ class LyricsStudioTestCase(TestCase):
         self.assertTrue(data.get('is_synced'))
         self.assertEqual(len(data.get('lyrics_data')), 1)
 
+    # 7. AI Whisper Lyrics Transcription & Sync
+    @patch('faster_whisper.WhisperModel')
+    def test_transcribe_and_sync_with_whisper(self, mock_whisper_class):
+        class MockWord:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+
+        class MockSegment:
+            def __init__(self, text, start, end, words):
+                self.text = text
+                self.start = start
+                self.end = end
+                self.words = words
+
+        class MockInfo:
+            language = 'en'
+            language_probability = 0.98
+            duration = 30.0
+
+        mock_instance = mock_whisper_class.return_value
+        mock_instance.transcribe.return_value = (
+            [
+                MockSegment(
+                    "Starlight in the evening sky",
+                    2.5,
+                    6.0,
+                    [
+                        MockWord("Starlight", 2.5, 3.2),
+                        MockWord("in", 3.2, 3.5),
+                        MockWord("the", 3.5, 3.8),
+                        MockWord("evening", 3.8, 4.8),
+                        MockWord("sky", 4.8, 6.0)
+                    ]
+                )
+            ],
+            MockInfo()
+        )
+
+        audio_file = self.create_mock_audio_file("ai_song.wav")
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tf:
+            tf.write(audio_file.read())
+            temp_path = tf.name
+
+        try:
+            res = LyricsEngineService.transcribe_and_sync_with_whisper(temp_path, model_size='base')
+            self.assertTrue(res['success'])
+            self.assertEqual(len(res['lyrics_data']), 1)
+            self.assertEqual(res['lyrics_data'][0]['line'], "Starlight in the evening sky")
+            self.assertEqual(res['lyrics_data'][0]['start'], 2.5)
+            self.assertEqual(len(res['lyrics_data'][0]['words']), 5)
+            self.assertEqual(res['detected_language'], 'en')
+        finally:
+            import os
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.transcribe_and_sync_with_whisper')
+    def test_lyrics_ai_transcribe_api_endpoint(self, mock_transcribe):
+        mock_transcribe.return_value = {
+            'success': True,
+            'lyrics_data': [
+                {'line': 'AI generated vocal line', 'start': 1.0, 'end': 4.0, 'words': []}
+            ],
+            'plain_lyrics': 'AI generated vocal line',
+            'detected_language': 'en',
+            'duration': 30.0
+        }
+
+        audio_file = self.create_mock_audio_file("test_ai.wav")
+        response = self.client.post(reverse('lyrics_ai_transcribe_api'), {
+            'audio_file': audio_file,
+            'model_size': 'base'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(len(data.get('lyrics_data')), 1)
+        self.assertIn("AI generated vocal line", data.get('plain_lyrics'))
+
+

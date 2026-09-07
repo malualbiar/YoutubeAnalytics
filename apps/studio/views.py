@@ -977,5 +977,49 @@ def lyrics_online_search_api(request):
     return JsonResponse(result, status=status_code)
 
 
+@login_required
+@require_POST
+def lyrics_ai_transcribe_api(request):
+    """
+    AI Lyrics Transcription & Millisecond Timestamp Sync API (Local faster-whisper):
+    Takes audio file (AI generated, Suno/Udio, demo, or unreleased),
+    transcribes singing/speech, and extracts exact word/line timestamps.
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    audio_file = request.FILES.get('audio_file')
+    if not audio_file:
+        return JsonResponse({'error': 'Please select or upload an audio file first.'}, status=400)
+
+    model_size = request.POST.get('model_size', 'base').strip() or 'base'
+    initial_prompt = request.POST.get('initial_prompt', '').strip() or None
+
+    import tempfile
+    ext = os.path.splitext(audio_file.name)[1] or '.wav'
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tf:
+        for chunk in audio_file.chunks():
+            tf.write(chunk)
+        temp_audio_path = tf.name
+
+    try:
+        res = LyricsEngineService.transcribe_and_sync_with_whisper(
+            temp_audio_path,
+            model_size=model_size,
+            initial_prompt=initial_prompt
+        )
+        res['message'] = f"Successfully transcribed {len(res.get('lyrics_data', []))} lyric lines with word-accurate timestamps!"
+        return JsonResponse(res)
+    except Exception as e:
+        return JsonResponse({'error': f"AI Transcription error: {str(e)}"}, status=500)
+    finally:
+        if os.path.exists(temp_audio_path):
+            try:
+                os.remove(temp_audio_path)
+            except Exception:
+                pass
+
+
+
 
 

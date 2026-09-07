@@ -371,6 +371,76 @@ class LyricsEngineService:
         return {'success': False, 'message': f'No synced lyrics found for "{title}". You can use Vocal Frequency Auto-Sync instead.'}
 
     @classmethod
+    def transcribe_and_sync_with_whisper(cls, audio_path, model_size='base', initial_prompt=None):
+        """
+        Uses local Whisper AI (faster-whisper) with word-level timestamping
+        to automatically transcribe speech/singing and generate millisecond-accurate synchronized lyrics.
+        Works 100% offline for any song (AI generated, Suno, Udio, unreleased tracks, or commercial).
+        """
+        try:
+            from faster_whisper import WhisperModel
+        except ImportError:
+            raise ImportError("faster-whisper is not installed. Please install it with: pip install faster-whisper")
+
+        audio_path = os.path.abspath(str(audio_path))
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+        # Choose efficient INT8 quantization on CPU
+        model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        
+        # Transcribe with word timestamps and VAD filter to ignore silence
+        segments, info = model.transcribe(
+            audio_path,
+            beam_size=5,
+            word_timestamps=True,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=400),
+            initial_prompt=initial_prompt or "Song lyrics transcribed with accurate verse and chorus lines."
+        )
+
+        lyrics_data = []
+        plain_lines = []
+
+        for seg in segments:
+            text = seg.text.strip()
+            if not text:
+                continue
+
+            words_data = []
+            if seg.words:
+                for w in seg.words:
+                    clean_w = w.word.strip()
+                    if clean_w:
+                        words_data.append({
+                            'word': clean_w,
+                            'start': round(w.start, 2),
+                            'end': round(w.end, 2)
+                        })
+
+            start_t = round(seg.start, 2)
+            end_t = round(seg.end, 2)
+            if end_t <= start_t:
+                end_t = round(start_t + 2.5, 2)
+
+            lyrics_data.append({
+                'line': text,
+                'start': start_t,
+                'end': end_t,
+                'words': words_data
+            })
+            plain_lines.append(text)
+
+        return {
+            'success': True,
+            'lyrics_data': lyrics_data,
+            'plain_lyrics': "\n".join(plain_lines),
+            'detected_language': info.language,
+            'language_probability': round(getattr(info, 'language_probability', 1.0), 2),
+            'duration': round(getattr(info, 'duration', 0.0), 2)
+        }
+
+    @classmethod
     def hex_to_ass_color(cls, hex_str, alpha=0):
         """
         Converts hex color (e.g. #00E5FF or #FFFFFF) to ASS color format &HAABBGGRR&.
@@ -505,17 +575,27 @@ class LyricsEngineService:
             duration_cs = max(10, int((end_sec - start_sec) * 100))
 
             if animation_style == 'KARAOKE_WIPE':
-                # Generate fluid word-by-word karaoke wipe tag {\k<cs>}
-                words = raw_line.split(' ')
-                total_chars = max(1, sum(len(w) for w in words))
-                
-                karaoke_text_parts = []
-                for w in words:
-                    # Centiseconds proportional to word length with natural spacing
-                    w_cs = max(8, int(duration_cs * (len(w) / total_chars)))
-                    karaoke_text_parts.append(f"{{\\k{w_cs}}}{w}")
+                # Check if exact word timestamps are provided
+                words_list = item.get('words')
+                if words_list and len(words_list) > 0:
+                    karaoke_text_parts = []
+                    for w in words_list:
+                        w_text = w.get('word', '')
+                        w_start = float(w.get('start', start_sec))
+                        w_end = float(w.get('end', w_start + 0.3))
+                        w_cs = max(5, int((w_end - w_start) * 100))
+                        karaoke_text_parts.append(f"{{\\k{w_cs}}}{w_text}")
+                    karaoke_line = " ".join(karaoke_text_parts)
+                else:
+                    # Fallback proportional word wipe
+                    words = raw_line.split(' ')
+                    total_chars = max(1, sum(len(w) for w in words))
+                    karaoke_text_parts = []
+                    for w in words:
+                        w_cs = max(8, int(duration_cs * (len(w) / total_chars)))
+                        karaoke_text_parts.append(f"{{\\k{w_cs}}}{w}")
+                    karaoke_line = " ".join(karaoke_text_parts)
 
-                karaoke_line = " ".join(karaoke_text_parts)
                 script_content.append(
                     f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{karaoke_line}"
                 )

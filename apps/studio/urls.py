@@ -30,6 +30,7 @@ urlpatterns = [
     path('studio/lyrics/api/parse/', views.lyrics_parse_api, name='lyrics_parse_api'),
     path('studio/lyrics/api/vocal-sync/', views.lyrics_vocal_sync_api, name='lyrics_vocal_sync_api'),
     path('studio/lyrics/api/search-online/', views.lyrics_online_search_api, name='lyrics_online_search_api'),
+    path('studio/lyrics/api/ai-transcribe/', views.lyrics_ai_transcribe_api, name='lyrics_ai_transcribe_api'),
 ]
 
 
