@@ -371,10 +371,86 @@ class LyricsEngineService:
         return {'success': False, 'message': f'No synced lyrics found for "{title}". You can use Vocal Frequency Auto-Sync instead.'}
 
     @classmethod
+    def format_words_into_lyric_bars(cls, words, max_words=7, max_chars=36, max_duration=4.2, min_pause=0.35):
+        """
+        Splits a continuous stream of timestamped words into clean, rhythmic song lyric bars (short lines).
+        Uses vocal breath pauses, punctuation, word counts, and max duration to create optimal song bars.
+        """
+        if not words:
+            return []
+
+        bars = []
+        current_bar_words = []
+
+        for i, w in enumerate(words):
+            current_bar_words.append(w)
+            
+            is_last = (i == len(words) - 1)
+            if is_last:
+                break
+
+            next_w = words[i + 1]
+            pause_after = max(0.0, next_w['start'] - w['end'])
+            word_count = len(current_bar_words)
+            char_len = sum(len(x['word']) for x in current_bar_words) + (word_count - 1)
+            bar_dur = w['end'] - current_bar_words[0]['start']
+            w_text = w['word'].strip()
+
+            # Conditions to break into a new short lyric bar (line):
+            # 1. Natural musical breath pause between words (e.g. >= 0.35s)
+            is_pause_split = (pause_after >= min_pause and word_count >= 2) or (pause_after >= 0.6)
+            # 2. Punctuation break after at least 3 words
+            is_punct_split = (w_text.endswith((',', '.', '!', '?', ';', ':', '—', '-')) and word_count >= 3)
+            # 3. Maximum words per line (4 to 7 words is ideal for music bars)
+            is_length_split = (word_count >= max_words) or (char_len >= max_chars)
+            # 4. Maximum duration cap
+            is_duration_split = (bar_dur >= max_duration and word_count >= 3)
+
+            if is_pause_split or is_punct_split or is_length_split or is_duration_split:
+                bar_start = round(current_bar_words[0]['start'], 2)
+                bar_end = round(max(current_bar_words[-1]['end'], bar_start + 0.8), 2)
+                if next_w['start'] > bar_end:
+                    bar_end = round(min(next_w['start'], bar_end + 0.4), 2)
+
+                bar_line = " ".join(x['word'].strip() for x in current_bar_words).strip()
+                if bar_line:
+                    bars.append({
+                        'line': bar_line,
+                        'start': bar_start,
+                        'end': bar_end,
+                        'words': list(current_bar_words)
+                    })
+                current_bar_words = []
+
+        # Flush any trailing words
+        if current_bar_words:
+            bar_start = round(current_bar_words[0]['start'], 2)
+            bar_end = round(max(current_bar_words[-1]['end'], bar_start + 1.0), 2)
+            bar_line = " ".join(x['word'].strip() for x in current_bar_words).strip()
+            if bar_line:
+                bars.append({
+                    'line': bar_line,
+                    'start': bar_start,
+                    'end': bar_end,
+                    'words': list(current_bar_words)
+                })
+
+        # Smooth out transitions and eliminate timestamp overlaps
+        for idx in range(len(bars)):
+            if idx + 1 < len(bars):
+                next_start = bars[idx + 1]['start']
+                if bars[idx]['end'] > next_start:
+                    bars[idx]['end'] = round(next_start, 2)
+                elif next_start - bars[idx]['end'] < 0.6:
+                    bars[idx]['end'] = round(next_start, 2)
+
+        return bars
+
+    @classmethod
     def transcribe_and_sync_with_whisper(cls, audio_path, model_size='base', initial_prompt=None):
         """
         Uses local Whisper AI (faster-whisper) with word-level timestamping
-        to automatically transcribe speech/singing and generate millisecond-accurate synchronized lyrics.
+        to automatically transcribe speech/singing and generate short, rhythmic song lyric bars.
         Works 100% offline for any song (AI generated, Suno, Udio, unreleased tracks, or commercial).
         """
         try:
@@ -390,46 +466,43 @@ class LyricsEngineService:
         model = WhisperModel(model_size, device="cpu", compute_type="int8")
         
         # Transcribe with word timestamps and VAD filter to ignore silence
+        prompt_text = initial_prompt or "Song lyrics formatted in short musical bars and rhyming verse lines."
         segments, info = model.transcribe(
             audio_path,
             beam_size=5,
             word_timestamps=True,
             vad_filter=True,
-            vad_parameters=dict(min_silence_duration_ms=400),
-            initial_prompt=initial_prompt or "Song lyrics transcribed with accurate verse and chorus lines."
+            vad_parameters=dict(min_silence_duration_ms=350),
+            initial_prompt=prompt_text
         )
 
-        lyrics_data = []
-        plain_lines = []
+        all_words = []
 
         for seg in segments:
-            text = seg.text.strip()
-            if not text:
-                continue
-
-            words_data = []
             if seg.words:
                 for w in seg.words:
                     clean_w = w.word.strip()
                     if clean_w:
-                        words_data.append({
+                        all_words.append({
                             'word': clean_w,
                             'start': round(w.start, 2),
                             'end': round(w.end, 2)
                         })
+            elif seg.text and seg.text.strip():
+                # Fallback: estimate word timestamps if word-level missing
+                words_list = seg.text.strip().split()
+                dur = max(0.5, seg.end - seg.start)
+                slot = dur / len(words_list)
+                for s_idx, wt in enumerate(words_list):
+                    all_words.append({
+                        'word': wt,
+                        'start': round(seg.start + s_idx * slot, 2),
+                        'end': round(seg.start + (s_idx + 1) * slot, 2)
+                    })
 
-            start_t = round(seg.start, 2)
-            end_t = round(seg.end, 2)
-            if end_t <= start_t:
-                end_t = round(start_t + 2.5, 2)
-
-            lyrics_data.append({
-                'line': text,
-                'start': start_t,
-                'end': end_t,
-                'words': words_data
-            })
-            plain_lines.append(text)
+        # Format all timestamped words into clean, short song lyric bars (4-7 words per line)
+        lyrics_data = cls.format_words_into_lyric_bars(all_words, max_words=7, max_chars=36)
+        plain_lines = [b['line'] for b in lyrics_data]
 
         return {
             'success': True,

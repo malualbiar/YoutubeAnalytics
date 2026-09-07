@@ -421,4 +421,26 @@ class LyricsStudioTestCase(TestCase):
         self.assertEqual(len(data.get('lyrics_data')), 1)
         self.assertIn("AI generated vocal line", data.get('plain_lyrics'))
 
+    def test_format_words_into_lyric_bars_splits_long_lines(self):
+        words = [
+            {'word': 'Dancing', 'start': 1.0, 'end': 1.5},
+            {'word': 'in', 'start': 1.5, 'end': 1.7},
+            {'word': 'the', 'start': 1.7, 'end': 1.9},
+            {'word': 'dark,', 'start': 1.9, 'end': 2.4},  # Punctuation + pause
+            {'word': 'watching', 'start': 3.0, 'end': 3.5},
+            {'word': 'all', 'start': 3.5, 'end': 3.7},
+            {'word': 'the', 'start': 3.7, 'end': 3.9},
+            {'word': 'neon', 'start': 3.9, 'end': 4.3},
+            {'word': 'lights', 'start': 4.3, 'end': 4.7},
+            {'word': 'glow', 'start': 4.7, 'end': 5.2}
+        ]
+        bars = LyricsEngineService.format_words_into_lyric_bars(words, max_words=6)
+        self.assertEqual(len(bars), 2)
+        self.assertEqual(bars[0]['line'], "Dancing in the dark,")
+        self.assertEqual(bars[0]['start'], 1.0)
+        self.assertLessEqual(bars[0]['end'], 3.0)
+        self.assertEqual(bars[1]['line'], "watching all the neon lights glow")
+        self.assertEqual(bars[1]['start'], 3.0)
+
+
 
