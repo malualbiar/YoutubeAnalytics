@@ -50,8 +50,14 @@ def main():
         logger.info("Applying database migrations...")
         call_command('migrate', interactive=False, verbosity=0)
         logger.info("Database schema is up to date.")
+        
+        from apps.authentication.models import User
+        if not User.objects.exists():
+            logger.info("First run detected. Seeding initial demo data...")
+            call_command('seed_demo_data', verbosity=0)
+            logger.info("Demo data successfully initialized.")
     except Exception as e:
-        logger.warning(f"Database migration notice: {e}")
+        logger.warning(f"Database migration/seed notice: {e}")
 
     # 2. If running test mode, exit cleanly
     if args.test:

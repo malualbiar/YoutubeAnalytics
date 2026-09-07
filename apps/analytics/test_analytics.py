@@ -75,3 +75,37 @@ class AnalyticsServiceTests(TestCase):
         self.assertEqual(chart_data['cumulative_views'][0], 0)
         self.assertEqual(chart_data['cumulative_views'][-1], 1500000)
 
+    def test_revenue_predictions(self):
+        predictions = AnalyticsService.get_revenue_predictions(
+            base_rpm=2.00,
+            growth_rate=0.05,
+            shorts_multiplier=0.02
+        )
+        self.assertIn('kpis', predictions)
+        self.assertIn('artist_matrix', predictions)
+        self.assertIn('projection_series', predictions)
+        self.assertIn('top_earning_songs', predictions)
+        self.assertIn('monthly_summaries', predictions)
+        self.assertGreater(len(predictions['monthly_summaries']), 0)
+        self.assertEqual(len(predictions['artist_matrix']), 1)
+        self.assertGreater(predictions['kpis']['total_today_views'], 0)
+        self.assertGreater(predictions['kpis']['total_lifetime_revenue'], 0)
+
+    def test_revenue_predictions_filtered_by_month_and_artist(self):
+        predictions = AnalyticsService.get_revenue_predictions(
+            base_rpm=2.50,
+            artist_id=self.artist.id,
+            selected_month=timezone.now().strftime('%Y-%m')
+        )
+        self.assertTrue(predictions['kpis']['is_filtered_by_month'])
+        self.assertEqual(predictions['kpis']['filtered_month_name'], timezone.now().strftime('%B %Y'))
+        self.assertEqual(len(predictions['artists']), 1)
+
+    def test_monthly_views_recent_release(self):
+        AnalyticsService.update_video_growth_metrics(self.video)
+        self.video.refresh_from_db()
+        # Since published today <= 30 days, views_this_month should equal current_views
+        self.assertEqual(self.video.views_this_month, 1500000)
+
+
+

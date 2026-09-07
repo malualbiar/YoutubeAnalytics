@@ -103,3 +103,26 @@ class MixEngineTests(TestCase):
         detail_response = self.client.get(reverse('mix_detail', args=[project.id]))
         self.assertEqual(detail_response.status_code, 200)
         self.assertContains(detail_response, "Test Long Mix")
+
+    def test_mix_access_denied_for_non_superadmin(self):
+        manager = User.objects.create_user(
+            email='manager_mix@test.com',
+            username='managermix',
+            password='password123',
+            role=User.Role.MANAGER
+        )
+        self.client.force_login(manager)
+
+        response = self.client.get(reverse('mix_maker'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))
+
+        project = LongMixProject.objects.create(
+            title='Test Mix Guard',
+            duration_seconds=120,
+            track_count=2,
+            render_status=LongMixProject.Status.COMPLETED
+        )
+        response = self.client.get(reverse('mix_detail', args=[project.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))

@@ -57,3 +57,22 @@ class StudioViewsTestCase(TestCase):
         self.assertIsNotNone(project)
         self.assertEqual(project.render_status, VideoProject.Status.COMPLETED)
         self.assertTrue(bool(project.output_video))
+
+    def test_studio_access_denied_for_non_superadmin(self):
+        viewer = User.objects.create_user(
+            email='viewer@test.com',
+            username='viewer',
+            password='password123',
+            role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+
+        # GET studio_home
+        response = self.client.get(reverse('studio_home'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))
+
+        # POST studio_render
+        response = self.client.post(reverse('studio_render'), {})
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))

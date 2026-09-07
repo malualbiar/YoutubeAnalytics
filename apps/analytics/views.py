@@ -1,8 +1,10 @@
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
 from apps.artists.models import Artist, YouTubeChannel
 from apps.videos.models import Video
 from .services import AnalyticsService
@@ -191,4 +193,149 @@ def delete_content_upload_view(request, pk):
     AnalyticsService.delete_content_upload(pk)
     messages.info(request, "Content upload record removed.")
     return redirect('dashboard')
+
+
+@login_required
+def revenue_prediction_view(request):
+    """
+    Interactive YouTube revenue forecasting dashboard with format-weighted RPM modeling,
+    monthly performance summaries, artist earnings breakdown, top songs forecast, and scenario simulation.
+    """
+    AnalyticsService.update_video_growth_metrics()
+
+    try:
+        base_rpm = float(request.GET.get('rpm', 2.50))
+    except (ValueError, TypeError):
+        base_rpm = 2.50
+
+    try:
+        growth_rate = float(request.GET.get('growth', 0.05))
+    except (ValueError, TypeError):
+        growth_rate = 0.05
+
+    try:
+        shorts_mult = float(request.GET.get('shorts_mult', 0.02))
+    except (ValueError, TypeError):
+        shorts_mult = 0.02
+
+    artist_id = request.GET.get('artist', None)
+    selected_month = request.GET.get('month', 'all')
+
+    forecast_data = AnalyticsService.get_revenue_predictions(
+        base_rpm=base_rpm,
+        growth_rate=growth_rate,
+        shorts_multiplier=shorts_mult,
+        artist_id=artist_id,
+        selected_month=selected_month
+    )
+
+    current_summary = forecast_data['monthly_summaries'][-1] if forecast_data.get('monthly_summaries') else {}
+
+    return render(request, 'revenue/index.html', {
+        'forecast': forecast_data,
+        'base_rpm': base_rpm,
+        'growth_rate': growth_rate,
+        'growth_pct': int(growth_rate * 100),
+        'shorts_mult': shorts_mult,
+        'selected_artist_id': artist_id,
+        'selected_month': selected_month,
+        'available_artists': forecast_data['available_artists'],
+        'monthly_summaries': forecast_data['monthly_summaries'],
+        'current_month_summary': current_summary,
+        'kpis': forecast_data['kpis'],
+        'artists': forecast_data['artists'],
+        'top_videos': forecast_data['top_videos'],
+        'all_videos': forecast_data['all_videos'],
+        'format_totals': forecast_data['format_totals'],
+        'chart_data': forecast_data['chart_data'],
+    })
+
+
+@login_required
+def export_revenue_csv(request):
+    """
+    Export detailed revenue forecasts, monthly timelines, and track breakdowns to CSV.
+    """
+    try:
+        base_rpm = float(request.GET.get('rpm', 2.50))
+    except (ValueError, TypeError):
+        base_rpm = 2.50
+
+    try:
+        growth_rate = float(request.GET.get('growth', 0.05))
+    except (ValueError, TypeError):
+        growth_rate = 0.05
+
+    try:
+        shorts_mult = float(request.GET.get('shorts_mult', 0.02))
+    except (ValueError, TypeError):
+        shorts_mult = 0.02
+
+    artist_id = request.GET.get('artist', None)
+    selected_month = request.GET.get('month', 'all')
+
+    forecast_data = AnalyticsService.get_revenue_predictions(
+        base_rpm=base_rpm,
+        growth_rate=growth_rate,
+        shorts_multiplier=shorts_mult,
+        artist_id=artist_id,
+        selected_month=selected_month
+    )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="youtube_revenue_forecast_{timezone.now():%Y%m%d}.csv"'
+
+    writer = csv.writer(response)
+
+    # 1. Monthly Performance & Revenue Timeline
+    writer.writerow(['--- MONTHLY PERFORMANCE & REVENUE TIMELINE ---'])
+    writer.writerow(['Month', 'Status', 'Views Gained', 'Likes', 'Comments', 'Est. Revenue ($)', 'MoM Growth (%)', 'Top Artist', 'Top Track'])
+    for ms in forecast_data['monthly_summaries']:
+        writer.writerow([
+            ms['month_label'],
+            ms['status'],
+            ms['views'],
+            ms['likes'],
+            ms['comments'],
+            f"${ms['revenue']:,.2f}",
+            f"{ms['mom_growth']:+.1f}%",
+            ms['top_artist'],
+            ms['top_video']
+        ])
+
+    writer.writerow([])
+    # 2. Artist Breakdown
+    writer.writerow(['--- ARTIST REVENUE FORECAST ---'])
+    writer.writerow(['Artist', 'Monitored Tracks', 'Lifetime Views', 'Past 30 Days Views', 'Est. Monthly Revenue ($)', 'Est. Annual Revenue ($)', 'Revenue Share (%)', 'Effective RPM ($)', 'Top Track'])
+    for a in forecast_data['artists']:
+        writer.writerow([
+            a['artist'].stage_name,
+            a['video_count'],
+            a['lifetime_views'],
+            a['views_this_month'],
+            f"${a['monthly_revenue']:,.2f}",
+            f"${a['annual_revenue']:,.2f}",
+            f"{a['revenue_share_pct']}%",
+            f"${a['effective_rpm']:,.2f}",
+            a['top_song']
+        ])
+
+    writer.writerow([])
+    # 3. Track Rankings
+    writer.writerow(['--- SONG REVENUE BREAKDOWN ---'])
+    writer.writerow(['Song Title', 'Artist', 'Format', 'Est. RPM ($)', 'Lifetime Views', 'Past 30 Days Views', 'Est. Monthly Revenue ($)', 'Est. Annual Revenue ($)', 'Est. Lifetime Revenue ($)'])
+    for v in forecast_data['all_videos']:
+        writer.writerow([
+            v['title'],
+            v['artist_name'],
+            v['format'],
+            f"${v['rpm']:,.2f}",
+            v['current_views'],
+            v['views_this_month'],
+            f"${v['monthly_revenue']:,.2f}",
+            f"${v['annual_revenue']:,.2f}",
+            f"${v['lifetime_revenue']:,.2f}"
+        ])
+
+    return response
 

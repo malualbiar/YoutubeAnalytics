@@ -16,6 +16,10 @@ def radar_feed_view(request):
     AI Music Discovery Radar dashboard with granular time, duration,
     and channel popularity filters.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     query = request.GET.get('q', '').strip()
     genre = request.GET.get('genre', 'all')
     time_window = request.GET.get('time', '48h')
@@ -103,6 +107,10 @@ def download_audio_view(request):
     """
     Directly downloads audio from YouTube as uncompressed lossless WAV or MP3.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     video_id = request.GET.get('video_id') or request.POST.get('video_id')
     audio_format = (request.GET.get('format') or request.POST.get('format') or 'wav').lower()
     custom_title = request.GET.get('title') or request.POST.get('title') or 'AI Track'
@@ -139,6 +147,10 @@ def import_to_studio_view(request):
     """
     One-click bridge to download track & cover, creating a VideoProject in Video Studio.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     video_id = request.POST.get('video_id')
     title = request.POST.get('title', 'AI Track')
     thumbnail_url = request.POST.get('thumbnail_url', '')

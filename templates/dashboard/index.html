@@ -15,10 +15,12 @@
         </div>
 
         <div class="flex items-center gap-3 self-start md:self-auto flex-wrap">
+            {% if user.is_super_admin %}
             <a href="{% url 'studio_home' %}" class="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-600/20 transition-all hover:scale-[1.02]">
                 <i data-lucide="video" class="w-4 h-4"></i>
                 1-Hour Video Studio
             </a>
+            {% endif %}
 
             <!-- Time Range Selector -->
             <div class="flex items-center gap-1.5 p-1 rounded-xl bg-dark-900 border border-zinc-800">

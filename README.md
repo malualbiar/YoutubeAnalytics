@@ -1,80 +1,146 @@
-# YT Quid - YouTube Artist Analytics & Monitoring Platform
+# YT Quid - YouTube Artist Analytics, AI Music Radar & Video Studio Platform
 
-A full-featured music analytics, channel monitoring, and historical growth intelligence platform built with **Django**, **Django HTML Templates**, **Tailwind CSS**, **Chart.js**, and **SQLite**.
+A full-featured music analytics, channel monitoring, historical growth intelligence, AI discovery radar, and automated video rendering platform built with **Django**, **Tailwind CSS**, **Chart.js**, **Waitress**, and **Electron**.
 
-Designed specifically for music managers, record labels, and artists to track YouTube channel growth, video performance, historical view snapshots, milestone unlocks, and comparative analytics directly via the official **YouTube Data API v3**—with zero dependency on DistroKid.
+Available as both a **Web Server** and a **Standalone Native Windows Desktop Application** (`.exe` Installer & Portable).
+
+---
+
+## 📥 Download Desktop Application (Windows)
+
+Get the latest version of YT Quid for Windows directly from the GitHub releases:
+
+| Package | Download Link | Description |
+| :--- | :--- | :--- |
+| **Windows Installer** | 📦 [**Download `YT Quid Setup.exe`**](https://github.com/malualbiar/YoutubeAnalytics/releases/latest) | Recommended. Full installer with Desktop & Start Menu shortcuts, auto-updater, and uninstaller. |
+| **Portable Version** | ⚡ [**Download `YT Quid Portable.exe`**](https://github.com/malualbiar/YoutubeAnalytics/releases/latest) | Zero-installation standalone executable. Run directly from any folder or USB drive. |
+| **All Releases & Notes** | 📋 [**View GitHub Releases**](https://github.com/malualbiar/YoutubeAnalytics/releases) | Release notes, changelog history, and SHA-256 checksums. |
 
 ---
 
 ## Key Features
 
-1. **Artist & Channel Management**:
-   - Add/edit artists and connect official YouTube channels via channel URL, `@handle`, or raw Channel ID (`UC...`).
-   - Automated channel validation and preview before connection.
-2. **Automated Video Discovery & Statistics**:
-   - Discovers new uploads from channel playlists.
-   - Batch fetches statistics (up to 50 videos per API call) to preserve daily API quotas.
-3. **Historical Snapshots & Growth Calculations**:
-   - Records periodic snapshots (`VideoStatisticSnapshot` and `ChannelStatisticSnapshot`).
-   - Accurately distinguishes **Total Cumulative Views** (YouTube reported) from **Views Gained** (Platform calculated).
-   - Computes views gained today, this week, this month, and lifetime growth curves.
-4. **Interactive Analytics Dashboard**:
-   - Day-by-day views growth trajectory (7D, 30D, 90D, 1Y filters) powered by Chart.js.
-   - Top performing tracks ranked by total views, daily gains, weekly gains, or likes.
-   - Fastest growing songs (velocity indicators).
-   - Milestones feed (celebrates crossing 10K, 50K, 100K, 1M, 5M, 10M views).
-5. **Artist & Video Comparisons**:
-   - Side-by-side benchmarking matrix for multiple artists or tracks.
-   - Comparative multi-line performance charts.
-6. **Executive Reports & Data Export**:
-   - Custom date-range reports for artists and video catalogs.
-   - One-click **CSV download** and **Executive Printable PDF** layouts.
-7. **System Health & API Quota Tracking**:
-   - Quota usage meter (tracks units consumed against Google's standard 10,000 daily limit).
-   - Real-time audit logs of all synchronization runs with execution times and error messages.
-8. **Role-Based Access Control (RBAC)**:
-   - **Super Admin**: Full platform control, channel connections, user management, and system settings.
-   - **Manager**: Artist creation and catalog management.
-   - **Viewer**: Read-only access to dashboards, comparisons, and reports.
-9. **Global Search (Ctrl + K)**:
-   - Instant live search modal indexing artists, tracks, and channels.
+### 1. 📊 Interactive Analytics & Catalog Monitoring
+- **Real-Time Channel & Video Tracking**: Connect official YouTube channels via channel URL, `@handle`, or raw Channel ID (`UC...`).
+- **Growth Calculations & Snapshots**: Accurately tracks **Total Cumulative Views** vs. **Views Gained** (today, this week, this month, 90D, 1Y, all-time).
+- **Side-by-Side Comparisons**: Multi-artist and multi-video benchmarking matrices with multi-line growth charts.
+- **Milestones & Velocity**: Milestone unlock notifications (10K, 50K, 100K, 1M, 5M, 10M views) with daily velocity indicators.
+- **Daily Upload Tracker**: 30-day activity heatmap, streak counter, and customizable posting goals.
+- **Executive Reports**: One-click CSV and printable PDF export.
+
+### 2. 📡 AI Music Discovery Radar (`/radar/`)
+- **Granular Time Filtering**: Real-time discovery of breakout AI music (Suno, Udio, Lofi, Synthwave, Hip-Hop, Pop, Rock) published in the past 30m, 1h, 6h, 12h, 24h, 48h, 7d, or 30d.
+- **Velocity Arbitrage**: Sort by views/hour or filter by underdogs (<10K views) to catch rising trends before they saturate.
+- **Lossless Extraction**: 1-click lossless WAV / MP3 audio downloader powered by `yt-dlp`.
+- **Direct Studio Bridge**: 1-click export from Radar into the Video Studio.
+
+### 3. 🎬 Video Studio & Long Mix Engine (`/studio/`)
+- **Automated FFmpeg Video Rendering**:
+  - **1-Hour Study/Chill Loops**: 60-minute seamless audio loops with darkened 16:9 blurred canvas and high-res artwork.
+  - **1080p Official Visualizers**: Full-song visualizer video.
+  - **15s YouTube Shorts Hooks**: 9:16 vertical hook video with artwork.
+  - **Non-Stop Continuous Mixes**: DJ-style seamless crossfades with 5 transition curves (Equal-Power Quarter-Sine, Linear, Triangular, Exponential, Quick Club Cut).
+- **Automated YouTube Metadata**: Generates SEO titles, timestamped chapters, tags, and descriptions.
 
 ---
 
-## Quick Start (Local Setup)
+## 💻 Standalone Desktop Application
+
+YT Quid runs as a native desktop application with an embedded Python/Django WSGI server powered by **Waitress** and an **Electron** frontend.
+
+👉 **[Download the Latest Windows Release (v1.0.0)](https://github.com/malualbiar/YoutubeAnalytics/releases/latest)**
+
+### Desktop Architecture
+- **Zero Configuration**: Automatically applies database migrations and seeds initial demo data on first launch.
+- **Data Persistence**: Stores the SQLite database (`db.sqlite3`), `.env` overrides, and generated media/video outputs in `%APPDATA%\YTQuid\` (or `~/.config/ytquid/` on Linux/macOS).
+- **Bundled Binaries**: Ships with embedded Python runtime dependencies and bundled FFmpeg.
+
+---
+
+## 🛠️ Building the Desktop App Locally
 
 ### 1. Prerequisites
 - Python 3.10+ installed
+- Node.js 18+ and npm installed
 
-### 2. Install Dependencies
+### 2. One-Click Build (Windows)
+Run the automated build batch script from the project root:
+```cmd
+build_desktop.bat
+```
+
+### 3. Manual Step-by-Step Build
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
+npm install
+
+# 2. Package the backend into dist-backend/server/
+npm run build:backend
+
+# 3. Test the packaged backend executable
+dist-backend\server\server.exe --test
+
+# 4. Build the Electron Desktop Installer and Portable App
+npm run dist
 ```
 
-### 3. Setup Environment Variables
-Copy `.env.example` to `.env`:
+### Build Artifacts
+Outputs are generated in `dist-electron/`:
+- **`YT Quid Setup 1.0.0.exe`**: Full NSIS Windows installer (desktop shortcut, start menu shortcut, uninstaller).
+- **`YT Quid 1.0.0.exe`**: Standalone zero-install portable executable.
+
+---
+
+## 🚀 CI/CD Automated Release Workflows
+
+The repository includes a GitHub Actions workflow located at [`.github/workflows/release-desktop.yml`](.github/workflows/release-desktop.yml) for building and publishing desktop releases.
+
+### How to Trigger a Release
+1. **Via Git Tag**:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+2. **Via GitHub Actions Web UI**:
+   - Go to the **Actions** tab on GitHub.
+   - Select **Release Desktop App**.
+   - Click **Run workflow** and specify the version tag (e.g. `v1.0.0`).
+
+### Automated Workflow Pipeline
+1. Sets up clean Windows runners with Python 3.11 and Node.js 20.
+2. Compiles the embedded Django backend via PyInstaller.
+3. Builds the NSIS Installer and Portable Executables via `electron-builder`.
+4. Calculates SHA-256 checksums (`checksums-sha256.txt`).
+5. Publishes a new **GitHub Release** with all executable assets attached.
+
+---
+
+## 🌐 Running in Web Server Mode
+
+You can also run YT Quid as a standard web application:
+
 ```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Configure .env
 cp .env.example .env
-```
-*(Optional: Add your Google Cloud `YOUTUBE_API_KEY` in `.env` to enable live syncing with YouTube).*
 
-### 4. Run Migrations & Seed Demo Data
-```bash
+# 3. Migrate and seed demo data
 python manage.py migrate
 python manage.py seed_demo_data
-```
 
-### 5. Start the Development Server
-```bash
+# 4. Start local server
 python manage.py runserver
 ```
-Open **`http://127.0.0.1:8000/`** in your browser.
+Visit **`http://127.0.0.1:8000/`** in your browser.
 
 ---
 
 ## Demo Accounts
 
-The database comes pre-seeded with realistic artists (*Luna Vance*, *Kairo Beats*, *Nova Sound*, *Aria Vega*), 22+ songs, 30 days of historical snapshots, and 3 demo user roles:
+The database comes pre-seeded with 4 active artists (*Luna Vance*, *Kairo Beats*, *Nova Sound*, *Aria Vega*), 22+ songs, 30 days of historical snapshots, and 3 demo user roles:
 
 | Role | Email | Password | Permissions |
 | :--- | :--- | :--- | :--- |
@@ -82,39 +148,13 @@ The database comes pre-seeded with realistic artists (*Luna Vance*, *Kairo Beats
 | **Manager** | `manager@analytics.com` | `manager123` | Artist Management, Reports, Dashboard |
 | **Viewer** | `viewer@analytics.com` | `viewer123` | Read-only access to Analytics & Charts |
 
-*(The login page also includes 1-Click Quick Demo Login buttons for immediate testing).*
-
----
-
-## 📡 YouTube Data API v3 Configuration
-
-1. Visit [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project or select an existing one.
-3. Enable the **YouTube Data API v3** under **APIs & Services > Library**.
-4. Create an **API Key** under **APIs & Services > Credentials**.
-5. Paste the key in your `.env` file:
-   ```env
-   YOUTUBE_API_KEY=AIzaSy...
-   ```
-
-### Running Live Sync
-- **Via Web UI**: Click the **"Sync All Channels"** button in the top navigation bar or **"Sync Now"** in Channels list.
-- **Via Command Line**:
-  ```bash
-  # Sync all monitored channels
-  python manage.py sync_youtube_channels
-
-  # Sync a specific channel
-  python manage.py sync_youtube_channels --channel-id UCLunaVanceOfficial01
-  ```
-
 ---
 
 ## Running Automated Tests
 
-Run the complete test suite (18 unit & view integration tests):
+Run the test suite:
 ```bash
-python manage.py test apps.authentication.test_auth apps.artists.test_artists apps.videos.test_videos apps.youtube.test_youtube apps.analytics.test_analytics apps.analytics.test_views
+python manage.py test apps.authentication.test_auth apps.artists.test_artists apps.videos.test_videos apps.youtube.test_youtube apps.analytics.test_analytics apps.analytics.test_views apps.studio.test_mix_engine apps.radar.tests
 ```
 
 ---
@@ -123,22 +163,26 @@ python manage.py test apps.authentication.test_auth apps.artists.test_artists ap
 
 ```
 YoutubeAnalytics/
-├── manage.py
-├── requirements.txt
-├── .env.example
-├── .env
-├── db.sqlite3
+├── .github/workflows/
+│   └── release-desktop.yml         # CI/CD automated desktop release workflow
+├── build_desktop.bat               # 1-click Windows desktop compilation script
+├── main.js                         # Electron main process & server launcher
+├── preload.js                      # Electron secure context bridge
+├── server.py                       # Embedded Waitress WSGI server launcher
+├── server.spec                     # PyInstaller configuration & asset bundler
+├── package.json                    # Electron build configuration & scripts
+├── requirements.txt                # Python backend dependencies
+├── bin/
+│   └── ffmpeg.exe                  # Bundled FFmpeg multimedia engine
 ├── core/                           # Django project settings & URLs
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
 ├── apps/
-│   ├── authentication/             # Custom User, JWT/Session auth & RBAC
+│   ├── authentication/             # Custom User, Auth & RBAC
 │   ├── artists/                    # Artist & YouTubeChannel models & views
-│   ├── videos/                     # Video & Snapshot models, video library & detail
-│   ├── analytics/                  # Core metrics engine, comparisons & global search
-│   ├── milestones/                 # Milestones (10K..10M views) & spike alerts
+│   ├── videos/                     # Video & Snapshot models, catalog & detail
+│   ├── analytics/                  # Core metrics engine & comparisons
+│   ├── milestones/                 # Milestones & velocity alerts
 │   ├── reports/                    # CSV & printable report generator
+<<<<<<< HEAD
 │   └── youtube/                    # YouTube Data API v3 services & quota tracker
 ├── templates/                      # Tailwind CSS + Chart.js Django templates
 │   ├── base.html                   # Sidebar, TopBar, global search modal (Ctrl+K)
@@ -153,3 +197,11 @@ YoutubeAnalytics/
 └── static/
     └── css/styles.css
 ```
+=======
+│   ├── youtube/                    # YouTube Data API v3 services & quota tracker
+│   ├── studio/                     # Video Studio & Non-Stop Mix Engine
+│   └── radar/                      # AI Music Discovery Radar
+├── templates/                      # Tailwind CSS Django templates
+└── dist-electron/                  # Compiled desktop installer & portable .exe
+```
+>>>>>>> e0da034 (Release: Compile desktop app, add GitHub Actions release workflow, update README with download links)

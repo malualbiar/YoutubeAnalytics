@@ -1,0 +1,76 @@
+﻿name: Release Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag (e.g., v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release Windows Desktop App
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Build Django/Waitress Backend (PyInstaller)
+        run: |
+          pyinstaller server.spec --distpath dist-backend --workpath build-backend --clean --noconfirm
+
+      - name: Build Electron Desktop Application (NSIS Installer & Portable)
+        run: |
+          npx electron-builder --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Checksums (SHA-256)
+        shell: pwsh
+        run: |
+          Get-ChildItem dist-electron\*.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+            "$hash  $($_.Name)" | Out-File -FilePath dist-electron/checksums-sha256.txt -Append
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ github.ref_name || inputs.release_tag }}
+          name: "YT Quid Desktop ${{ github.ref_name || inputs.release_tag }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist-electron/*.exe
+            dist-electron/latest.yml
+            dist-electron/checksums-sha256.txt

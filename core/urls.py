@@ -1,3 +1,5 @@
+import os
+import sys
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -16,6 +18,8 @@ urlpatterns = [
     path('', include('apps.radar.urls')),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG or getattr(sys, 'frozen', False) or getattr(settings, 'DEBUG', False) or os.getenv('YT_QUID_DESKTOP') == '1':
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+

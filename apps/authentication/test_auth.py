@@ -32,3 +32,29 @@ class UserAuthenticationTests(TestCase):
         )
         self.assertFalse(viewer.can_manage_artists)
         self.assertFalse(viewer.can_manage_channels)
+
+    def test_users_manage_view_access_control(self):
+        from django.urls import reverse
+        admin = User.objects.create_superuser(
+            username='admin_user_mgr',
+            email='admin_mgr@test.com',
+            password='password123',
+            role=User.Role.SUPER_ADMIN
+        )
+        viewer = User.objects.create_user(
+            username='viewer_user_mgr',
+            email='viewer_mgr@test.com',
+            password='password123',
+            role=User.Role.VIEWER
+        )
+
+        # Superadmin allowed
+        self.client.force_login(admin)
+        response = self.client.get(reverse('users_manage'))
+        self.assertEqual(response.status_code, 200)
+
+        # Viewer denied
+        self.client.force_login(viewer)
+        response = self.client.get(reverse('users_manage'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))

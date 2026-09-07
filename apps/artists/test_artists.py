@@ -86,3 +86,72 @@ class ArtistModelTests(TestCase):
         self.assertContains(response, "This Month's Views")
         self.assertContains(response, "50,000")
 
+    def test_catalog_and_snapshot_views_calculation(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.authentication.models import User
+        from apps.videos.models import Video, VideoStatisticSnapshot
+        from apps.analytics.services import AnalyticsService
+
+        now = timezone.now()
+        artist = Artist.objects.create(name='Catalog Artist', stage_name='Catalog Artist')
+        channel = YouTubeChannel.objects.create(
+            artist=artist,
+            channel_id='UCcatalog123456789',
+            channel_name='Catalog Channel',
+            subscriber_count=2000,
+            total_views=500000,
+            video_count=2
+        )
+
+        # Video 1: 15-day-old release -> 100% of views count this month
+        v1 = Video.objects.create(
+            youtube_video_id='vid_recent_15d',
+            artist=artist,
+            channel=channel,
+            title='Recent Hit',
+            current_views=25000,
+            published_at=now - timedelta(days=15)
+        )
+
+        # Video 2: 180-day-old catalog track with snapshots over 3 days (+600 views) -> prorated to ~6000/mo
+        v2 = Video.objects.create(
+            youtube_video_id='vid_catalog_180d',
+            artist=artist,
+            channel=channel,
+            title='Catalog Evergreen',
+            current_views=100000,
+            published_at=now - timedelta(days=180)
+        )
+        # Add snapshots for v2
+        VideoStatisticSnapshot.objects.create(
+            video=v2,
+            recorded_at=now - timedelta(days=3),
+            views=99400,
+            views_change=200
+        )
+        VideoStatisticSnapshot.objects.create(
+            video=v2,
+            recorded_at=now - timedelta(days=2),
+            views=99600,
+            views_change=200
+        )
+        VideoStatisticSnapshot.objects.create(
+            video=v2,
+            recorded_at=now - timedelta(days=1),
+            views=99800,
+            views_change=200
+        )
+
+        AnalyticsService.update_video_growth_metrics(artist_id=artist.id)
+        v1.refresh_from_db()
+        v2.refresh_from_db()
+
+        # v1 (15 days old) has all 25k views counted this month
+        self.assertEqual(v1.views_this_month, 25000)
+        # v2 has prorated monthly gain based on 200 views/day -> 6000 views
+        self.assertGreaterEqual(v2.views_this_month, 600)
+        self.assertLessEqual(v2.views_this_month, v2.current_views)
+        self.assertGreaterEqual(v2.views_this_month, v2.views_this_week)
+        self.assertGreaterEqual(v2.views_this_week, v2.views_today)
+

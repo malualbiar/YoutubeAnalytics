@@ -15,7 +15,8 @@ class AIRadarTests(TestCase):
         self.user = User.objects.create_user(
             username='testradaruser',
             email='radar@test.com',
-            password='testpassword123'
+            password='testpassword123',
+            role=User.Role.SUPER_ADMIN
         )
         self.client = Client()
 
@@ -112,3 +113,25 @@ class AIRadarTests(TestCase):
                     os.remove(dummy_wav)
                 except Exception:
                     pass
+
+    def test_radar_access_denied_for_non_superadmin(self):
+        """Test non-superadmin user gets redirected to dashboard"""
+        viewer = User.objects.create_user(
+            username='viewerradar',
+            email='viewerradar@test.com',
+            password='password123',
+            role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+
+        response = self.client.get(reverse('radar_feed'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))
+
+        response = self.client.get(reverse('radar_download_audio'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))
+
+        response = self.client.post(reverse('radar_import_studio'), {})
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('dashboard'))

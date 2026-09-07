@@ -17,6 +17,10 @@ def studio_home_view(request):
     """
     Main YouTube Video Studio dashboard: displays both 1-Hour Loops and Non-Stop Long Mixes.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     tab = request.GET.get('tab', 'mixes')
     single_loops = VideoProject.objects.all().order_by('-created_at')
     mix_projects = LongMixProject.objects.all().order_by('-created_at')
@@ -40,6 +44,10 @@ def studio_render_view(request):
     """
     Handles single video loop rendering form submission.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     title = request.POST.get('title', '').strip() or 'My YouTube Chill Loop'
     video_format = request.POST.get('video_format', VideoProject.VideoFormat.ONE_HOUR_LOOP)
     audio_file = request.FILES.get('audio_file')
@@ -113,6 +121,10 @@ def studio_delete_view(request, pk):
     """
     Deletes a generated single loop video project.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     project = get_object_or_404(VideoProject, pk=pk)
     title = project.title
     project.delete()
@@ -130,6 +142,10 @@ def mix_maker_view(request):
     Interactive Continuous Long Mix Builder.
     Allows uploading multiple songs, importing from catalog / YouTube, configuring crossfade, and cover art.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     catalog_videos = Video.objects.filter(is_active=True).select_related('artist', 'channel').order_by('-current_views')[:30]
 
     return render(request, 'studio/mix_maker.html', {
@@ -145,6 +161,10 @@ def mix_render_view(request):
     Processes multiple audio tracks, calculates timeline, blends via FFmpeg acrossfade,
     and optionally renders 1080p MP4 long mix video.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     title = request.POST.get('title', '').strip() or 'My Non-Stop Music Mix'
     description = request.POST.get('description', '').strip()
     crossfade_seconds = int(request.POST.get('crossfade_seconds', 6))
@@ -286,6 +306,10 @@ def mix_detail_view(request, pk):
     - 1-Click Copy YouTube Chapters / Description
     - Direct MP3 & MP4 Downloads
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     project = get_object_or_404(LongMixProject, pk=pk)
     
     return render(request, 'studio/mix_detail.html', {
@@ -299,6 +323,10 @@ def mix_delete_view(request, pk):
     """
     Deletes a continuous mix project and its generated media.
     """
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
     project = get_object_or_404(LongMixProject, pk=pk)
     title = project.title
     project.delete()
@@ -311,6 +339,9 @@ def mix_import_api(request):
     """
     AJAX helper to lookup catalog videos by query.
     """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
+
     query = request.GET.get('q', '').strip()
     videos = Video.objects.filter(is_active=True)
     if query:
