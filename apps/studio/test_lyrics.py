@@ -257,3 +257,85 @@ class LyricsStudioTestCase(TestCase):
         response = self.client.post(reverse('lyrics_delete', kwargs={'pk': project.id}))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(LyricVideoProject.objects.count(), 0)
+
+    # 6. Vocal Frequency Alignment & Online Search
+    def test_align_lyrics_with_vocal_segments(self):
+        raw_lyrics = "Verse 1 line\nVerse 2 line\nChorus line 1\nChorus line 2"
+        vocal_segments = [
+            {'start': 5.0, 'end': 15.0, 'duration': 10.0},
+            {'start': 20.0, 'end': 32.0, 'duration': 12.0}
+        ]
+        aligned = LyricsEngineService.align_lyrics_with_vocal_segments(raw_lyrics, vocal_segments, total_duration=40.0)
+        self.assertEqual(len(aligned), 4)
+        self.assertGreaterEqual(aligned[0]['start'], 5.0)
+        self.assertLessEqual(aligned[1]['end'], 15.0)
+        self.assertGreaterEqual(aligned[2]['start'], 20.0)
+        self.assertLessEqual(aligned[3]['end'], 32.0)
+
+    @patch('urllib.request.urlopen')
+    def test_fetch_online_synced_lyrics_success(self, mock_urlopen):
+        mock_response = io.BytesIO(json.dumps({
+            'trackName': 'Golden Hour',
+            'artistName': 'JVKE',
+            'syncedLyrics': "[00:04.50]It was just two lovers\n[00:08.00]Sittin' in the car\n",
+            'plainLyrics': "It was just two lovers\nSittin' in the car"
+        }).encode('utf-8'))
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        res = LyricsEngineService.fetch_online_synced_lyrics("Golden Hour", "JVKE")
+        self.assertTrue(res.get('success'))
+        self.assertTrue(res.get('is_synced'))
+        self.assertEqual(len(res.get('lyrics_data')), 2)
+        self.assertEqual(res['lyrics_data'][0]['line'], "It was just two lovers")
+        self.assertEqual(res['lyrics_data'][0]['start'], 4.5)
+
+    def test_lyrics_vocal_sync_api_fallback_no_audio(self):
+        response = self.client.post(reverse('lyrics_vocal_sync_api'), {
+            'raw_text': "Line 1\nLine 2\nLine 3",
+            'duration': 60.0
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertFalse(data.get('is_vocal_detected'))
+        self.assertEqual(len(data.get('lyrics_data')), 3)
+
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.detect_vocal_segments')
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.inspect_media_duration')
+    def test_lyrics_vocal_sync_api_with_audio(self, mock_dur, mock_detect):
+        mock_dur.return_value = 45.0
+        mock_detect.return_value = [
+            {'start': 4.0, 'end': 14.0, 'duration': 10.0},
+            {'start': 18.0, 'end': 30.0, 'duration': 12.0}
+        ]
+
+        audio_file = self.create_mock_audio_file("test_vocal.wav")
+        response = self.client.post(reverse('lyrics_vocal_sync_api'), {
+            'raw_text': "Verse 1\nVerse 2\nChorus 1\nChorus 2",
+            'audio_file': audio_file,
+            'duration': 45.0
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertTrue(data.get('is_vocal_detected'))
+        self.assertEqual(len(data.get('lyrics_data')), 4)
+        self.assertIn("vocal phrases", data.get('message'))
+
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.fetch_online_synced_lyrics')
+    def test_lyrics_online_search_api_endpoint(self, mock_fetch):
+        mock_fetch.return_value = {
+            'success': True,
+            'is_synced': True,
+            'lyrics_data': [{'line': 'Sample', 'start': 2.0, 'end': 5.0}],
+            'track_name': 'Test Song',
+            'artist_name': 'Test Artist'
+        }
+
+        response = self.client.get(reverse('lyrics_online_search_api') + '?title=Test Song&artist=Test Artist')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertTrue(data.get('is_synced'))
+        self.assertEqual(len(data.get('lyrics_data')), 1)
+

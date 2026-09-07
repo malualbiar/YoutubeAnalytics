@@ -166,6 +166,211 @@ class LyricsEngineService:
         return result
 
     @classmethod
+    def detect_vocal_segments(cls, audio_path, min_silence_duration=0.35, noise_threshold_db=-30):
+        """
+        Uses vocal frequency bandpass filtering (300Hz-3400Hz) and silence detection
+        to identify active vocal singing segments vs instrumental intros, solos & breaks.
+        Returns list of dicts:
+        [{'start': 12.4, 'end': 16.8, 'duration': 4.4}, ...]
+        """
+        ffmpeg = cls.get_ffmpeg_binary()
+        audio_path = os.path.abspath(str(audio_path))
+        total_duration = cls.inspect_media_duration(audio_path)
+
+        # 1. Bandpass filter around vocal formant region (300Hz to 3800Hz)
+        # 2. Dynamic gate / compand to isolate singing energy
+        # 3. Silence detector
+        af_filter = (
+            f"bandpass=f=1850:width_type=h:w=3100,"
+            f"compand=attacks=0.03:decays=0.15:points=-80/-80|-45/-30|-20/-10|0/0,"
+            f"silencedetect=noise={noise_threshold_db}dB:d={min_silence_duration}"
+        )
+
+        cmd = [
+            ffmpeg, '-i', audio_path,
+            '-af', af_filter,
+            '-f', 'null', '-'
+        ]
+
+        try:
+            proc = subprocess.run(
+                cmd,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+                errors='ignore'
+            )
+
+            silence_ranges = []
+            cur_silence_start = None
+
+            for line in proc.stderr.splitlines():
+                if 'silence_start:' in line:
+                    m = re.search(r'silence_start:\s*([0-9.]+)', line)
+                    if m:
+                        cur_silence_start = float(m.group(1))
+                elif 'silence_end:' in line:
+                    m = re.search(r'silence_end:\s*([0-9.]+)', line)
+                    if m:
+                        end_t = float(m.group(1))
+                        start_t = cur_silence_start if cur_silence_start is not None else 0.0
+                        silence_ranges.append((start_t, end_t))
+                        cur_silence_start = None
+
+            vocal_segments = []
+            last_end = 0.0
+
+            for s_start, s_end in silence_ranges:
+                if s_start > last_end + 0.5:
+                    vocal_segments.append({
+                        'start': round(last_end, 2),
+                        'end': round(s_start, 2),
+                        'duration': round(s_start - last_end, 2)
+                    })
+                last_end = s_end
+
+            if total_duration > last_end + 0.5:
+                vocal_segments.append({
+                    'start': round(last_end, 2),
+                    'end': round(total_duration, 2),
+                    'duration': round(total_duration - last_end, 2)
+                })
+
+            valid_segments = [s for s in vocal_segments if s['duration'] >= 0.6]
+            return valid_segments if valid_segments else [{'start': 2.0, 'end': total_duration - 1.0, 'duration': total_duration - 3.0}]
+
+        except Exception:
+            return [{'start': 2.0, 'end': total_duration - 1.0, 'duration': total_duration - 3.0}]
+
+    @classmethod
+    def align_lyrics_with_vocal_segments(cls, raw_text, vocal_segments, total_duration):
+        """
+        Maps raw lyrics lines to detected vocal frequency segments, ensuring
+        no lyrics are displayed during instrumental solos, intros, and drum breaks.
+        """
+        lines = [l.strip() for l in raw_text.strip().splitlines() if l.strip()]
+        cleaned_lines = [l for l in lines if not (l.startswith('[') and l.endswith(']'))]
+        if not cleaned_lines:
+            return []
+
+        if not vocal_segments:
+            return cls.auto_distribute_raw_lyrics(raw_text, total_duration)
+
+        line_count = len(cleaned_lines)
+        seg_count = len(vocal_segments)
+
+        result = []
+
+        if line_count <= seg_count:
+            for idx, line in enumerate(cleaned_lines):
+                seg_idx = int(idx * (seg_count / line_count))
+                seg = vocal_segments[min(seg_idx, seg_count - 1)]
+                result.append({
+                    'line': line,
+                    'start': seg['start'],
+                    'end': seg['end']
+                })
+        else:
+            lines_per_seg = math.ceil(line_count / seg_count)
+            line_idx = 0
+
+            for seg in vocal_segments:
+                seg_lines = cleaned_lines[line_idx : line_idx + lines_per_seg]
+                line_idx += lines_per_seg
+                if not seg_lines:
+                    break
+
+                seg_dur = max(1.0, seg['end'] - seg['start'])
+                sub_slot = seg_dur / len(seg_lines)
+
+                for s_idx, s_line in enumerate(seg_lines):
+                    start = round(seg['start'] + (s_idx * sub_slot), 2)
+                    end = round(min(seg['end'], start + sub_slot * 0.95), 2)
+                    result.append({
+                        'line': s_line,
+                        'start': start,
+                        'end': end
+                    })
+
+        return result
+
+    @classmethod
+    def fetch_online_synced_lyrics(cls, title, artist=''):
+        """
+        Queries the free public LRCLIB database for 1-click synchronized lyrics.
+        Returns dict with success status, lyrics_data list, and raw LRC content.
+        """
+        import urllib.request
+        import urllib.parse
+        import json
+
+        title = str(title).strip()
+        artist = str(artist).strip()
+
+        if not title:
+            return {'success': False, 'message': 'Please provide a song title.'}
+
+        params = {'track_name': title}
+        if artist:
+            params['artist_name'] = artist
+
+        url = f"https://lrclib.net/api/get?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'YTQuid/1.2.0 (contact@ytquid.app)'})
+
+        try:
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                synced = data.get('syncedLyrics', '')
+                if synced:
+                    parsed = cls.parse_lrc_file(synced)
+                    return {
+                        'success': True,
+                        'is_synced': True,
+                        'lyrics_data': parsed,
+                        'lrc_text': synced,
+                        'plain_lyrics': data.get('plainLyrics', ''),
+                        'track_name': data.get('trackName', title),
+                        'artist_name': data.get('artistName', artist)
+                    }
+        except Exception:
+            pass
+
+        query_str = f"{title} {artist}".strip()
+        search_url = f"https://lrclib.net/api/search?q={urllib.parse.quote(query_str)}"
+        req_search = urllib.request.Request(search_url, headers={'User-Agent': 'YTQuid/1.2.0 (contact@ytquid.app)'})
+
+        try:
+            with urllib.request.urlopen(req_search, timeout=4) as resp:
+                results = json.loads(resp.read().decode('utf-8'))
+                for item in results:
+                    synced = item.get('syncedLyrics')
+                    if synced:
+                        parsed = cls.parse_lrc_file(synced)
+                        return {
+                            'success': True,
+                            'is_synced': True,
+                            'lyrics_data': parsed,
+                            'lrc_text': synced,
+                            'plain_lyrics': item.get('plainLyrics', ''),
+                            'track_name': item.get('trackName', title),
+                            'artist_name': item.get('artistName', artist)
+                        }
+
+                if results and results[0].get('plainLyrics'):
+                    return {
+                        'success': True,
+                        'is_synced': False,
+                        'lyrics_data': [],
+                        'plain_lyrics': results[0].get('plainLyrics'),
+                        'track_name': results[0].get('trackName', title),
+                        'artist_name': results[0].get('artistName', artist)
+                    }
+        except Exception as e:
+            return {'success': False, 'message': f'Search query failed: {str(e)}'}
+
+        return {'success': False, 'message': f'No synced lyrics found for "{title}". You can use Vocal Frequency Auto-Sync instead.'}
+
+    @classmethod
     def hex_to_ass_color(cls, hex_str, alpha=0):
         """
         Converts hex color (e.g. #00E5FF or #FFFFFF) to ASS color format &HAABBGGRR&.

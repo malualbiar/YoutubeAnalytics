@@ -28,5 +28,8 @@ urlpatterns = [
     path('studio/lyrics/<int:pk>/delete/', views.lyrics_delete_view, name='lyrics_delete'),
     path('studio/lyrics/<int:pk>/export-lrc/', views.lyrics_export_lrc_view, name='lyrics_export_lrc'),
     path('studio/lyrics/api/parse/', views.lyrics_parse_api, name='lyrics_parse_api'),
+    path('studio/lyrics/api/vocal-sync/', views.lyrics_vocal_sync_api, name='lyrics_vocal_sync_api'),
+    path('studio/lyrics/api/search-online/', views.lyrics_online_search_api, name='lyrics_online_search_api'),
 ]
+
 

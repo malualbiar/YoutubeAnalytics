@@ -149,16 +149,20 @@
                     <h3 class="text-sm font-bold text-white">Lyrics Input & Tap-to-Sync Engine</h3>
                 </div>
 
-                <!-- Import Actions -->
-                <div class="flex items-center gap-2">
+                <!-- Import & Auto Actions -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" id="searchOnlineBtn" class="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-colors flex items-center gap-1.5" title="Search millions of songs on LRCLIB">
+                        <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                        ⚡ 1-Click Search Online
+                    </button>
                     <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1">
                         <i data-lucide="file-up" class="w-3.5 h-3.5 text-cyan-400"></i>
                         Import .LRC
                         <input type="file" id="lrcFileInput" accept=".lrc,.txt" class="hidden">
                     </label>
-                    <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-colors flex items-center gap-1">
-                        <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
-                        Auto Space
+                    <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors flex items-center gap-1">
+                        <i data-lucide="wand-2" class="w-3.5 h-3.5 text-amber-400"></i>
+                        Even Space
                     </button>
                     <button type="button" id="exportLrcBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors flex items-center gap-1">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i>
@@ -182,10 +186,16 @@
                     <textarea id="rawLyricsTextarea" name="lyrics_raw_text" rows="10" placeholder="Paste your song lyrics here (one line per lyric)...&#10;&#10;[Verse 1]&#10;Starlight in the evening sky&#10;Watching silent worlds drift by&#10;Echoes of another time&#10;Whisper in this heart of mine" 
                               class="w-full p-3.5 bg-dark-850 border border-zinc-700 rounded-xl text-xs text-zinc-200 font-mono leading-relaxed placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 transition-colors"></textarea>
                     
-                    <button type="button" id="loadLyricsBtn" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="sparkles" class="w-4 h-4"></i>
-                        Load into Tap-to-Sync Studio
-                    </button>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button type="button" id="vocalSyncBtn" class="py-2.5 px-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5 border border-emerald-400/30">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>🎯 Vocal Frequency Auto-Sync</span>
+                        </button>
+                        <button type="button" id="loadLyricsBtn" class="py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-1.5">
+                            <i data-lucide="radio" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            <span>Load for Tap-to-Sync</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Right Column: Interactive Tap-to-Sync Studio & Player -->
@@ -579,6 +589,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const vocalSyncBtn = document.getElementById('vocalSyncBtn');
+    const searchOnlineBtn = document.getElementById('searchOnlineBtn');
+
     // 4. Raw Lyrics Line Counter
     rawLyricsTextarea.addEventListener('input', () => {
         const lines = rawLyricsTextarea.value.split('\n').filter(l => l.trim().length > 0);
@@ -606,6 +619,116 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSyncIndex = 0;
             renderTimelineList();
             updateSpacebarButtonText();
+            updateHiddenJson();
+        }
+    });
+
+    // 1-Click Online Synced Lyrics Search (LRCLIB)
+    searchOnlineBtn.addEventListener('click', async () => {
+        let title = songTitleInput.value.trim();
+        let artist = artistNameInput.value.trim();
+
+        if (!title) {
+            title = prompt('Enter Song Title to search online synced lyrics:');
+            if (!title) return;
+            songTitleInput.value = title;
+        }
+
+        const originalHtml = searchOnlineBtn.innerHTML;
+        searchOnlineBtn.disabled = true;
+        searchOnlineBtn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Searching LRCLIB...</span>`;
+        lucide.createIcons();
+
+        try {
+            const url = `{% url 'lyrics_online_search_api' %}?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data.success) {
+                if (data.track_name && !songTitleInput.value) songTitleInput.value = data.track_name;
+                if (data.artist_name && !artistNameInput.value) artistNameInput.value = data.artist_name;
+
+                if (data.plain_lyrics) {
+                    rawLyricsTextarea.value = data.plain_lyrics;
+                    const lines = data.plain_lyrics.split('\n').filter(l => l.trim().length > 0);
+                    lineCountBadge.textContent = `${lines.length} lines`;
+                }
+
+                if (data.is_synced && data.lyrics_data && data.lyrics_data.length > 0) {
+                    lyricsArray = data.lyrics_data;
+                    currentSyncIndex = lyricsArray.length;
+                    renderTimelineList();
+                    updateSpacebarButtonText();
+                    updateHiddenJson();
+                    drawLiveCanvas();
+                    alert(`✅ Found community-synced lyrics (${lyricsArray.length} lines) for "${data.track_name || title}"!`);
+                } else {
+                    alert(`Found plain lyrics for "${data.track_name || title}". Loaded into editor. You can now use Vocal Auto-Sync or Tap-to-Sync.`);
+                }
+            } else {
+                alert(data.message || `No synced lyrics found online for "${title}". You can use Vocal Frequency Auto-Sync instead!`);
+            }
+        } catch (err) {
+            alert('Failed to connect to lyrics database: ' + err.message);
+        } finally {
+            searchOnlineBtn.disabled = false;
+            searchOnlineBtn.innerHTML = originalHtml;
+            lucide.createIcons();
+        }
+    });
+
+    // Vocal Frequency Auto-Sync (300Hz - 3400Hz Vocal Formant Detection)
+    vocalSyncBtn.addEventListener('click', async () => {
+        const rawText = rawLyricsTextarea.value.trim();
+        if (!rawText) {
+            alert('Please paste or load song lyrics text first.');
+            rawLyricsTextarea.focus();
+            return;
+        }
+
+        const originalHtml = vocalSyncBtn.innerHTML;
+        vocalSyncBtn.disabled = true;
+        vocalSyncBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Analyzing Vocal Frequencies (300-3400Hz)...</span>`;
+        lucide.createIcons();
+
+        try {
+            const formData = new FormData();
+            formData.append('raw_text', rawText);
+            formData.append('duration', audioDuration || (audioPlayer.duration || 180.0));
+            
+            const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfTokenEl) {
+                formData.append('csrfmiddlewaretoken', csrfTokenEl.value);
+            }
+
+            if (audioInput.files && audioInput.files[0]) {
+                formData.append('audio_file', audioInput.files[0]);
+            }
+
+            const resp = await fetch(`{% url 'lyrics_vocal_sync_api' %}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await resp.json();
+
+            if (data.success && data.lyrics_data && data.lyrics_data.length > 0) {
+                lyricsArray = data.lyrics_data;
+                currentSyncIndex = lyricsArray.length;
+                renderTimelineList();
+                updateSpacebarButtonText();
+                updateHiddenJson();
+                drawLiveCanvas();
+                alert(`🎯 ${data.message || 'Auto-Sync complete! Timestamps aligned to vocal frequencies.'}\n\nYou can now listen and tap Spacebar or click any line to fine-tune!`);
+            } else {
+                alert(data.error || 'Vocal frequency detection failed.');
+            }
+        } catch (err) {
+            alert('Error during vocal sync: ' + err.message);
+        } finally {
+            vocalSyncBtn.disabled = false;
+            vocalSyncBtn.innerHTML = originalHtml;
+            lucide.createIcons();
         }
     });
 
@@ -706,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
     });
 
-    // 5. Tap-to-Sync Spacebar Recording Logic
+    // 5. Tap-to-Sync & Tap-to-Fix Spacebar Recording Logic
     function handleSyncTap() {
         if (!audioPlayer.src) {
             audioInput.click();
@@ -730,8 +853,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 lyricsArray[currentSyncIndex - 1].end = curTime;
             }
 
-            // Estimate end of current line
-            lyricsArray[currentSyncIndex].end = +(curTime + 4.5).toFixed(2);
+            // Estimate end of current line based on next line or default duration
+            if (currentSyncIndex + 1 < lyricsArray.length && lyricsArray[currentSyncIndex + 1].start > curTime) {
+                lyricsArray[currentSyncIndex].end = lyricsArray[currentSyncIndex + 1].start;
+            } else {
+                lyricsArray[currentSyncIndex].end = +(curTime + 4.5).toFixed(2);
+            }
 
             currentSyncIndex++;
             renderTimelineList();
@@ -775,13 +902,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (currentSyncIndex < lyricsArray.length) {
-            tapBtnText.textContent = `TAP SPACEBAR FOR: "${lyricsArray[currentSyncIndex].line.substring(0, 32)}..." (${currentSyncIndex + 1}/${lyricsArray.length})`;
+            tapBtnText.textContent = `TAP SPACEBAR FOR: "${lyricsArray[currentSyncIndex].line.substring(0, 30)}..." (${currentSyncIndex + 1}/${lyricsArray.length})`;
         } else {
-            tapBtnText.textContent = `ALL ${lyricsArray.length} LINES SYNCED! (CLICK TO RE-SYNC)`;
+            tapBtnText.textContent = `ALL ${lyricsArray.length} LINES SYNCED! (CLICK ANY LINE TO RE-TAP & FIX)`;
         }
     }
 
-    // 6. Render Timeline Items List
+    // 6. Render Timeline Items List with Tap-to-Fix line targeting
     function renderTimelineList() {
         syncedCount.textContent = lyricsArray.filter(l => l.start > 0).length;
         lyricsTimelineList.innerHTML = '';
@@ -790,7 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lyricsTimelineList.innerHTML = `
                 <div class="text-center py-8 text-zinc-500 text-xs">
                     <i data-lucide="list-music" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
-                    Paste lyrics on the left and click "Load into Tap-to-Sync Studio".
+                    Paste lyrics on the left and click "Load for Tap-to-Sync" or "🎯 Vocal Frequency Auto-Sync".
                 </div>
             `;
             lucide.createIcons();
@@ -801,45 +928,70 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('div');
             row.id = `lyric-line-${index}`;
             const isRecorded = item.start > 0;
-            const isCurrent = index === currentSyncIndex;
+            const isCurrentTarget = index === currentSyncIndex;
 
-            row.className = `p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs ${
-                isCurrent 
-                    ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md' 
+            row.className = `p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 text-xs ${
+                isCurrentTarget 
+                    ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-lg ring-1 ring-cyan-400/50' 
                     : isRecorded 
                         ? 'bg-dark-850/80 border-zinc-800 text-zinc-200 hover:border-zinc-700' 
                         : 'bg-dark-900/40 border-zinc-850 text-zinc-500'
             }`;
 
             row.innerHTML = `
-                <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer seek-trigger" data-time="${item.start}">
-                    <span class="w-5 h-5 rounded-full ${isRecorded ? 'bg-cyan-500/20 text-cyan-300' : 'bg-zinc-800 text-zinc-500'} font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer select-line-trigger" data-idx="${index}" title="Click to target this line for Spacebar Tap-to-Fix">
+                    <span class="w-5 h-5 rounded-full ${isCurrentTarget ? 'bg-cyan-400 text-dark-950 font-black' : (isRecorded ? 'bg-cyan-500/20 text-cyan-300' : 'bg-zinc-800 text-zinc-500')} font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
                         ${index + 1}
                     </span>
-                    <span class="font-medium truncate ${isCurrent ? 'text-cyan-300 font-bold' : ''}">${item.line}</span>
+                    <span class="font-medium truncate ${isCurrentTarget ? 'text-cyan-300 font-bold' : ''}">${item.line}</span>
+                    ${isCurrentTarget ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-cyan-400 text-dark-950 shrink-0">NEXT TAP</span>' : ''}
                 </div>
 
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="-0.2">-0.2s</button>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" class="seek-play-btn p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-cyan-300 transition-colors" data-time="${item.start}" title="Seek audio here">
+                        <i data-lucide="play" class="w-3 h-3"></i>
+                    </button>
+                    <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="-0.2" title="Shift earlier 0.2s">-0.2s</button>
                     <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-zinc-950 border border-zinc-800 ${isRecorded ? 'text-cyan-400 font-bold' : 'text-zinc-600'}">
                         ${formatTime(item.start)}
                     </span>
-                    <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="0.2">+0.2s</button>
+                    <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="0.2" title="Shift later 0.2s">+0.2s</button>
                 </div>
             `;
             lyricsTimelineList.appendChild(row);
         });
 
-        // Add event listeners for seek and nudge
-        document.querySelectorAll('.seek-trigger').forEach(el => {
+        // Add event listeners for line selection (Tap-to-Fix targeting)
+        document.querySelectorAll('.select-line-trigger').forEach(el => {
             el.addEventListener('click', () => {
-                const t = parseFloat(el.dataset.time);
+                const idx = parseInt(el.dataset.idx);
+                currentSyncIndex = idx;
+                const item = lyricsArray[idx];
+                if (item && item.start > 0 && audioPlayer.src) {
+                    audioPlayer.currentTime = Math.max(0, item.start - 0.5);
+                }
+                renderTimelineList();
+                updateSpacebarButtonText();
+            });
+        });
+
+        // Seek Audio button
+        document.querySelectorAll('.seek-play-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const t = parseFloat(btn.dataset.time);
                 if (t >= 0 && audioPlayer.src) {
                     audioPlayer.currentTime = t;
+                    if (audioPlayer.paused) {
+                        audioPlayer.play();
+                        playIcon.setAttribute('data-lucide', 'pause');
+                        lucide.createIcons();
+                    }
                 }
             });
         });
 
+        // Nudge +/- 0.2s buttons
         document.querySelectorAll('.nudge-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();

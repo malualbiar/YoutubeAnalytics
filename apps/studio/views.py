@@ -895,4 +895,87 @@ def lyrics_parse_api(request):
     return JsonResponse({'error': 'No lyrics provided'}, status=400)
 
 
+@login_required
+@require_POST
+def lyrics_vocal_sync_api(request):
+    """
+    Automatic Vocal Frequency Alignment API:
+    Isolates vocal frequency bandpass (300Hz-3400Hz), detects singing vs instrumental breaks,
+    and automatically snaps text lines to the detected vocal phrase timestamps.
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    raw_text = request.POST.get('raw_text', '').strip()
+    audio_file = request.FILES.get('audio_file')
+    duration = float(request.POST.get('duration', 180.0))
+
+    if not raw_text:
+        return JsonResponse({'error': 'Please provide song lyrics text to sync.'}, status=400)
+
+    if not audio_file:
+        # Fallback to even distribution if no audio file uploaded yet
+        distributed = LyricsEngineService.auto_distribute_raw_lyrics(raw_text, total_duration=duration)
+        return JsonResponse({
+            'success': True,
+            'lyrics_data': distributed,
+            'is_vocal_detected': False,
+            'message': 'No audio file uploaded yet. Lyrics spaced evenly across estimated duration.'
+        })
+
+    import tempfile
+    ext = os.path.splitext(audio_file.name)[1] or '.wav'
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tf:
+        for chunk in audio_file.chunks():
+            tf.write(chunk)
+        temp_audio_path = tf.name
+
+    try:
+        total_dur = LyricsEngineService.inspect_media_duration(temp_audio_path)
+        vocal_segments = LyricsEngineService.detect_vocal_segments(temp_audio_path)
+        aligned = LyricsEngineService.align_lyrics_with_vocal_segments(raw_text, vocal_segments, total_dur)
+
+        return JsonResponse({
+            'success': True,
+            'lyrics_data': aligned,
+            'vocal_segments': vocal_segments,
+            'is_vocal_detected': True,
+            'duration': total_dur,
+            'message': f'Successfully detected {len(vocal_segments)} vocal phrases and auto-aligned {len(aligned)} lyric lines!'
+        })
+    except Exception as e:
+        # Fallback gracefully to auto-distribute
+        distributed = LyricsEngineService.auto_distribute_raw_lyrics(raw_text, total_duration=duration)
+        return JsonResponse({
+            'success': True,
+            'lyrics_data': distributed,
+            'is_vocal_detected': False,
+            'message': f'Frequency detector fallback: {str(e)}'
+        })
+    finally:
+        if os.path.exists(temp_audio_path):
+            try:
+                os.remove(temp_audio_path)
+            except Exception:
+                pass
+
+
+@login_required
+def lyrics_online_search_api(request):
+    """
+    1-Click Free Synced Lyrics Database Search (LRCLIB API):
+    Queries millions of public synchronized tracks by Title and Artist.
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    title = request.GET.get('title', '') or request.POST.get('title', '')
+    artist = request.GET.get('artist', '') or request.POST.get('artist', '')
+
+    result = LyricsEngineService.fetch_online_synced_lyrics(title, artist)
+    status_code = 200 if result.get('success') else 404
+    return JsonResponse(result, status=status_code)
+
+
+
 
