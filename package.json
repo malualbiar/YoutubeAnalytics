@@ -50,5 +50,9 @@
       "!**/*.pyc",
       "!**/__pycache__/**"
     ]
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "lucide": "^1.41.0"
   }
 }

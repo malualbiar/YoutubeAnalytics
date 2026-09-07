@@ -31,10 +31,20 @@
             }
         }
     </script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons (Local bundled with CDN fallback) -->
+    <script src="/static/js/lucide.js"></script>
+    <script>
+        if (typeof lucide === 'undefined') {
+            document.write('<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"><\/script>');
+        }
+    </script>
+    <!-- Chart.js (Local bundled with CDN fallback) -->
+    <script src="/static/js/chart.umd.js"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"><\/script>');
+        }
+    </script>
     <style>
         /* Custom scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }

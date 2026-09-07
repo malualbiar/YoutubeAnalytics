@@ -21,8 +21,6 @@ if os.path.exists('.env'):
 elif os.path.exists('.env.example'):
     datas.append(('.env.example', '.'))
 
-if os.path.exists('db.sqlite3'):
-    datas.append(('db.sqlite3', '.'))
 
 
 hiddenimports = [
