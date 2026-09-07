@@ -13,4 +13,11 @@ urlpatterns = [
     path('studio/mix/<int:pk>/', views.mix_detail_view, name='mix_detail'),
     path('studio/mix/<int:pk>/delete/', views.mix_delete_view, name='mix_delete'),
     path('studio/mix/api/search/', views.mix_import_api, name='mix_import_api'),
+
+    # Short Video Generator & Multi-Clip Chopper routes
+    path('studio/shorts/', views.shorts_maker_view, name='shorts_maker'),
+    path('studio/shorts/render/', views.shorts_render_view, name='shorts_render'),
+    path('studio/shorts/<int:pk>/', views.shorts_detail_view, name='shorts_detail'),
+    path('studio/shorts/<int:pk>/delete/', views.shorts_delete_view, name='shorts_delete'),
+    path('studio/shorts/<int:pk>/export-zip/', views.shorts_export_zip_view, name='shorts_export_zip'),
 ]

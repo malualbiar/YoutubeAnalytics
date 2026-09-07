@@ -165,3 +165,108 @@ class LongMixProject(models.Model):
             f"#nonstopmix #longmix #chillmix #djmix #studybeats #continuousmix"
         )
 
+
+class ShortVideoProject(models.Model):
+    class SourceType(models.TextChoices):
+        VIDEO = 'VIDEO', 'Long Video Upload (.mp4, .mov, .mkv)'
+        AUDIO_COVER = 'AUDIO_COVER', 'Audio + Cover Art Track'
+
+    class AspectMode(models.TextChoices):
+        BLURRED_FIT = 'BLURRED_FIT', 'Blurred Ambient Background (9:16 Vertical)'
+        CENTER_CROP = 'CENTER_CROP', 'Center Crop 9:16 (Fill Full Screen)'
+        LETTERBOX = 'LETTERBOX', 'Letterbox (Black Bars)'
+
+    class ThemeStyle(models.TextChoices):
+        VIRAL_HOOK = 'VIRAL_HOOK', 'Viral Hook Banner + Smart Badges'
+        CLEAN = 'CLEAN', 'Modern Minimal (No Overlays)'
+        GLOW_NEON = 'GLOW_NEON', 'Cyber Neon Glow'
+        CHILL_LOFI = 'CHILL_LOFI', 'Aesthetic Lo-Fi / Ambient'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        RENDERING = 'RENDERING', 'Rendering'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+
+    title = models.CharField(max_length=255, default='My Viral Shorts & Reels')
+    source_type = models.CharField(
+        max_length=20,
+        choices=SourceType.choices,
+        default=SourceType.VIDEO
+    )
+    source_video = models.FileField(upload_to='studio/shorts_source/', blank=True, null=True)
+    audio_file = models.FileField(upload_to='studio/shorts_audio/', blank=True, null=True)
+    cover_image = models.ImageField(upload_to='studio/shorts_covers/', blank=True, null=True)
+
+    aspect_mode = models.CharField(
+        max_length=20,
+        choices=AspectMode.choices,
+        default=AspectMode.BLURRED_FIT
+    )
+    theme_style = models.CharField(
+        max_length=30,
+        choices=ThemeStyle.choices,
+        default=ThemeStyle.VIRAL_HOOK
+    )
+
+    duration_seconds = models.FloatField(default=0.0)
+    chop_count = models.IntegerField(default=0)
+    chops_data = models.JSONField(default=list, blank=True)
+    output_video = models.FileField(upload_to='studio/shorts_output/', blank=True, null=True)
+
+    render_status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    error_message = models.TextField(blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Short Video Project'
+        verbose_name_plural = 'Short Video Projects'
+
+    def __str__(self):
+        return f"{self.title} ({self.chop_count} chops • {self.get_source_type_display()})"
+
+    @property
+    def duration_formatted(self):
+        secs = int(self.duration_seconds or 0)
+        minutes = (secs % 3600) // 60
+        seconds = secs % 60
+        hours = secs // 3600
+        if hours > 0:
+            return f"{hours}h {minutes:02d}m {seconds:02d}s"
+        return f"{minutes:02d}m {seconds:02d}s"
+
+    @property
+    def completed_chops_count(self):
+        return sum(1 for c in (self.chops_data or []) if c.get('status') == 'COMPLETED' or c.get('output_url'))
+
+    def youtube_title_for_chop(self, chop_index=0):
+        chops = self.chops_data or []
+        chop = chops[chop_index] if chop_index < len(chops) else {}
+        part_label = f"Part {chop_index + 1}"
+        hook = chop.get('hook_text', '').strip()
+        if hook:
+            return f"{self.title} ({part_label}) - {hook} 🔥 #shorts #fyp #viral"
+        return f"{self.title} - {part_label} 🔥 #shorts #trending #newvideo"
+
+    def youtube_description_for_chop(self, chop_index=0):
+        chops = self.chops_data or []
+        chop = chops[chop_index] if chop_index < len(chops) else {}
+        part_label = f"Part {chop_index + 1}"
+        start_sec = chop.get('start_seconds', 0.0)
+        end_sec = chop.get('end_seconds', 0.0)
+        dur = round(end_sec - start_sec, 1)
+
+        return (
+            f"🔥 {self.title} - {part_label}\n\n"
+            f"Segment: {start_sec}s to {end_sec}s ({dur}s clip)\n"
+            f"Watch full version on our channel!\n\n"
+            f"👍 Like, Share & Subscribe for more daily shorts!\n\n"
+            f"#shorts #shortsvideo #reels #tiktok #viralvideo #trending #fyp"
+        )

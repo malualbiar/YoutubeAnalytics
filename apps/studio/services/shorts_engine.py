@@ -1,0 +1,345 @@
+import os
+import sys
+import shutil
+import glob
+import subprocess
+import math
+import re
+from PIL import Image, ImageFilter, ImageEnhance, ImageDraw, ImageFont
+
+from django.conf import settings
+from .renderer import VideoStudioRenderer
+
+class ShortsEngineService:
+
+    @classmethod
+    def get_ffmpeg_binary(cls):
+        return VideoStudioRenderer.get_ffmpeg_binary()
+
+    @classmethod
+    def inspect_media_duration(cls, file_path):
+        """
+        Inspects video or audio file and returns duration in seconds as float.
+        """
+        ffmpeg = cls.get_ffmpeg_binary()
+        file_path = os.path.abspath(str(file_path))
+        
+        try:
+            cmd = [ffmpeg, '-i', file_path]
+            proc = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True, errors='ignore')
+            
+            # Look for Duration: 00:03:45.67
+            match = re.search(r'Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)', proc.stderr)
+            if match:
+                hours = int(match.group(1))
+                mins = int(match.group(2))
+                secs = float(match.group(3))
+                total_seconds = hours * 3600 + mins * 60 + secs
+                return max(1.0, round(total_seconds, 2))
+        except Exception:
+            pass
+
+        return 60.0  # Safe default 60s
+
+    @classmethod
+    def generate_chop_splits(cls, total_duration, interval_seconds=15.0, hook_prefix="Wait for the end... 🔥"):
+        """
+        Generates automatic even chops for a given total duration.
+        """
+        interval = max(5.0, float(interval_seconds))
+        total = float(total_duration)
+        if total <= 0:
+            total = 60.0
+
+        chops = []
+        current_start = 0.0
+        idx = 1
+
+        while current_start < total:
+            current_end = min(total, current_start + interval)
+            dur = round(current_end - current_start, 2)
+            
+            if dur >= 3.0:  # Ignore fragments smaller than 3s
+                chops.append({
+                    'id': idx,
+                    'title': f"Part {idx}",
+                    'hook_text': f"{hook_prefix}" if idx == 1 else f"Part {idx} 🔥",
+                    'start_seconds': round(current_start, 2),
+                    'end_seconds': round(current_end, 2),
+                    'duration': dur,
+                    'output_file': '',
+                    'status': 'PENDING',
+                })
+                idx += 1
+            
+            current_start = current_end
+
+        if not chops:
+            chops.append({
+                'id': 1,
+                'title': 'Part 1',
+                'hook_text': hook_prefix,
+                'start_seconds': 0.0,
+                'end_seconds': min(total, 15.0),
+                'duration': min(total, 15.0),
+                'output_file': '',
+                'status': 'PENDING',
+            })
+
+        return chops
+
+    @classmethod
+    def prepare_overlay_banner(cls, hook_text="", part_label="", theme="VIRAL_HOOK", width=1080, height=1920, output_png_path=None):
+        """
+        Creates a high-resolution transparent RGBA PNG overlay with modern typography,
+        viral hook banner badges, and call-to-action pills for vertical 9:16 shorts.
+        """
+        if theme == 'CLEAN' and not hook_text and not part_label:
+            return None
+
+        # Create transparent canvas
+        img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        # Try to load standard TrueType font, fallback to default font
+        font_large = None
+        font_small = None
+        font_badge = None
+
+        font_names = [
+            "arialbd.ttf", "segoeuib.ttf", "calibrib.ttf", "impact.ttf",
+            "DejaVuSans-Bold.ttf", "arial.ttf", "calibri.ttf"
+        ]
+        
+        for fn in font_names:
+            try:
+                font_large = ImageFont.truetype(fn, 44)
+                font_small = ImageFont.truetype(fn, 28)
+                font_badge = ImageFont.truetype(fn, 22)
+                break
+            except Exception:
+                continue
+
+        if not font_large:
+            font_large = ImageFont.load_default()
+            font_small = font_large
+            font_badge = font_large
+
+        # 1. Top Part / Viral Hook Banner
+        if hook_text or part_label:
+            banner_y = 160
+            banner_text = hook_text.strip() if hook_text else (part_label.strip() if part_label else "WAIT FOR IT... 🔥")
+            
+            # Measure text size
+            try:
+                bbox = draw.textbbox((0, 0), banner_text, font=font_large)
+                text_w = bbox[2] - bbox[0]
+                text_h = bbox[3] - bbox[1]
+            except Exception:
+                text_w = len(banner_text) * 24
+                text_h = 44
+
+            box_padding_x = 45
+            box_padding_y = 20
+            box_w = min(width - 80, text_w + box_padding_x * 2)
+            box_h = text_h + box_padding_y * 2
+            box_x1 = (width - box_w) // 2
+            box_y1 = banner_y
+            box_x2 = box_x1 + box_w
+            box_y2 = box_y1 + box_h
+
+            # Draw background pill with glow effect
+            if theme == 'GLOW_NEON':
+                pill_bg = (10, 15, 30, 220)
+                border_color = (0, 240, 255, 255)
+                text_color = (255, 255, 255, 255)
+            elif theme == 'CHILL_LOFI':
+                pill_bg = (30, 20, 35, 210)
+                border_color = (230, 150, 210, 240)
+                text_color = (255, 245, 250, 255)
+            else:  # VIRAL_HOOK
+                pill_bg = (15, 15, 20, 230)
+                border_color = (255, 50, 80, 255)
+                text_color = (255, 255, 255, 255)
+
+            # Draw rounded rectangle pill
+            draw.rounded_rectangle([box_x1, box_y1, box_x2, box_y2], radius=24, fill=pill_bg, outline=border_color, width=3)
+
+            # Part Mini Tag above pill if part_label exists
+            if part_label:
+                part_tag = f"● {part_label.upper()} ●"
+                try:
+                    p_bbox = draw.textbbox((0, 0), part_tag, font=font_badge)
+                    p_w = p_bbox[2] - p_bbox[0]
+                except Exception:
+                    p_w = len(part_tag) * 12
+                
+                tag_x1 = (width - p_w) // 2 - 16
+                tag_y1 = box_y1 - 18
+                tag_x2 = tag_x1 + p_w + 32
+                tag_y2 = tag_y1 + 28
+                draw.rounded_rectangle([tag_x1, tag_y1, tag_x2, tag_y2], radius=10, fill=(255, 50, 80, 255))
+                draw.text((tag_x1 + 16, tag_y1 + 4), part_tag, fill=(255, 255, 255, 255), font=font_badge)
+
+            # Draw banner main text
+            text_x = (width - text_w) // 2
+            text_y = box_y1 + (box_h - text_h) // 2 - 2
+            draw.text((text_x, text_y), banner_text, fill=text_color, font=font_large)
+
+        # 2. Bottom Call to Action Pill
+        cta_text = "▶ Full Video on YouTube  •  Subscribe"
+        try:
+            c_bbox = draw.textbbox((0, 0), cta_text, font=font_small)
+            c_w = c_bbox[2] - c_bbox[0]
+            c_h = c_bbox[3] - c_bbox[1]
+        except Exception:
+            c_w = len(cta_text) * 15
+            c_h = 28
+
+        c_box_w = c_w + 50
+        c_box_h = c_h + 24
+        c_box_x1 = (width - c_box_w) // 2
+        c_box_y1 = height - 240
+        c_box_x2 = c_box_x1 + c_box_w
+        c_box_y2 = c_box_y1 + c_box_h
+
+        draw.rounded_rectangle([c_box_x1, c_box_y1, c_box_x2, c_box_y2], radius=20, fill=(10, 10, 15, 200), outline=(255, 255, 255, 80), width=2)
+        draw.text(((width - c_w) // 2, c_box_y1 + 12), cta_text, fill=(255, 255, 255, 240), font=font_small)
+
+        if output_png_path:
+            os.makedirs(os.path.dirname(os.path.abspath(output_png_path)), exist_ok=True)
+            img.save(output_png_path, format='PNG')
+            return output_png_path
+
+        return img
+
+    @classmethod
+    def render_video_chop(cls, source_video_path, output_mp4_path, start_seconds, duration_seconds, aspect_mode='BLURRED_FIT', overlay_png_path=None):
+        """
+        Renders a 1080x1920 (9:16 vertical) video chop using FFmpeg.
+        Accurately trims from start_seconds with length duration_seconds.
+        Applies blurred ambient backdrop, center crop, or letterbox, and overlays banner if given.
+        """
+        ffmpeg = cls.get_ffmpeg_binary()
+        source_video_path = os.path.abspath(str(source_video_path))
+        output_mp4_path = os.path.abspath(str(output_mp4_path))
+        os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
+
+        start_s = max(0.0, float(start_seconds))
+        dur_s = max(1.0, float(duration_seconds))
+
+        # Base filter graph for 9:16 vertical re-framing
+        if aspect_mode == 'CENTER_CROP':
+            # Scale video so height is 1920, then crop 1080x1920 from center
+            vf_base = "[0:v]scale=-1:1920,crop=1080:1920[base]"
+        elif aspect_mode == 'LETTERBOX':
+            # Scale video to fit within 1080x1920 with black bars
+            vf_base = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black[base]"
+        else:  # BLURRED_FIT (Default & Recommended)
+            # Create blurred background from source video + centered original video
+            vf_base = (
+                "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=25:5,eq=brightness=-0.25[bg]; "
+                "[0:v]scale=1080:-1[fg]; "
+                "[bg][fg]overlay=(W-w)/2:(H-h)/2[base]"
+            )
+
+        inputs = [
+            '-ss', f"{start_s:.3f}",
+            '-t', f"{dur_s:.3f}",
+            '-i', source_video_path
+        ]
+
+        if overlay_png_path and os.path.exists(str(overlay_png_path)):
+            inputs.extend(['-i', os.path.abspath(str(overlay_png_path))])
+            filter_complex = f"{vf_base}; [base][1:v]overlay=0:0[vout]"
+            map_out = '[vout]'
+        else:
+            filter_complex = f"{vf_base}"
+            map_out = '[base]'
+
+        cmd = [
+            ffmpeg, '-y',
+            *inputs,
+            '-filter_complex', filter_complex,
+            '-map', map_out,
+            '-map', '0:a?',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-movflags', '+faststart',
+            output_mp4_path
+        ]
+
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore')
+        if result.returncode != 0:
+            raise RuntimeError(f"FFmpeg video chop rendering failed: {result.stderr[-400:]}")
+
+        return output_mp4_path
+
+    @classmethod
+    def render_audio_cover_chop(cls, cover_path, audio_path, output_mp4_path, start_seconds, duration_seconds, overlay_png_path=None):
+        """
+        Renders a 1080x1920 vertical video from an audio file and cover image.
+        """
+        ffmpeg = cls.get_ffmpeg_binary()
+        cover_path = os.path.abspath(str(cover_path))
+        audio_path = os.path.abspath(str(audio_path))
+        output_mp4_path = os.path.abspath(str(output_mp4_path))
+        os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
+
+        start_s = max(0.0, float(start_seconds))
+        dur_s = max(1.0, float(duration_seconds))
+
+        temp_bg = output_mp4_path.replace('.mp4', '_canvas_bg.jpg')
+
+        try:
+            VideoStudioRenderer.prepare_9_16_background(cover_path, temp_bg)
+
+            inputs = [
+                '-loop', '1',
+                '-i', temp_bg,
+                '-ss', f"{start_s:.3f}",
+                '-t', f"{dur_s:.3f}",
+                '-i', audio_path
+            ]
+
+            if overlay_png_path and os.path.exists(str(overlay_png_path)):
+                inputs.extend(['-i', os.path.abspath(str(overlay_png_path))])
+                filter_complex = "[0:v][2:v]overlay=0:0[vout]"
+                map_args = ['-map', '[vout]', '-map', '1:a']
+            else:
+                filter_complex = None
+                map_args = ['-map', '0:v', '-map', '1:a']
+
+            cmd = [
+                ffmpeg, '-y',
+                *inputs,
+            ]
+            if filter_complex:
+                cmd.extend(['-filter_complex', filter_complex])
+            cmd.extend([
+                *map_args,
+                '-c:v', 'libx264',
+                '-tune', 'stillimage',
+                '-preset', 'fast',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '192k',
+                '-shortest',
+                '-movflags', '+faststart',
+                output_mp4_path
+            ])
+
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore')
+            if result.returncode != 0:
+                raise RuntimeError(f"FFmpeg audio/cover chop rendering failed: {result.stderr[-400:]}")
+
+            return output_mp4_path
+        finally:
+            if os.path.exists(temp_bg):
+                try:
+                    os.remove(temp_bg)
+                except Exception:
+                    pass

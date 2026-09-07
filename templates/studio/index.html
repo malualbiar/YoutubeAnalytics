@@ -25,8 +25,28 @@
     </div>
 
     <!-- Studio Hero & Mode Switcher -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Card 1: Non-Stop Long Mix Maker -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Card 1: Shorts & Reels Video Chopper -->
+        <a href="{% url 'shorts_maker' %}" class="glass-panel p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-dark-900 via-amber-950/20 to-dark-900 hover:border-amber-500/70 transition-all group relative overflow-hidden shadow-xl">
+            <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-colors pointer-events-none"></div>
+            <div class="flex items-start justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 group-hover:scale-110 transition-transform">
+                    <i data-lucide="scissors" class="w-6 h-6"></i>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    VIRAL 9:16
+                </span>
+            </div>
+            <div class="mt-4">
+                <h3 class="text-base font-bold text-white group-hover:text-amber-300 transition-colors flex items-center gap-2">
+                    Shorts & Reels Chopper
+                    <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                </h3>
+                <p class="text-xs text-zinc-400 mt-1">Chop 1 long video into multiple 9:16 vertical shorts with interactive timeline, movable boundaries, and live preview.</p>
+            </div>
+        </a>
+
+        <!-- Card 2: Non-Stop Long Mix Maker -->
         <a href="{% url 'mix_maker' %}" class="glass-panel p-6 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-dark-900 via-purple-950/20 to-dark-900 hover:border-purple-500/60 transition-all group relative overflow-hidden shadow-xl">
             <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors pointer-events-none"></div>
             <div class="flex items-start justify-between">
@@ -42,26 +62,86 @@
                     Non-Stop Long Mix Maker
                     <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                 </h3>
-                <p class="text-xs text-zinc-400 mt-1">Blend multiple songs into continuous DJ long-mixes with smooth crossfades, automatic YouTube chapters, and 1080p video rendering.</p>
+                <p class="text-xs text-zinc-400 mt-1">Blend multiple tracks into continuous DJ long-mixes with smooth crossfades and automatic YouTube chapters.</p>
             </div>
         </a>
 
-        <!-- Card 2: 1-Hour Single Loop Factory -->
+        <!-- Card 3: 1-Hour Single Loop Factory -->
         <div class="glass-panel p-6 rounded-2xl border border-rose-500/20 bg-gradient-to-br from-dark-900 via-rose-950/10 to-dark-900 shadow-xl relative overflow-hidden">
             <div class="flex items-start justify-between">
                 <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
                     <i data-lucide="repeat" class="w-6 h-6"></i>
                 </div>
                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                    WATCH-TIME ENGINE
+                    4,000 HRS
                 </span>
             </div>
             <div class="mt-4">
-                <h3 class="text-base font-bold text-white">1-Hour Study / Chill Loop Factory</h3>
-                <p class="text-xs text-zinc-400 mt-1">Turn a single track into a seamless 60-minute extended loop or a 15-second YouTube Shorts hook with visualizer.</p>
+                <h3 class="text-base font-bold text-white">1-Hour Loop Factory</h3>
+                <p class="text-xs text-zinc-400 mt-1">Turn a single track into a seamless 60-minute extended loop or a 15-second visualizer hook for YouTube.</p>
             </div>
         </div>
     </div>
+
+    <!-- Shorts & Reels Projects Section (if any exist) -->
+    {% if short_projects %}
+    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+        <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div>
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="scissors" class="w-4 h-4 text-amber-400"></i>
+                    Shorts & Reels Projects ({{ short_projects.count }})
+                </h3>
+                <p class="text-xs text-zinc-400">Multi-clip 9:16 vertical video packages ready for upload</p>
+            </div>
+            <a href="{% url 'shorts_maker' %}" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                Chop New Video
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for s in short_projects %}
+            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-amber-500/40 transition-all flex flex-col justify-between space-y-3 group">
+                <div class="flex items-start gap-3">
+                    <div class="w-16 h-16 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-700/60 flex items-center justify-center">
+                        {% if s.cover_image %}
+                        <img src="{{ s.cover_image.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <i data-lucide="film" class="w-7 h-7 text-amber-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-bold text-white group-hover:text-amber-300 transition-colors line-clamp-1">
+                            {{ s.title }}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
+                            <span class="text-amber-400 font-bold">{{ s.chop_count }} clips</span>
+                            <span>•</span>
+                            <span>{{ s.duration_formatted }}</span>
+                        </div>
+                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-zinc-400 font-mono">
+                            {{ s.get_aspect_mode_display|truncatechars:22 }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
+                    <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                        Open Shorts Gallery →
+                    </a>
+                    <form method="POST" action="{% url 'shorts_delete' s.id %}" onsubmit="return confirm('Delete shorts project?');" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="p-1 text-zinc-500 hover:text-red-400" title="Delete Project">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Non-Stop Mix Projects Section (if any exist) -->
     {% if mix_projects %}

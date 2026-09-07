@@ -114,10 +114,13 @@
                         <i id="studio-menu-chevron" data-lucide="chevron-down" class="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 {% if not 'studio' in request.resolver_match.url_name and not 'mix' in request.resolver_match.url_name and not 'radar' in request.resolver_match.url_name %}-rotate-90{% endif %}"></i>
                     </button>
 
-                    <div id="studio-menu-items" class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-purple-500/20 ml-4 mt-1 {% if not 'studio' in request.resolver_match.url_name and not 'mix' in request.resolver_match.url_name and not 'radar' in request.resolver_match.url_name %}hidden{% endif %}">
-                        <a href="{% url 'studio_home' %}" class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all {% if request.resolver_match.url_name == 'studio_home' %}bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40{% endif %}">
-                            <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
-                            1-Hour Loop Studio
+                    <div id="studio-menu-items" class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-purple-500/20 ml-4 mt-1 {% if not 'studio' in request.resolver_match.url_name and not 'mix' in request.resolver_match.url_name and not 'radar' in request.resolver_match.url_name and not 'shorts' in request.resolver_match.url_name %}hidden{% endif %}">
+                        <a href="{% url 'shorts_maker' %}" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all {% if 'shorts' in request.resolver_match.url_name %}bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40{% endif %}">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="scissors" class="w-3.5 h-3.5 text-amber-400"></i>
+                                Shorts & Reels Chopper
+                            </div>
+                            <span class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-500/30">9:16</span>
                         </a>
 
                         <a href="{% url 'mix_maker' %}" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all {% if 'mix' in request.resolver_match.url_name %}bg-purple-500/15 text-purple-300 border border-purple-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40{% endif %}">
@@ -126,6 +129,11 @@
                                 Non-Stop Mix Studio
                             </div>
                             <span class="bg-purple-500/20 text-purple-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-purple-500/30">DJ</span>
+                        </a>
+
+                        <a href="{% url 'studio_home' %}" class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all {% if request.resolver_match.url_name == 'studio_home' %}bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40{% endif %}">
+                            <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
+                            1-Hour Loop Studio
                         </a>
 
                         <a href="{% url 'radar_feed' %}" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all {% if 'radar' in request.resolver_match.url_name %}bg-violet-500/15 text-violet-300 border border-violet-500/30 shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40{% endif %}">

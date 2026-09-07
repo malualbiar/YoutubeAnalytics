@@ -34,13 +34,18 @@ Get the latest version of YT Quid for Windows directly from the GitHub releases:
 - **Lossless Extraction**: 1-click lossless WAV / MP3 audio downloader powered by `yt-dlp`.
 - **Direct Studio Bridge**: 1-click export from Radar into the Video Studio.
 
-### 3. 🎬 Video Studio & Long Mix Engine (`/studio/`)
-- **Automated FFmpeg Video Rendering**:
-  - **1-Hour Study/Chill Loops**: 60-minute seamless audio loops with darkened 16:9 blurred canvas and high-res artwork.
-  - **1080p Official Visualizers**: Full-song visualizer video.
-  - **15s YouTube Shorts Hooks**: 9:16 vertical hook video with artwork.
-  - **Non-Stop Continuous Mixes**: DJ-style seamless crossfades with 5 transition curves (Equal-Power Quarter-Sine, Linear, Triangular, Exponential, Quick Club Cut).
-- **Automated YouTube Metadata**: Generates SEO titles, timestamped chapters, tags, and descriptions.
+### 3. 🎬 Creator Studio & Viral Shorts Factory (`/studio/`)
+- **Short Video Generator & Multi-Clip Chopper (`/studio/shorts/`)**:
+  - **1 Long Video → Multiple Shorts**: Upload any long video (.mp4, .mov, .mkv) or track and chop it into multiple vertical 9:16 clips (15s, 30s, 60s, or custom intervals).
+  - **Move & Preview Chops**: Interactive visual timeline to adjust boundaries, reorder chops, and preview segments in the player before rendering.
+  - **9:16 Vertical Re-Framing**: Blurred ambient backdrop, center crop, or letterbox modes.
+  - **Viral Hook Badges & Typography**: Custom banner pills (`"Wait for the beat drop! 🎧"`), top part badges, and channel watermark CTA.
+  - **Batch & ZIP Export**: Download individual vertical shorts or all chops in a single ZIP package.
+- **Non-Stop Continuous Mix Maker (`/studio/mix/`)**:
+  - DJ-style seamless multi-track blending with 5 crossfade curves (Equal-Power Quarter-Sine, Linear, Triangular, Exponential, Quick Club Cut).
+  - Automatic YouTube chapters and descriptions generator.
+- **1-Hour Extended Study Loops & Visualizers**:
+  - 60-minute seamless watch-time loops and 1080p official visualizers.
 
 ---
 

@@ -1,6 +1,7 @@
 import io
 import wave
 import struct
+from unittest.mock import patch
 from PIL import Image
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -27,7 +28,14 @@ class StudioViewsTestCase(TestCase):
         self.assertContains(response, 'YouTube Video Studio')
         self.assertContains(response, '1-Hour Study / Chill Loop')
 
-    def test_studio_render_view(self):
+    @patch.object(VideoStudioRenderer, 'render_visualizer')
+    def test_studio_render_view(self, mock_render_vis):
+        def fake_render(artwork, audio, out_path):
+            with open(out_path, 'wb') as f:
+                f.write(b'dummy video content')
+            return out_path
+        mock_render_vis.side_effect = fake_render
+
         # Generate dummy 1-second WAV
         wav_buf = io.BytesIO()
         with wave.open(wav_buf, 'wb') as wf:
