@@ -6,7 +6,7 @@ Designed specifically for music managers, record labels, and artists to track Yo
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 1. **Artist & Channel Management**:
    - Add/edit artists and connect official YouTube channels via channel URL, `@handle`, or raw Channel ID (`UC...`).
@@ -41,7 +41,7 @@ Designed specifically for music managers, record labels, and artists to track Yo
 
 ---
 
-## 🚀 Quick Start (Local Setup)
+## Quick Start (Local Setup)
 
 ### 1. Prerequisites
 - Python 3.10+ installed
@@ -72,7 +72,7 @@ Open **`http://127.0.0.1:8000/`** in your browser.
 
 ---
 
-## 🔑 Demo Accounts
+## Demo Accounts
 
 The database comes pre-seeded with realistic artists (*Luna Vance*, *Kairo Beats*, *Nova Sound*, *Aria Vega*), 22+ songs, 30 days of historical snapshots, and 3 demo user roles:
 
@@ -110,7 +110,7 @@ The database comes pre-seeded with realistic artists (*Luna Vance*, *Kairo Beats
 
 ---
 
-## 🧪 Running Automated Tests
+## Running Automated Tests
 
 Run the complete test suite (18 unit & view integration tests):
 ```bash
@@ -119,7 +119,7 @@ python manage.py test apps.authentication.test_auth apps.artists.test_artists ap
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 YoutubeAnalytics/
