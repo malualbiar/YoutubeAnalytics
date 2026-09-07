@@ -13,10 +13,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <a href="{% url 'studio_home' %}?tab=lyrics" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors">
+            <a href="{% url 'studio_home' %}?tab=lyrics" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 Studio Dashboard
             </a>
-            <a href="https://studio.youtube.com" target="_blank" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-colors">
+            <a href="https://studio.youtube.com" target="_blank" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 YouTube Studio
             </a>
         </div>
@@ -27,16 +27,16 @@
         {% csrf_token %}
         <input type="hidden" name="lyrics_data" id="lyricsDataInput" value="[]">
 
-        <!-- STEP 1: Media & Live Video Preview (Top of page) -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-5">
+        <!-- STEP 1: Media & Live Video Preview -->
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
+                <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
                     <h3 class="text-sm font-bold text-white">Media Files & Live Video Preview</h3>
                 </div>
                 <div class="flex items-center gap-2">
                     <label class="text-xs text-zinc-400">Aspect Ratio:</label>
-                    <select name="aspect_ratio" id="aspectRatioSelect" class="px-2.5 py-1 bg-dark-850 border border-zinc-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500">
+                    <select name="aspect_ratio" id="aspectRatioSelect" class="px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
                         <option value="16:9" selected>16:9 Landscape (YouTube)</option>
                         <option value="9:16">9:16 Vertical (Shorts / Reels)</option>
                     </select>
@@ -51,13 +51,13 @@
                         <div class="space-y-1">
                             <label class="text-xs font-bold text-zinc-300">Song Title <span class="text-rose-400">*</span></label>
                             <input type="text" name="title" id="songTitleInput" required placeholder="e.g. Midnight Waves" 
-                                   class="w-full px-3 py-2 bg-dark-850 border border-zinc-700 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500">
+                                   class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-xs font-bold text-zinc-300">Artist Name</label>
                             <input type="text" name="artist_name" id="artistNameInput" placeholder="e.g. Luna Echoes" 
-                                   class="w-full px-3 py-2 bg-dark-850 border border-zinc-700 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500">
+                                   class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                         </div>
                     </div>
 
@@ -66,16 +66,16 @@
                         <!-- Audio File -->
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-zinc-300">Audio Track (.mp3, .wav) <span class="text-rose-400">*</span></label>
-                            <div id="audioDropZone" class="border border-dashed border-zinc-700 hover:border-cyan-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-dark-850">
+                            <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950">
                                 <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden" required>
                                 
                                 <div id="audioEmpty" class="py-2">
                                     <p class="text-xs font-bold text-white">Select Audio File</p>
-                                    <p class="text-[10px] text-zinc-400 mt-0.5">MP3, WAV, AAC, or FLAC</p>
+                                    <p class="text-[10px] text-zinc-500 mt-0.5">MP3, WAV, AAC, or FLAC</p>
                                 </div>
 
                                 <div id="audioSelected" class="hidden">
-                                    <p id="audioFileName" class="text-xs font-bold text-cyan-400 truncate">audio.mp3</p>
+                                    <p id="audioFileName" class="text-xs font-bold text-white truncate">audio.mp3</p>
                                     <p id="audioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
                                 </div>
                             </div>
@@ -84,16 +84,16 @@
                         <!-- Cover Artwork -->
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-zinc-300">Cover Artwork (Optional)</label>
-                            <div id="coverDropZone" class="border border-dashed border-zinc-700 hover:border-cyan-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-dark-850">
+                            <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950">
                                 <input type="file" name="background_image" id="coverInput" accept="image/*" class="hidden">
                                 
                                 <div id="coverEmpty" class="py-2">
                                     <p class="text-xs font-bold text-white">Select Cover Image</p>
-                                    <p class="text-[10px] text-zinc-400 mt-0.5">Square album art or wallpaper</p>
+                                    <p class="text-[10px] text-zinc-500 mt-0.5">Square album art or wallpaper</p>
                                 </div>
 
                                 <div id="coverSelected" class="hidden flex items-center justify-center gap-2">
-                                    <img id="coverPreviewImg" class="w-7 h-7 rounded object-cover border border-zinc-700" src="" alt="Cover">
+                                    <img id="coverPreviewImg" class="w-7 h-7 rounded object-cover border border-zinc-800" src="" alt="Cover">
                                     <p id="coverFileName" class="text-xs font-bold text-zinc-200 truncate">cover.jpg</p>
                                 </div>
                             </div>
@@ -101,14 +101,14 @@
                     </div>
                 </div>
 
-                <!-- Right: Live Video Preview Canvas (Placed at Top) -->
+                <!-- Right: Live Video Preview Canvas -->
                 <div class="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
                     <div class="flex items-center justify-between w-full text-[11px] text-zinc-400 px-1">
                         <span class="font-bold text-zinc-300">Live Video Preview</span>
-                        <span id="previewAspectBadge" class="font-mono text-cyan-400 font-bold">16:9 HD</span>
+                        <span id="previewAspectBadge" class="font-mono text-zinc-300 font-semibold">16:9 HD</span>
                     </div>
 
-                    <div id="previewFrame" class="w-full aspect-video bg-dark-900 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-lg transition-all">
+                    <div id="previewFrame" class="w-full aspect-video bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-lg transition-all">
                         <canvas id="livePreviewCanvas" width="960" height="540" class="w-full h-full object-contain"></canvas>
                     </div>
 
@@ -118,26 +118,26 @@
         </div>
 
         <!-- STEP 2: Lyrics Sync & Tap-to-Fix Studio -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-5">
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
+                <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
                     <h3 class="text-sm font-bold text-white">Lyrics Input & Synchronization</h3>
                 </div>
 
                 <!-- Utility actions -->
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <button type="button" id="searchOnlineBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors" title="Search LRCLIB">
+                    <button type="button" id="searchOnlineBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors" title="Search LRCLIB">
                         Search Online (LRCLIB)
                     </button>
-                    <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold cursor-pointer transition-colors">
+                    <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 cursor-pointer transition-colors">
                         Import .LRC
                         <input type="file" id="lrcFileInput" accept=".lrc,.txt" class="hidden">
                     </label>
-                    <button type="button" id="exportLrcBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors">
+                    <button type="button" id="exportLrcBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                         Export .LRC
                     </button>
-                    <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors">
+                    <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                         Even Space
                     </button>
                 </div>
@@ -147,13 +147,13 @@
             <div id="aiProgressBarContainer" class="hidden p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 transition-all">
                 <div class="flex items-center justify-between text-xs">
                     <span id="aiProgressStatus" class="text-zinc-200 font-semibold flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         Transcribing song audio with Whisper AI...
                     </span>
-                    <span id="aiProgressPercent" class="text-cyan-400 font-mono font-bold">0%</span>
+                    <span id="aiProgressPercent" class="text-emerald-400 font-mono font-bold">0%</span>
                 </div>
                 <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div id="aiProgressBarFill" class="h-full bg-cyan-500 transition-all duration-300 w-0"></div>
+                    <div id="aiProgressBarFill" class="h-full bg-emerald-500 transition-all duration-300 w-0"></div>
                 </div>
             </div>
 
@@ -161,8 +161,9 @@
                 <!-- Left: AI Transcribe & Raw Lyrics Textarea -->
                 <div class="lg:col-span-5 space-y-3">
                     <!-- Primary AI Transcribe Action -->
-                    <button type="button" id="aiTranscribeBtn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
-                        <span>AI Transcribe & Sync Audio (AI / Suno Songs)</span>
+                    <button type="button" id="aiTranscribeBtn" class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700/60 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-zinc-300"></i>
+                        <span>AI Transcribe & Sync Audio</span>
                     </button>
 
                     <div class="flex items-center justify-between">
@@ -171,66 +172,59 @@
                     </div>
 
                     <textarea id="rawLyricsTextarea" name="lyrics_raw_text" rows="7" placeholder="Paste lyrics or click 'AI Transcribe' above to auto-generate short song bars..." 
-                              class="w-full p-3 bg-dark-850 border border-zinc-700 rounded-xl text-xs text-zinc-200 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-cyan-500"></textarea>
+                              class="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-zinc-600"></textarea>
                     
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" id="vocalSyncBtn" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1">
-                            <span>Vocal Auto-Sync</span>
-                        </button>
-                        <button type="button" id="loadLyricsBtn" class="py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-1">
-                            <span>Load for Tap-to-Sync</span>
+                    <div class="space-y-2">
+                        <button type="button" id="vocalSyncBtn" class="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700/60 transition-colors flex items-center justify-center gap-1.5">
+                            <i data-lucide="activity" class="w-3.5 h-3.5 text-zinc-400"></i>
+                            <span>Vocal Frequency Auto-Sync</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Right: Audio Player & Tap-to-Fix Studio -->
+                <!-- Right: Audio Player & Timeline View -->
                 <div class="lg:col-span-7 space-y-3 bg-zinc-950 p-4 rounded-xl border border-zinc-800">
                     <!-- Player Controls -->
                     <div class="space-y-2">
                         <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-white uppercase tracking-wider">Tap-To-Sync Player</span>
+                            <span class="font-bold text-white uppercase tracking-wider">Audio Player</span>
                             <div class="flex items-center gap-1 text-[10px]">
-                                <span class="text-zinc-400">Speed:</span>
-                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-bold" data-speed="0.75">0.75x</button>
-                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-bold" data-speed="1.0">1.0x</button>
-                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-bold" data-speed="1.25">1.25x</button>
+                                <span class="text-zinc-500">Speed:</span>
+                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="0.75">0.75x</button>
+                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold" data-speed="1.0">1.0x</button>
+                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="1.25">1.25x</button>
                             </div>
                         </div>
 
                         <!-- Audio Playback Widget -->
-                        <div class="bg-dark-850 p-3 rounded-xl border border-zinc-800 space-y-2">
+                        <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 space-y-2">
                             <audio id="audioPlayer" class="hidden" preload="auto"></audio>
                             
                             <div class="flex items-center gap-3">
-                                <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-dark-950 font-bold flex items-center justify-center shrink-0">
+                                <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center shrink-0 transition-colors">
                                     <i data-lucide="play" class="w-4 h-4 fill-current" id="playIcon"></i>
                                 </button>
                                 
                                 <div class="flex-1 space-y-1">
                                     <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                                        <span id="currentTimeDisplay" class="text-cyan-400 font-bold">00:00.00</span>
+                                        <span id="currentTimeDisplay" class="text-zinc-200 font-semibold">00:00.00</span>
                                         <span id="totalDurationDisplay">00:00.00</span>
                                     </div>
                                     <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.01" 
-                                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+                                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Big Spacebar Tap Button -->
-                        <button type="button" id="spacebarTapBtn" class="w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-sm rounded-xl shadow transition-colors flex items-center justify-center gap-2">
-                            <span id="tapBtnText">TAP SPACEBAR ON LYRIC HIT (Line 1)</span>
-                        </button>
                     </div>
 
                     <!-- Synchronized Lyric Lines List -->
                     <div class="space-y-1.5 pt-1">
                         <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
                             <span>Synced Timeline (<span id="syncedCount">0</span> lines)</span>
-                            <span>Click line to select for Spacebar Tap-to-Fix</span>
+                            <span class="text-zinc-500">Preview & adjust timings</span>
                         </div>
 
-                        <div id="lyricsTimelineList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        <div id="lyricsTimelineList" class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                             <div class="text-center py-6 text-zinc-500 text-xs">
                                 Click "AI Transcribe" or paste lyrics to start.
                             </div>
@@ -241,10 +235,10 @@
         </div>
 
         <!-- STEP 3: Typography Style & Settings -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-5">
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">3</span>
+                <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">3</span>
                     <h3 class="text-sm font-bold text-white">Visual Typography & Settings</h3>
                 </div>
             </div>
@@ -252,16 +246,16 @@
             <!-- Animation Style Selector Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <!-- Karaoke Wipe -->
-                <label class="style-card p-3 rounded-xl border-2 border-cyan-500 bg-cyan-500/10 cursor-pointer flex flex-col justify-between" data-style="KARAOKE_WIPE">
+                <label class="style-card p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between" data-style="KARAOKE_WIPE">
                     <input type="radio" name="animation_style" value="KARAOKE_WIPE" class="hidden" checked>
                     <div>
-                        <span class="text-xs font-bold text-cyan-300">Karaoke Wipe</span>
+                        <span class="text-xs font-bold text-white">Karaoke Wipe</span>
                         <p class="text-[11px] text-zinc-400 mt-1">Word-by-word active color wipe.</p>
                     </div>
                 </label>
 
                 <!-- Rolling 3-Line -->
-                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer flex flex-col justify-between" data-style="ROLLING_3LINE">
+                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="ROLLING_3LINE">
                     <input type="radio" name="animation_style" value="ROLLING_3LINE" class="hidden">
                     <div>
                         <span class="text-xs font-bold text-white">Rolling 3-Line</span>
@@ -270,7 +264,7 @@
                 </label>
 
                 <!-- Cyber Neon -->
-                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer flex flex-col justify-between" data-style="CYBER_NEON">
+                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CYBER_NEON">
                     <input type="radio" name="animation_style" value="CYBER_NEON" class="hidden">
                     <div>
                         <span class="text-xs font-bold text-white">Cyber Neon</span>
@@ -279,7 +273,7 @@
                 </label>
 
                 <!-- Cinematic Minimal -->
-                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer flex flex-col justify-between" data-style="CINEMATIC">
+                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CINEMATIC">
                     <input type="radio" name="animation_style" value="CINEMATIC" class="hidden">
                     <div>
                         <span class="text-xs font-bold text-white">Cinematic Serif</span>
@@ -293,7 +287,7 @@
                 <!-- Font Family -->
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-zinc-300">Font</label>
-                    <select name="font_family" id="fontFamilySelect" class="w-full px-2.5 py-1.5 bg-dark-850 border border-zinc-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500">
+                    <select name="font_family" id="fontFamilySelect" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
                         <option value="Arial" selected>Arial</option>
                         <option value="Impact">Impact</option>
                         <option value="Montserrat">Montserrat</option>
@@ -307,18 +301,19 @@
                 <div class="space-y-1">
                     <div class="flex items-center justify-between">
                         <label class="text-xs font-bold text-zinc-300">Font Size</label>
-                        <span id="fontSizeDisplay" class="text-xs font-mono text-cyan-400 font-bold">48px</span>
+                        <span id="fontSizeDisplay" class="text-xs font-mono text-zinc-200 font-semibold">48px</span>
                     </div>
                     <input type="range" name="font_size" id="fontSizeSlider" min="28" max="76" value="48" step="2"
-                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                 </div>
 
                 <!-- Position Mode -->
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-zinc-300">Position</label>
-                    <select name="position_mode" id="positionModeSelect" class="w-full px-2.5 py-1.5 bg-dark-850 border border-zinc-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500">
-                        <option value="CENTER" selected>Center Screen</option>
-                        <option value="BOTTOM">Bottom Subtitle</option>
+                    <select name="position_mode" id="positionModeSelect" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
+                        <option value="TOP">Top</option>
+                        <option value="CENTER" selected>Center</option>
+                        <option value="BOTTOM">Bottom</option>
                     </select>
                 </div>
 
@@ -327,7 +322,7 @@
                     <label class="text-xs font-bold text-zinc-300">Active Highlight</label>
                     <div class="flex items-center gap-1.5">
                         <input type="color" name="highlight_color" id="highlightColorPicker" value="#00E5FF" class="w-7 h-7 rounded cursor-pointer border-0">
-                        <input type="text" id="highlightColorHex" value="#00E5FF" class="w-full px-2 py-1 bg-dark-850 border border-zinc-700 rounded-lg text-xs font-mono text-white">
+                        <input type="text" id="highlightColorHex" value="#00E5FF" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-white">
                     </div>
                 </div>
 
@@ -336,7 +331,7 @@
                     <label class="text-xs font-bold text-zinc-300">Base Text</label>
                     <div class="flex items-center gap-1.5">
                         <input type="color" name="text_color" id="textColorPicker" value="#FFFFFF" class="w-7 h-7 rounded cursor-pointer border-0">
-                        <input type="text" id="textColorHex" value="#FFFFFF" class="w-full px-2 py-1 bg-dark-850 border border-zinc-700 rounded-lg text-xs font-mono text-white">
+                        <input type="text" id="textColorHex" value="#FFFFFF" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-white">
                     </div>
                 </div>
             </div>
@@ -349,7 +344,7 @@
                 <p class="text-xs text-zinc-400">1080p high quality video rendered locally.</p>
             </div>
 
-            <button type="submit" id="renderSubmitBtn" class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-sm rounded-xl transition-colors flex items-center justify-center gap-2">
+            <button type="submit" id="renderSubmitBtn" class="px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2">
                 <span>Render Synced Lyric Video</span>
             </button>
         </div>
@@ -384,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const rawLyricsTextarea = document.getElementById('rawLyricsTextarea');
     const lineCountBadge = document.getElementById('lineCountBadge');
-    const loadLyricsBtn = document.getElementById('loadLyricsBtn');
     const autoDistributeBtn = document.getElementById('autoDistributeBtn');
     const lrcFileInput = document.getElementById('lrcFileInput');
     const exportLrcBtn = document.getElementById('exportLrcBtn');
@@ -394,8 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentTimeDisplay = document.getElementById('currentTimeDisplay');
     const totalDurationDisplay = document.getElementById('totalDurationDisplay');
     const audioScrubber = document.getElementById('audioScrubber');
-    const spacebarTapBtn = document.getElementById('spacebarTapBtn');
-    const tapBtnText = document.getElementById('tapBtnText');
     const lyricsTimelineList = document.getElementById('lyricsTimelineList');
     const syncedCount = document.getElementById('syncedCount');
     const lyricsDataInput = document.getElementById('lyricsDataInput');
@@ -499,9 +491,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const speed = parseFloat(btn.dataset.speed);
             audioPlayer.playbackRate = speed;
             document.querySelectorAll('.speed-btn').forEach(b => {
-                b.className = "speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px] font-bold";
+                b.className = "speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold";
             });
-            btn.className = "speed-btn px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold";
+            btn.className = "speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold";
         });
     });
 
@@ -517,11 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!aiProgressBarContainer) return;
 
         aiProgressBarContainer.classList.remove('hidden');
-        aiProgressBarFill.className = "h-full bg-cyan-500 transition-all duration-300";
+        aiProgressBarFill.className = "h-full bg-emerald-500 transition-all duration-300";
         aiProgressBarFill.style.width = "6%";
-        aiProgressPercent.className = "text-cyan-400 font-mono font-bold";
+        aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
         aiProgressPercent.textContent = "6%";
-        aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> ${statusMessage}`;
+        aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ${statusMessage}`;
 
         let currentPct = 6;
         const intervalMs = 250;
@@ -548,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(() => {
             aiProgressBarContainer.classList.add('hidden');
-            aiProgressPercent.className = "text-cyan-400 font-mono font-bold";
+            aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
         }, 3500);
     }
 
@@ -562,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(() => {
             aiProgressBarContainer.classList.add('hidden');
-            aiProgressPercent.className = "text-cyan-400 font-mono font-bold";
+            aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
         }, 4000);
     }
 
@@ -609,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     lyricsArray = data.lyrics_data;
                     currentSyncIndex = lyricsArray.length;
                     renderTimelineList();
-                    updateSpacebarButtonText();
                     updateHiddenJson();
                     drawLiveCanvas();
 
@@ -629,34 +620,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Raw Lyrics Line Counter
+    // 4. Raw Lyrics Line Counter & Auto-sync on text entry
     rawLyricsTextarea.addEventListener('input', () => {
-        const lines = rawLyricsTextarea.value.split('\n').filter(l => l.trim().length > 0);
-        lineCountBadge.textContent = `${lines.length} lines`;
-    });
-
-    // Load Lyrics into Sync Engine
-    loadLyricsBtn.addEventListener('click', () => {
         const text = rawLyricsTextarea.value.trim();
-        if (!text) {
-            alert('Please paste song lyrics first.');
-            return;
-        }
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        lineCountBadge.textContent = `${lines.length} lines`;
 
-        // Check if LRC format
         if (text.includes('[') && text.includes(']')) {
             parseLrcString(text);
-        } else {
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            lyricsArray = lines.map(line => ({
-                line: line,
-                start: 0.0,
-                end: 0.0
-            }));
-            currentSyncIndex = 0;
-            renderTimelineList();
-            updateSpacebarButtonText();
-            updateHiddenJson();
         }
     });
 
@@ -695,7 +666,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     lyricsArray = data.lyrics_data;
                     currentSyncIndex = lyricsArray.length;
                     renderTimelineList();
-                    updateSpacebarButtonText();
                     updateHiddenJson();
                     drawLiveCanvas();
                     completeProgress(`Found ${lyricsArray.length} synced lines for "${data.track_name || title}"!`);
@@ -714,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Vocal Frequency Auto-Sync (300Hz - 3400Hz Vocal Formant Detection)
+    // Vocal Frequency Auto-Sync
     vocalSyncBtn.addEventListener('click', async () => {
         const rawText = rawLyricsTextarea.value.trim();
         if (!rawText) {
@@ -726,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalHtml = vocalSyncBtn.innerHTML;
         vocalSyncBtn.disabled = true;
         vocalSyncBtn.innerHTML = `<span>Analyzing Vocals...</span>`;
-        startProgress('Analyzing vocal frequencies & syllable boundaries (300-3400Hz)...', 4);
+        startProgress('Analyzing vocal frequencies & syllable boundaries...', 4);
 
         try {
             const formData = new FormData();
@@ -753,7 +723,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 lyricsArray = data.lyrics_data;
                 currentSyncIndex = lyricsArray.length;
                 renderTimelineList();
-                updateSpacebarButtonText();
                 updateHiddenJson();
                 drawLiveCanvas();
                 completeProgress('Vocal Auto-Sync complete! Timestamps aligned.');
@@ -816,14 +785,18 @@ document.addEventListener('DOMContentLoaded', () => {
         lyricsArray = parsed;
         currentSyncIndex = lyricsArray.length;
         renderTimelineList();
-        updateSpacebarButtonText();
         updateHiddenJson();
+        drawLiveCanvas();
     }
 
     // Auto-Distribute Timestamps
     autoDistributeBtn.addEventListener('click', () => {
         if (!lyricsArray.length) {
-            loadLyricsBtn.click();
+            const text = rawLyricsTextarea.value.trim();
+            if (text) {
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                lyricsArray = lines.map(line => ({ line: line, start: 0.0, end: 0.0 }));
+            }
         }
         if (!lyricsArray.length) return;
 
@@ -840,7 +813,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentSyncIndex = lyricsArray.length;
         renderTimelineList();
-        updateSpacebarButtonText();
         updateHiddenJson();
         drawLiveCanvas();
     });
@@ -868,86 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
     });
 
-    // 5. Tap-to-Sync & Tap-to-Fix Spacebar Recording Logic
-    function handleSyncTap() {
-        if (!audioPlayer.src) {
-            audioInput.click();
-            return;
-        }
-
-        if (audioPlayer.paused) {
-            audioPlayer.play();
-            playIcon.setAttribute('data-lucide', 'pause');
-            lucide.createIcons();
-        }
-
-        const curTime = +(audioPlayer.currentTime).toFixed(2);
-
-        if (currentSyncIndex < lyricsArray.length) {
-            // Set start of current line
-            lyricsArray[currentSyncIndex].start = curTime;
-            
-            // Set end of previous line if needed
-            if (currentSyncIndex > 0 && lyricsArray[currentSyncIndex - 1].end === 0) {
-                lyricsArray[currentSyncIndex - 1].end = curTime;
-            }
-
-            // Estimate end of current line based on next line or default duration
-            if (currentSyncIndex + 1 < lyricsArray.length && lyricsArray[currentSyncIndex + 1].start > curTime) {
-                lyricsArray[currentSyncIndex].end = lyricsArray[currentSyncIndex + 1].start;
-            } else {
-                lyricsArray[currentSyncIndex].end = +(curTime + 4.5).toFixed(2);
-            }
-
-            currentSyncIndex++;
-            renderTimelineList();
-            updateSpacebarButtonText();
-            updateHiddenJson();
-            drawLiveCanvas();
-
-            // Scroll active line into view
-            const activeEl = document.getElementById(`lyric-line-${currentSyncIndex - 1}`);
-            if (activeEl) {
-                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        } else {
-            // Reached the end: reset to line 1 or allow retapping
-            if (confirm("You've timed all lines! Restart sync from line 1?")) {
-                currentSyncIndex = 0;
-                audioPlayer.currentTime = 0;
-                updateSpacebarButtonText();
-                renderTimelineList();
-            }
-        }
-    }
-
-    spacebarTapBtn.addEventListener('click', handleSyncTap);
-
-    // Global Spacebar Key Listener (when not typing in an input/textarea)
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
-            const activeTag = document.activeElement.tagName.toLowerCase();
-            if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
-                return; // Let normal typing happen
-            }
-            e.preventDefault();
-            handleSyncTap();
-        }
-    });
-
-    function updateSpacebarButtonText() {
-        if (!lyricsArray.length) {
-            tapBtnText.textContent = "LOAD LYRICS FIRST TO START TAP-TO-SYNC";
-            return;
-        }
-        if (currentSyncIndex < lyricsArray.length) {
-            tapBtnText.textContent = `TAP SPACEBAR FOR: "${lyricsArray[currentSyncIndex].line.substring(0, 30)}..." (${currentSyncIndex + 1}/${lyricsArray.length})`;
-        } else {
-            tapBtnText.textContent = `ALL ${lyricsArray.length} LINES SYNCED! (CLICK ANY LINE TO RE-TAP & FIX)`;
-        }
-    }
-
-    // 6. Render Timeline Items List with Tap-to-Fix line targeting
+    // 5. Render Timeline Items List with Seeking and Timestamp Fine-Tuning
     function renderTimelineList() {
         syncedCount.textContent = lyricsArray.filter(l => l.start > 0).length;
         lyricsTimelineList.innerHTML = '';
@@ -955,8 +848,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!lyricsArray.length) {
             lyricsTimelineList.innerHTML = `
                 <div class="text-center py-8 text-zinc-500 text-xs">
-                    <i data-lucide="list-music" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
-                    Paste lyrics on the left and click "Load for Tap-to-Sync" or "🎯 Vocal Frequency Auto-Sync".
+                    <i data-lucide="list-music" class="w-6 h-6 mx-auto mb-2 opacity-40"></i>
+                    Click "AI Transcribe" or paste lyrics on the left to start.
                 </div>
             `;
             lucide.createIcons();
@@ -967,51 +860,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('div');
             row.id = `lyric-line-${index}`;
             const isRecorded = item.start > 0;
-            const isCurrentTarget = index === currentSyncIndex;
 
             row.className = `p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 text-xs ${
-                isCurrentTarget 
-                    ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-lg ring-1 ring-cyan-400/50' 
-                    : isRecorded 
-                        ? 'bg-dark-850/80 border-zinc-800 text-zinc-200 hover:border-zinc-700' 
-                        : 'bg-dark-900/40 border-zinc-850 text-zinc-500'
+                isRecorded 
+                    ? 'bg-zinc-950 border-zinc-800 text-zinc-200 hover:border-zinc-700' 
+                    : 'bg-zinc-950/40 border-zinc-850 text-zinc-500'
             }`;
 
             row.innerHTML = `
-                <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer select-line-trigger" data-idx="${index}" title="Click to target this line for Spacebar Tap-to-Fix">
-                    <span class="w-5 h-5 rounded-full ${isCurrentTarget ? 'bg-cyan-400 text-dark-950 font-black' : (isRecorded ? 'bg-cyan-500/20 text-cyan-300' : 'bg-zinc-800 text-zinc-500')} font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                <div class="flex items-center gap-2 overflow-hidden flex-1">
+                    <span class="w-5 h-5 rounded-lg ${isRecorded ? 'bg-zinc-800 text-zinc-200 font-bold' : 'bg-zinc-900 text-zinc-600'} font-mono text-[10px] flex items-center justify-center shrink-0">
                         ${index + 1}
                     </span>
-                    <span class="font-medium truncate ${isCurrentTarget ? 'text-cyan-300 font-bold' : ''}">${item.line}</span>
-                    ${isCurrentTarget ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-cyan-400 text-dark-950 shrink-0">NEXT TAP</span>' : ''}
+                    <span class="font-medium truncate text-zinc-200">${item.line}</span>
                 </div>
 
                 <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" class="seek-play-btn p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-cyan-300 transition-colors" data-time="${item.start}" title="Seek audio here">
+                    <button type="button" class="seek-play-btn p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" data-time="${item.start}" title="Seek audio here">
                         <i data-lucide="play" class="w-3 h-3"></i>
                     </button>
                     <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="-0.2" title="Shift earlier 0.2s">-0.2s</button>
-                    <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-zinc-950 border border-zinc-800 ${isRecorded ? 'text-cyan-400 font-bold' : 'text-zinc-600'}">
+                    <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 ${isRecorded ? 'text-zinc-200 font-semibold' : 'text-zinc-600'}">
                         ${formatTime(item.start)}
                     </span>
                     <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="0.2" title="Shift later 0.2s">+0.2s</button>
                 </div>
             `;
             lyricsTimelineList.appendChild(row);
-        });
-
-        // Add event listeners for line selection (Tap-to-Fix targeting)
-        document.querySelectorAll('.select-line-trigger').forEach(el => {
-            el.addEventListener('click', () => {
-                const idx = parseInt(el.dataset.idx);
-                currentSyncIndex = idx;
-                const item = lyricsArray[idx];
-                if (item && item.start > 0 && audioPlayer.src) {
-                    audioPlayer.currentTime = Math.max(0, item.start - 0.5);
-                }
-                renderTimelineList();
-                updateSpacebarButtonText();
-            });
         });
 
         // Seek Audio button
@@ -1055,9 +930,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!el) return;
 
             if (curTime >= item.start && curTime <= item.end) {
-                el.classList.add('border-cyan-400', 'bg-cyan-500/20');
-            } else if (index !== currentSyncIndex) {
-                el.classList.remove('border-cyan-400', 'bg-cyan-500/20');
+                el.classList.add('border-zinc-600', 'bg-zinc-800/50');
+            } else {
+                el.classList.remove('border-zinc-600', 'bg-zinc-800/50');
             }
         });
     }
@@ -1066,13 +941,13 @@ document.addEventListener('DOMContentLoaded', () => {
         lyricsDataInput.value = JSON.stringify(lyricsArray);
     }
 
-    // 7. Styling & Animation Style Selection
+    // 6. Styling & Animation Style Selection
     document.querySelectorAll('.style-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.style-card').forEach(c => {
-                c.className = "style-card relative p-3.5 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer transition-all hover:border-zinc-700 flex flex-col justify-between group";
+                c.className = "style-card relative p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer transition-all hover:border-zinc-700 flex flex-col justify-between";
             });
-            card.className = "style-card relative p-3.5 rounded-xl border-2 border-cyan-500 bg-cyan-500/10 cursor-pointer transition-all hover:border-cyan-400 flex flex-col justify-between group";
+            card.className = "style-card relative p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer transition-all flex flex-col justify-between";
             activeAnimationStyle = card.dataset.style;
             drawLiveCanvas();
         });
@@ -1107,12 +982,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Aspect Ratio toggle
     aspectRatioSelect.addEventListener('change', (e) => {
         if (e.target.value === '9:16') {
-            previewFrame.className = "w-48 aspect-[9/16] bg-dark-900 rounded-2xl border border-zinc-700 overflow-hidden relative flex items-center justify-center shadow-2xl transition-all";
+            previewFrame.className = "w-48 aspect-[9/16] bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-xl transition-all";
             livePreviewCanvas.width = 540;
             livePreviewCanvas.height = 960;
             previewAspectBadge.textContent = "9:16 Shorts";
         } else {
-            previewFrame.className = "w-full aspect-video bg-dark-900 rounded-xl border border-zinc-700 overflow-hidden relative flex items-center justify-center shadow-2xl transition-all";
+            previewFrame.className = "w-full aspect-video bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-xl transition-all";
             livePreviewCanvas.width = 960;
             livePreviewCanvas.height = 540;
             previewAspectBadge.textContent = "16:9 HD";
@@ -1120,25 +995,33 @@ document.addEventListener('DOMContentLoaded', () => {
         drawLiveCanvas();
     });
 
-    // 8. Live Interactive HTML5 Canvas Simulation Renderer
+    // 7. Live Interactive HTML5 Canvas Simulation Renderer
     function drawLiveCanvas() {
         const w = livePreviewCanvas.width;
         const h = livePreviewCanvas.height;
         const isVertical = (aspectRatioSelect.value === '9:16');
+        const posMode = positionModeSelect.value;
 
         canvasCtx.clearRect(0, 0, w, h);
 
-        // 1. Background
+        // 1. Background & Artwork
         if (loadedCoverImage) {
             // Draw blurred ambient background
             canvasCtx.filter = 'blur(20px) brightness(0.35)';
             canvasCtx.drawImage(loadedCoverImage, 0, 0, w, h);
             canvasCtx.filter = 'none';
 
-            // Draw album art centered
+            // Draw album art centered with vertical position consideration
             const artSize = isVertical ? w * 0.55 : h * 0.45;
             const artX = (w - artSize) / 2;
-            const artY = isVertical ? h * 0.22 : h * 0.16;
+            let artY;
+            if (posMode === 'TOP') {
+                artY = isVertical ? h * 0.46 : h * 0.42;
+            } else if (posMode === 'BOTTOM') {
+                artY = isVertical ? h * 0.20 : h * 0.16;
+            } else {
+                artY = isVertical ? h * 0.22 : h * 0.18;
+            }
             
             canvasCtx.save();
             canvasCtx.shadowColor = 'rgba(0,0,0,0.8)';
@@ -1146,11 +1029,8 @@ document.addEventListener('DOMContentLoaded', () => {
             canvasCtx.drawImage(loadedCoverImage, artX, artY, artSize, artSize);
             canvasCtx.restore();
         } else {
-            // Dark gradient
-            const grad = canvasCtx.createRadialGradient(w/2, h/2, 20, w/2, h/2, w);
-            grad.addColorStop(0, '#151e2d');
-            grad.addColorStop(1, '#080c13');
-            canvasCtx.fillStyle = grad;
+            // Solid dark background
+            canvasCtx.fillStyle = '#090d16';
             canvasCtx.fillRect(0, 0, w, h);
         }
 
@@ -1168,9 +1048,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const fontSizeVal = parseInt(fontSizeSlider.value) * (isVertical ? 0.9 : 0.7);
         const highlightColor = highlightColorPicker.value || '#00E5FF';
         const baseColor = textColorPicker.value || '#FFFFFF';
-        const posMode = positionModeSelect.value;
 
-        const centerY = (posMode === 'BOTTOM') ? (isVertical ? h * 0.85 : h * 0.80) : (isVertical ? h * 0.68 : h * 0.62);
+        let centerY;
+        if (posMode === 'TOP') {
+            centerY = isVertical ? h * 0.22 : h * 0.20;
+        } else if (posMode === 'BOTTOM') {
+            centerY = isVertical ? h * 0.82 : h * 0.80;
+        } else {
+            centerY = isVertical ? h * 0.50 : h * 0.50;
+        }
 
         if (activeIdx !== -1) {
             const activeLine = lyricsArray[activeIdx];
@@ -1258,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
     }
 
-    // 9. Form Submission with Render Progress Bar
+    // 8. Form Submission with Render Progress Bar
     const lyricsForm = document.getElementById('lyricsForm');
     const renderSubmitBtn = document.getElementById('renderSubmitBtn');
     if (lyricsForm) {

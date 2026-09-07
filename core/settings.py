@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'apps.youtube.apps.YoutubeConfig',
     'apps.studio.apps.StudioConfig',
     'apps.radar.apps.RadarConfig',
+    'apps.publishing.apps.PublishingConfig',
 ]
 
 MIDDLEWARE = [
@@ -151,3 +152,8 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 SYNC_INTERVAL_HOURS = int(os.getenv('SYNC_INTERVAL_HOURS', '6'))
+
+# Google OAuth 2.0 Credentials (for video upload & publishing)
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://127.0.0.1:8000/publishing/oauth/callback/')

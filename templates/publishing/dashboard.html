@@ -1,0 +1,487 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}YouTube Publishing - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto pb-20">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                YouTube Publishing
+            </h2>
+            <p class="text-xs text-zinc-400">Manage connected channels, review drafts, and dispatch studio content</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'publishing_queue' %}" class="flex items-center gap-2 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-800 transition-colors">
+                <i data-lucide="list-ordered" class="w-4 h-4 text-white"></i>
+                <span>Queue & History</span>
+                {% if active_jobs.count > 0 %}
+                <span class="px-1.5 py-0.2 rounded-full bg-zinc-700 text-[10px] font-bold text-white">{{ active_jobs.count }}</span>
+                {% endif %}
+            </a>
+
+            {% if is_oauth_configured %}
+            <a href="{% url 'publishing_oauth_connect' %}" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Connect Channel</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- KPI Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-zinc-400">Channels</span>
+                <div class="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+                    <i data-lucide="tv" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="text-2xl font-bold text-white tracking-tight">{{ accounts.count }}</span>
+                <span class="text-[11px] text-zinc-500 block mt-0.5">Linked accounts</span>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-zinc-400">Drafts Sent</span>
+                <div class="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+                    <i data-lucide="lock" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="text-2xl font-bold text-white tracking-tight">{{ draft_count }}</span>
+                <span class="text-[11px] text-zinc-500 block mt-0.5">Private drafts</span>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-zinc-400">Active Queue</span>
+                <div class="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+                    <i data-lucide="activity" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="text-2xl font-bold text-white tracking-tight">{{ active_jobs.count }}</span>
+                <span class="text-[11px] text-zinc-500 block mt-0.5">Processing</span>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-zinc-400">Completed</span>
+                <div class="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="text-2xl font-bold text-white tracking-tight">{{ completed_jobs }}</span>
+                <span class="text-[11px] text-zinc-500 block mt-0.5">Total uploaded</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- OAuth Setup Configuration Notice (Only shown if .env keys are missing) -->
+    {% if not is_oauth_configured %}
+    <div class="glass-panel p-5 rounded-2xl border border-zinc-800 space-y-3">
+        <div class="flex items-center gap-3">
+            <i data-lucide="key" class="w-4 h-4 text-zinc-400"></i>
+            <h3 class="text-sm font-bold text-white">Google OAuth Setup</h3>
+        </div>
+        <p class="text-xs text-zinc-400">
+            To enable direct YouTube uploads, add your OAuth client credentials to <code class="px-1.5 py-0.5 rounded bg-zinc-950 text-zinc-300 font-mono text-[11px]">.env</code>:
+        </p>
+        <div class="p-3 bg-zinc-950 rounded-xl font-mono text-xs text-zinc-400 space-y-1 select-all border border-zinc-900">
+            <div>GOOGLE_OAUTH_CLIENT_ID=your_client_id.apps.googleusercontent.com</div>
+            <div>GOOGLE_OAUTH_CLIENT_SECRET=your_client_secret</div>
+            <div>GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:8000/publishing/oauth/callback/</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Connected Channels -->
+    <div class="space-y-3">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">Connected Channels</h3>
+            {% if is_oauth_configured %}
+            <a href="{% url 'publishing_oauth_connect' %}" class="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-white"></i>
+                Add Channel
+            </a>
+            {% endif %}
+        </div>
+
+        {% if accounts %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for acc in accounts %}
+            <div class="glass-panel p-4 rounded-2xl flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-11 h-11 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0">
+                        {% if acc.thumbnail_url %}
+                        <img src="{{ acc.thumbnail_url }}" alt="{{ acc.channel_title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
+                            <i data-lucide="tv" class="w-5 h-5 text-zinc-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-bold text-white truncate">{{ acc.channel_title }}</h4>
+                            {% if acc.is_default %}
+                            <span class="px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] text-zinc-300 font-medium">Default</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-[11px] text-zinc-500 truncate">{{ acc.subscriber_count|intcomma }} subs • {{ acc.video_count }} videos</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0 text-xs">
+                    {% if not acc.is_default %}
+                    <form method="POST" action="{% url 'publishing_oauth_default' acc.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-[11px] text-zinc-400 hover:text-white transition-colors">
+                            Set Default
+                        </button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{% url 'publishing_oauth_disconnect' acc.id %}" onsubmit="return confirm('Disconnect \'{{ acc.channel_title }}\'?');">
+                        {% csrf_token %}
+                        <button type="submit" class="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors" title="Disconnect">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-zinc-400 hover:text-rose-400"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass-panel p-6 rounded-2xl text-center space-y-2">
+            <p class="text-xs text-zinc-400">No YouTube channels connected yet.</p>
+            {% if is_oauth_configured %}
+            <a href="{% url 'publishing_oauth_connect' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-xl transition-colors">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-white"></i>
+                Connect Channel
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Active Uploads Progress (if active jobs exist) -->
+    {% if active_jobs %}
+    <div class="space-y-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="loader" class="w-4 h-4 text-white animate-spin"></i>
+            Active Uploads
+        </h3>
+
+        <div class="space-y-2" id="activeJobsContainer">
+            {% for job in active_jobs %}
+            <div class="glass-panel p-4 rounded-xl space-y-2 job-card" data-job-id="{{ job.id }}">
+                <div class="flex items-center justify-between gap-4 text-xs">
+                    <div class="min-w-0">
+                        <span class="font-semibold text-white truncate block">{{ job.title }}</span>
+                        <span class="text-[11px] text-zinc-500">{{ job.account.channel_title|default:"Default Channel" }} • {{ job.get_privacy_status_display }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="font-mono text-xs text-zinc-300 job-percent">{{ job.progress_percent }}%</span>
+                        <form method="POST" action="{% url 'publishing_cancel_job' job.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Cancel">
+                                <i data-lucide="x" class="w-3.5 h-3.5 text-zinc-400"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-zinc-300 h-1.5 rounded-full transition-all duration-300 job-bar" style="width: {{ job.progress_percent }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Studio Projects Ready for YouTube -->
+    <div class="space-y-3">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">Ready for YouTube (Studio Projects)</h3>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Non-Stop Mixes -->
+            {% for mix in rendered_mixes %}
+            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
+                <div class="space-y-2">
+                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800">
+                        {% if mix.cover_image %}
+                        <img src="{{ mix.cover_image.url }}" alt="{{ mix.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
+                            <i data-lucide="disc" class="w-6 h-6 text-zinc-500"></i>
+                        </div>
+                        {% endif %}
+                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
+                            {{ mix.duration_formatted }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">Mix</span>
+                        <h4 class="text-xs font-bold text-white truncate">{{ mix.title }}</h4>
+                    </div>
+                </div>
+
+                <button type="button" 
+                        onclick="openPublishModal({
+                            sourceType: 'LONG_MIX',
+                            sourceId: {{ mix.id }},
+                            title: `{{ mix.title|escapejs }} [Continuous DJ Mix]`,
+                            description: `{{ mix.youtube_description|escapejs }}`,
+                            tags: 'djmix, continuousmix, nonstopmix, chillbeats',
+                            videoFilePath: `{{ mix.output_video.path|escapejs }}`,
+                            thumbnailPath: `{% if mix.cover_image %}{{ mix.cover_image.path|escapejs }}{% endif %}`,
+                            thumbnailUrl: `{% if mix.cover_image %}{{ mix.cover_image.url }}{% endif %}`
+                        })"
+                        class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-white"></i>
+                    <span>Send to YouTube</span>
+                </button>
+            </div>
+            {% endfor %}
+
+            <!-- Lyrics Videos -->
+            {% for lyric in rendered_lyrics %}
+            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
+                <div class="space-y-2">
+                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800">
+                        {% if lyric.background_image %}
+                        <img src="{{ lyric.background_image.url }}" alt="{{ lyric.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
+                            <i data-lucide="sparkles" class="w-6 h-6 text-zinc-500"></i>
+                        </div>
+                        {% endif %}
+                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
+                            {{ lyric.duration_formatted }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">Lyrics</span>
+                        <h4 class="text-xs font-bold text-white truncate">{{ lyric.title }}</h4>
+                    </div>
+                </div>
+
+                <button type="button" 
+                        onclick="openPublishModal({
+                            sourceType: 'LYRIC_VIDEO',
+                            sourceId: {{ lyric.id }},
+                            title: `{{ lyric.youtube_title|escapejs }}`,
+                            description: `{{ lyric.youtube_description|escapejs }}`,
+                            tags: 'lyrics, lyricvideo, karaoke, newmusic',
+                            videoFilePath: `{{ lyric.output_video.path|escapejs }}`,
+                            thumbnailPath: `{% if lyric.background_image %}{{ lyric.background_image.path|escapejs }}{% endif %}`,
+                            thumbnailUrl: `{% if lyric.background_image %}{{ lyric.background_image.url }}{% endif %}`
+                        })"
+                        class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-white"></i>
+                    <span>Send to YouTube</span>
+                </button>
+            </div>
+            {% endfor %}
+
+            <!-- 1-Hour Loops -->
+            {% for loop in rendered_loops %}
+            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
+                <div class="space-y-2">
+                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800">
+                        {% if loop.cover_image %}
+                        <img src="{{ loop.cover_image.url }}" alt="{{ loop.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
+                            <i data-lucide="video" class="w-6 h-6 text-zinc-500"></i>
+                        </div>
+                        {% endif %}
+                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
+                            60:00
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">1-Hour Loop</span>
+                        <h4 class="text-xs font-bold text-white truncate">{{ loop.title }}</h4>
+                    </div>
+                </div>
+
+                <button type="button" 
+                        onclick="openPublishModal({
+                            sourceType: 'VIDEO_LOOP',
+                            sourceId: {{ loop.id }},
+                            title: `{{ loop.youtube_title|escapejs }}`,
+                            description: `{{ loop.youtube_description|escapejs }}`,
+                            tags: 'studybeats, 1hourloop, chillvibes, focusmusic',
+                            videoFilePath: `{{ loop.output_video.path|escapejs }}`,
+                            thumbnailPath: `{% if loop.cover_image %}{{ loop.cover_image.path|escapejs }}{% endif %}`,
+                            thumbnailUrl: `{% if loop.cover_image %}{{ loop.cover_image.url }}{% endif %}`
+                        })"
+                        class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-white"></i>
+                    <span>Send to YouTube</span>
+                </button>
+            </div>
+            {% endfor %}
+
+            <!-- Shorts & Chops -->
+            {% for short in rendered_shorts %}
+            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
+                <div class="space-y-2">
+                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 flex items-center justify-center">
+                        {% if short.cover_image %}
+                        <img src="{{ short.cover_image.url }}" alt="{{ short.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <i data-lucide="scissors" class="w-6 h-6 text-zinc-500"></i>
+                        {% endif %}
+                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
+                            {{ short.completed_chops_count }} Chops
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">Shorts</span>
+                        <h4 class="text-xs font-bold text-white truncate">{{ short.title }}</h4>
+                    </div>
+                </div>
+
+                <a href="{% url 'shorts_detail' short.id %}" class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-white"></i>
+                    <span>Batch Queue</span>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Direct Upload Card -->
+    <div class="glass-panel p-6 rounded-2xl space-y-4">
+        <div>
+            <h3 class="text-sm font-bold text-white">Direct Upload</h3>
+            <p class="text-xs text-zinc-400">Upload any local video file directly to YouTube drafts</p>
+        </div>
+
+        <form method="POST" action="{% url 'publishing_create_job' %}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% csrf_token %}
+            <input type="hidden" name="source_type" value="CUSTOM_FILE">
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Video File</label>
+                    <input type="file" name="video_file" accept="video/mp4,video/quicktime,video/mkv" required
+                           class="w-full text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 cursor-pointer">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Title</label>
+                    <input type="text" name="title" maxlength="100" required placeholder="Video title"
+                           class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Description</label>
+                    <textarea name="description" rows="3" placeholder="Description, chapters, and links..."
+                              class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600 font-mono"></textarea>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Thumbnail (Optional)</label>
+                    <input type="file" name="thumbnail_file" accept="image/jpeg,image/png"
+                           class="w-full text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 cursor-pointer">
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Engine</label>
+                        <select name="upload_engine" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-zinc-600">
+                            <option value="API_V3" selected>API v3</option>
+                            <option value="BROWSER_AUTOMATION">Browser Bot</option>
+                            <option value="STUDIO_DISPATCHER">Studio Assistant</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Privacy</label>
+                        <select name="privacy_status" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-zinc-600">
+                            <option value="private" selected>Private Draft</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="public">Public</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">Category</label>
+                        <select name="category_id" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-zinc-600">
+                            <option value="10" selected>Music</option>
+                            <option value="24">Entertainment</option>
+                            <option value="22">People & Blogs</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span>Upload to YouTube</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<!-- Include Publishing Modal -->
+{% include 'publishing/_publish_modal.html' with oauth_accounts=accounts %}
+
+<script>
+// Auto-poll status of active jobs
+(function pollActiveJobs() {
+    const cards = document.querySelectorAll('.job-card');
+    if (!cards.length) return;
+
+    setInterval(async () => {
+        try {
+            const res = await fetch("{% url 'publishing_job_status_api' %}");
+            const data = await res.json();
+            if (data && data.jobs) {
+                data.jobs.forEach(job => {
+                    const card = document.querySelector(`.job-card[data-job-id="${job.id}"]`);
+                    if (card) {
+                        const percentElem = card.querySelector('.job-percent');
+                        const barElem = card.querySelector('.job-bar');
+                        if (percentElem) percentElem.innerText = job.progress_percent + '%';
+                        if (barElem) barElem.style.width = job.progress_percent + '%';
+                        
+                        if (job.status === 'SUCCESS' || job.status === 'FAILED') {
+                            window.location.reload();
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Poll error:", e);
+        }
+    }, 2500);
+})();
+</script>
+{% endblock %}

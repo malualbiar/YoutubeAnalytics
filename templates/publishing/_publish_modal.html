@@ -1,0 +1,309 @@
+<!-- Reusable YouTube Publishing / Drafts Modal -->
+<div id="publishYouTubeModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closePublishModal()"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal Dialog -->
+        <div class="inline-block align-bottom bg-zinc-900 border border-zinc-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <form id="publishYouTubeForm" method="POST" action="{% url 'publishing_create_job' %}" enctype="multipart/form-data" class="space-y-0">
+                {% csrf_token %}
+                
+                <!-- Hidden Source Fields -->
+                <input type="hidden" name="source_type" id="modalSourceType" value="CUSTOM_FILE">
+                <input type="hidden" name="source_id" id="modalSourceId" value="">
+                <input type="hidden" name="source_chop_index" id="modalSourceChopIndex" value="">
+                <input type="hidden" name="video_file_path" id="modalVideoFilePath" value="">
+                <input type="hidden" name="thumbnail_path" id="modalThumbnailPath" value="">
+
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-zinc-800 text-white flex items-center justify-center">
+                            <i data-lucide="upload-cloud" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white tracking-tight" id="modal-title">Publish to YouTube</h3>
+                            <p class="text-xs text-zinc-400">Dispatch video to YouTube Studio as draft, scheduled, or live release</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closePublishModal()" class="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="px-6 py-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <!-- Upload Engine Selector -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                                Publishing Engine
+                            </label>
+                            <span class="text-[10px] text-zinc-400 font-mono" id="engineBadge">API v3</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-700 bg-zinc-800/80 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800" onclick="updateEngineBadge('API v3')">
+                                <input type="radio" name="upload_engine" value="API_V3" checked class="sr-only">
+                                <div class="flex items-center gap-1.5 text-white font-semibold text-xs">
+                                    <i data-lucide="zap" class="w-3.5 h-3.5 text-white"></i>
+                                    <span>API v3 (OAuth)</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Direct API upload</span>
+                            </label>
+
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800/40 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800" onclick="updateEngineBadge('Browser Bot')">
+                                <input type="radio" name="upload_engine" value="BROWSER_AUTOMATION" class="sr-only">
+                                <div class="flex items-center gap-1.5 text-zinc-300 font-semibold text-xs">
+                                    <i data-lucide="bot" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span>Browser Bot</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Zero API quota</span>
+                            </label>
+
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800/40 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800" onclick="updateEngineBadge('Studio Assistant')">
+                                <input type="radio" name="upload_engine" value="STUDIO_DISPATCHER" class="sr-only">
+                                <div class="flex items-center gap-1.5 text-zinc-300 font-semibold text-xs">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span>Studio Assistant</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Pre-filled dispatch</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Channel Selector -->
+                    <div id="channelSelectorContainer">
+                        <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                            Target Channel <span class="text-zinc-500">*</span>
+                        </label>
+                        {% if oauth_accounts %}
+                        <select name="account_id" id="modalAccountId" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-zinc-600 transition-colors">
+                            {% for acc in oauth_accounts %}
+                            <option value="{{ acc.id }}" {% if acc.is_default %}selected{% endif %}>
+                                {{ acc.channel_title }} ({{ acc.channel_custom_url|default:acc.channel_id }}) {% if acc.is_default %}• Default{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs flex items-center justify-between">
+                            <span class="text-zinc-400">No YouTube channel connected yet.</span>
+                            <a href="{% url 'publishing_dashboard' %}" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors text-[11px]">
+                                Connect Channel
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Video Title -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                                Video Title <span class="text-zinc-500">*</span>
+                            </label>
+                            <span class="text-[11px] text-zinc-500" id="titleCharCount">0/100</span>
+                        </div>
+                        <input type="text" name="title" id="modalVideoTitle" maxlength="100" required
+                               placeholder="e.g. 1 HOUR of Chill Beats [Deep Focus & Study]"
+                               class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors"
+                               oninput="document.getElementById('titleCharCount').innerText = this.value.length + '/100'">
+                    </div>
+
+                    <!-- Privacy Mode Selector -->
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+                            Publishing Mode / Privacy
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-700 bg-zinc-800/80 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800">
+                                <input type="radio" name="privacy_status" value="private" checked class="sr-only" onchange="toggleScheduleInput()">
+                                <div class="flex items-center gap-1.5 text-white font-semibold text-xs">
+                                    <i data-lucide="lock" class="w-3.5 h-3.5 text-white"></i>
+                                    <span>Private Draft</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Review in Studio</span>
+                            </label>
+
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800/40 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800">
+                                <input type="radio" name="privacy_status" value="unlisted" class="sr-only" onchange="toggleScheduleInput()">
+                                <div class="flex items-center gap-1.5 text-zinc-300 font-semibold text-xs">
+                                    <i data-lucide="link" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span>Unlisted</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Direct link only</span>
+                            </label>
+
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800/40 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800">
+                                <input type="radio" name="privacy_status" value="scheduled" class="sr-only" onchange="toggleScheduleInput()">
+                                <div class="flex items-center gap-1.5 text-zinc-300 font-semibold text-xs">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span>Schedule</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Auto-release date</span>
+                            </label>
+
+                            <label class="relative flex flex-col p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800/40 cursor-pointer transition-all has-[:checked]:border-zinc-500 has-[:checked]:bg-zinc-800">
+                                <input type="radio" name="privacy_status" value="public" class="sr-only" onchange="toggleScheduleInput()">
+                                <div class="flex items-center gap-1.5 text-zinc-300 font-semibold text-xs">
+                                    <i data-lucide="globe" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span>Public</span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 mt-0.5">Instant live</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Scheduled DateTime Picker (Hidden by default) -->
+                    <div id="scheduleContainer" class="hidden p-3 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
+                        <label class="block text-xs font-semibold text-zinc-300">
+                            Release Date & Time (UTC)
+                        </label>
+                        <input type="datetime-local" name="publish_at" id="modalPublishAt"
+                               class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-500">
+                    </div>
+
+                    <!-- Description & Chapters -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                                Description & Chapters
+                            </label>
+                            <span class="text-[11px] text-zinc-500" id="descCharCount">0/5000</span>
+                        </div>
+                        <textarea name="description" id="modalVideoDesc" rows="4" maxlength="5000"
+                                  placeholder="Video description, tracklist chapters, credits..."
+                                  class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 font-mono transition-colors"
+                                  oninput="document.getElementById('descCharCount').innerText = this.value.length + '/5000'"></textarea>
+                    </div>
+
+                    <!-- Tags & Category -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                                Tags (comma-separated)
+                            </label>
+                            <input type="text" name="tags" id="modalVideoTags"
+                                   placeholder="chillbeats, 1hourloop, lofi"
+                                   class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                                Category
+                            </label>
+                            <select name="category_id" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600 transition-colors">
+                                <option value="10" selected>Music (10)</option>
+                                <option value="24">Entertainment (24)</option>
+                                <option value="22">People & Blogs (22)</option>
+                                <option value="1">Film & Animation (1)</option>
+                                <option value="27">Education (27)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Thumbnail & Settings Preview -->
+                    <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                                <img id="modalThumbnailPreview" src="" alt="Thumbnail" class="w-full h-full object-cover hidden">
+                                <i id="modalThumbnailIcon" data-lucide="image" class="w-4 h-4 text-zinc-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-white">Thumbnail Attached</p>
+                                <p class="text-[10px] text-zinc-500" id="modalThumbnailLabel">Cover art from project</p>
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                            <input type="checkbox" name="made_for_kids" value="1" class="rounded bg-zinc-900 border-zinc-700 text-zinc-300 focus:ring-0">
+                            <span>Made for Kids</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="px-6 py-4 border-t border-zinc-800 bg-zinc-950/60 flex items-center justify-between">
+                    <button type="button" onclick="closePublishModal()" class="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors">
+                        Cancel
+                    </button>
+
+                    <button type="submit" id="modalSubmitBtn" class="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors shadow-sm">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span>Dispatch to YouTube</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPublishModal(config) {
+    const modal = document.getElementById('publishYouTubeModal');
+    if (!modal) return;
+
+    // Set fields
+    document.getElementById('modalSourceType').value = config.sourceType || 'CUSTOM_FILE';
+    document.getElementById('modalSourceId').value = config.sourceId || '';
+    document.getElementById('modalSourceChopIndex').value = config.sourceChopIndex !== undefined ? config.sourceChopIndex : '';
+    document.getElementById('modalVideoFilePath').value = config.videoFilePath || '';
+    document.getElementById('modalThumbnailPath').value = config.thumbnailPath || '';
+
+    const titleInput = document.getElementById('modalVideoTitle');
+    titleInput.value = (config.title || '').substring(0, 100);
+    document.getElementById('titleCharCount').innerText = titleInput.value.length + '/100';
+
+    const descInput = document.getElementById('modalVideoDesc');
+    descInput.value = (config.description || '').substring(0, 5000);
+    document.getElementById('descCharCount').innerText = descInput.value.length + '/5000';
+
+    document.getElementById('modalVideoTags').value = config.tags || 'music, chill, studybeats';
+
+    // Thumbnail Preview
+    const previewImg = document.getElementById('modalThumbnailPreview');
+    const previewIcon = document.getElementById('modalThumbnailIcon');
+    const previewLabel = document.getElementById('modalThumbnailLabel');
+
+    if (config.thumbnailUrl) {
+        previewImg.src = config.thumbnailUrl;
+        previewImg.classList.remove('hidden');
+        previewIcon.classList.add('hidden');
+        previewLabel.innerText = "Cover art auto-attached";
+    } else {
+        previewImg.classList.add('hidden');
+        previewIcon.classList.remove('hidden');
+        previewLabel.innerText = "Default YouTube frame";
+    }
+
+    modal.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+}
+
+function closePublishModal() {
+    const modal = document.getElementById('publishYouTubeModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateEngineBadge(text) {
+    const badge = document.getElementById('engineBadge');
+    if (badge) badge.innerText = text;
+}
+
+function toggleScheduleInput() {
+    const isScheduled = document.querySelector('input[name="privacy_status"]:checked')?.value === 'scheduled';
+    const container = document.getElementById('scheduleContainer');
+    if (container) {
+        if (isScheduled) {
+            container.classList.remove('hidden');
+            // Default to tomorrow 18:00
+            const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            tomorrow.setHours(18, 0, 0, 0);
+            document.getElementById('modalPublishAt').value = tomorrow.toISOString().slice(0, 16);
+        } else {
+            container.classList.add('hidden');
+        }
+    }
+}
+</script>

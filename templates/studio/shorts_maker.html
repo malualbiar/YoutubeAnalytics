@@ -9,14 +9,14 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h2 class="text-xl font-bold text-white tracking-tight">Shorts Maker</h2>
-            <p class="text-xs text-zinc-400">Chop long media into high-retention 9:16 vertical clips with timeline control.</p>
+            <p class="text-xs text-zinc-400">Chop media into high-retention 9:16 vertical clips with timeline control.</p>
         </div>
 
         <div class="flex items-center gap-2">
-            <a href="{% url 'studio_home' %}" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors">
+            <a href="{% url 'studio_home' %}" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 Studio Dashboard
             </a>
-            <a href="https://studio.youtube.com" target="_blank" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-colors">
+            <a href="https://studio.youtube.com" target="_blank" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 YouTube Studio
             </a>
         </div>
@@ -28,16 +28,16 @@
         <input type="hidden" name="chops_json" id="chopsJsonInput" value="[]">
 
         <!-- Step 1: Upload Source Video or Audio -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-5">
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
+                <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
                     <h3 class="text-sm font-bold text-white">Source Media</h3>
                 </div>
 
                 <!-- Source Mode Radio Switcher -->
                 <div class="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
-                    <label class="px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors bg-amber-600 text-white source-tab" data-source="VIDEO">
+                    <label class="px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors bg-zinc-800 text-white source-tab" data-source="VIDEO">
                         <input type="radio" name="source_type" value="VIDEO" class="hidden" checked>
                         Long Video (.mp4 / .mov)
                     </label>
@@ -50,21 +50,24 @@
 
             <!-- Video Upload Mode Container -->
             <div id="videoSourceContainer" class="space-y-4">
-                <div id="videoDropZone" class="border border-dashed border-zinc-700 hover:border-amber-500 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-dark-850">
+                <div id="videoDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-zinc-950">
                     <input type="file" name="source_video" id="videoInput" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" class="hidden">
                     
                     <div id="videoEmpty" class="py-4">
+                        <div class="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 flex items-center justify-center mx-auto mb-2 border border-zinc-800">
+                            <i data-lucide="video" class="w-4 h-4"></i>
+                        </div>
                         <p class="text-sm font-bold text-white">Select Long Video File</p>
-                        <p class="text-xs text-zinc-400 mt-1">Supports MP4, MOV, MKV (1080p / 4K / Landscape or Square)</p>
+                        <p class="text-xs text-zinc-500 mt-1">Supports MP4, MOV, MKV (1080p / 4K / Landscape or Square)</p>
                     </div>
 
                     <div id="videoSelected" class="hidden">
                         <div class="flex items-center justify-between p-3 bg-zinc-900 rounded-xl border border-zinc-800">
                             <div class="text-left truncate">
-                                <p id="videoFileName" class="text-xs font-bold text-amber-400 truncate">video.mp4</p>
+                                <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
                                 <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
                             </div>
-                            <button type="button" id="changeVideoBtn" class="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold text-zinc-200 transition-colors">
+                            <button type="button" id="changeVideoBtn" class="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold text-zinc-200 border border-zinc-700 transition-colors">
                                 Replace Video
                             </button>
                         </div>
@@ -78,13 +81,13 @@
                     <!-- Audio File -->
                     <div class="space-y-2">
                         <label class="text-xs font-bold text-zinc-300">Audio Track (.wav, .mp3)</label>
-                        <div id="audioDropZone" class="border border-dashed border-zinc-700 hover:border-amber-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-dark-850 min-h-[100px] flex flex-col items-center justify-center">
+                        <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[100px] flex flex-col items-center justify-center">
                             <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
                             <div id="audioEmpty">
                                 <p class="text-xs font-semibold text-zinc-300">Select Audio File</p>
                             </div>
                             <div id="audioSelected" class="hidden text-left w-full">
-                                <p id="audioFileName" class="text-xs font-bold text-amber-400 truncate"></p>
+                                <p id="audioFileName" class="text-xs font-bold text-white truncate"></p>
                                 <p id="audioFileSize" class="text-[10px] text-zinc-400 font-mono"></p>
                             </div>
                         </div>
@@ -93,13 +96,13 @@
                     <!-- Cover Image -->
                     <div class="space-y-2">
                         <label class="text-xs font-bold text-zinc-300">Cover Image</label>
-                        <div id="coverDropZone" class="border border-dashed border-zinc-700 hover:border-amber-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-dark-850 min-h-[100px] flex flex-col items-center justify-center">
+                        <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[100px] flex flex-col items-center justify-center">
                             <input type="file" name="cover_image" id="coverInput" accept="image/*" class="hidden">
                             <div id="coverEmpty">
                                 <p class="text-xs font-semibold text-zinc-300">Select Cover Artwork</p>
                             </div>
                             <div id="coverSelected" class="hidden flex items-center gap-3 w-full">
-                                <img id="coverPreview" src="" class="w-10 h-10 rounded-lg object-cover border border-zinc-700 shrink-0">
+                                <img id="coverPreview" src="" class="w-10 h-10 rounded-lg object-cover border border-zinc-800 shrink-0">
                                 <div class="truncate text-left">
                                     <p id="coverFileName" class="text-xs font-bold text-white truncate"></p>
                                     <p class="text-[10px] text-zinc-400">Loaded for 9:16 background</p>
@@ -115,15 +118,15 @@
                 <label class="block text-xs font-semibold text-zinc-300 mb-1.5">
                     Project / Song Title
                 </label>
-                <input type="text" name="title" id="projectTitle" placeholder="e.g. Summer Breeze Session" class="w-full bg-dark-850 border border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 text-xs">
+                <input type="text" name="title" id="projectTitle" placeholder="e.g. Summer Breeze Session" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 text-xs">
             </div>
         </div>
 
         <!-- Step 2: Interactive Video Player & Timeline Chopper -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-6">
+        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
+                <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
                     <div>
                         <h3 class="text-sm font-bold text-white">Interactive Timeline & Chops</h3>
                         <p class="text-xs text-zinc-400">Set chop ranges, preview individual clips, and customize hook text.</p>
@@ -133,17 +136,17 @@
                 <!-- Auto-Split Tools -->
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs text-zinc-400">Auto-Split:</span>
-                    <button type="button" onclick="autoSplitChops(15)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-xs font-semibold transition-colors">
+                    <button type="button" onclick="autoSplitChops(15)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
                         15s
                     </button>
-                    <button type="button" onclick="autoSplitChops(30)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-xs font-semibold transition-colors">
+                    <button type="button" onclick="autoSplitChops(30)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
                         30s
                     </button>
-                    <button type="button" onclick="autoSplitChops(60)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-xs font-semibold transition-colors">
+                    <button type="button" onclick="autoSplitChops(60)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
                         60s
                     </button>
-                    <button type="button" onclick="addNewChop()" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-colors">
-                        Add Chop
+                    <button type="button" onclick="addNewChop()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
+                        + Add Chop
                     </button>
                 </div>
             </div>
@@ -157,12 +160,12 @@
                         <audio id="sourceAudioPlayer" controls class="w-4/5 hidden z-10"></audio>
 
                         <div id="playerPlaceholder" class="text-center p-6 space-y-2">
-                            <p class="text-xs font-semibold text-zinc-400">Upload video or audio above to load player</p>
+                            <p class="text-xs font-semibold text-zinc-500">Upload video or audio above to load player</p>
                         </div>
 
                         <!-- Active Chop Overlay Tag -->
-                        <div id="activeChopBadge" class="absolute top-3 left-3 bg-zinc-950/90 px-2.5 py-1 rounded-lg border border-amber-500/50 text-[10px] font-bold text-amber-300 hidden items-center gap-1.5 z-20">
-                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <div id="activeChopBadge" class="absolute top-3 left-3 bg-zinc-950/90 px-2.5 py-1 rounded-lg border border-zinc-700 text-[10px] font-semibold text-zinc-200 hidden items-center gap-1.5 z-20">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                             <span id="activeChopBadgeText">Previewing Part 1 (0.0s - 15.0s)</span>
                         </div>
                     </div>
@@ -171,7 +174,7 @@
                     <div class="space-y-1.5">
                         <div class="flex justify-between text-[11px] font-mono text-zinc-400">
                             <span id="timelineStartLabel">00:00</span>
-                            <span id="timelineCurrentLabel" class="text-amber-400 font-bold">Playhead: 00:00</span>
+                            <span id="timelineCurrentLabel" class="text-zinc-200 font-semibold">Playhead: 00:00</span>
                             <span id="timelineEndLabel">00:00</span>
                         </div>
                         
@@ -191,9 +194,9 @@
                     </div>
 
                     <!-- 9:16 Phone Frame Mockup -->
-                    <div class="w-[180px] h-[320px] bg-black rounded-3xl border-4 border-zinc-700 shadow-2xl relative overflow-hidden flex flex-col items-center justify-between p-2">
+                    <div class="w-[180px] h-[320px] bg-black rounded-3xl border-4 border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col items-center justify-between p-2">
                         <!-- Top Notch -->
-                        <div class="w-16 h-3 bg-zinc-800 rounded-full mx-auto z-20"></div>
+                        <div class="w-16 h-3 bg-zinc-900 rounded-full mx-auto z-20"></div>
 
                         <!-- Background Container -->
                         <div id="mockupBg" class="absolute inset-0 bg-zinc-900 flex items-center justify-center overflow-hidden">
@@ -203,13 +206,13 @@
                         </div>
 
                         <!-- Hook Pill at Top -->
-                        <div id="mockupHookPill" class="z-10 w-full max-w-[155px] bg-zinc-950/90 border border-rose-500/80 rounded-lg p-1.5 text-center shadow-lg mt-3">
-                            <span id="mockupHookTag" class="text-[7px] font-bold bg-rose-600 text-white px-1 py-0.2 rounded uppercase block mx-auto w-fit mb-0.5">PART 1</span>
+                        <div id="mockupHookPill" class="z-10 w-full max-w-[155px] bg-zinc-950/90 border border-zinc-700 rounded-lg p-1.5 text-center shadow-lg mt-3">
+                            <span id="mockupHookTag" class="text-[7px] font-bold bg-zinc-800 text-zinc-200 px-1 py-0.2 rounded uppercase block mx-auto w-fit mb-0.5">PART 1</span>
                             <p id="mockupHookText" class="text-[8px] font-bold text-white leading-tight truncate">Wait for the drop... 🔥</p>
                         </div>
 
                         <!-- Bottom Pill -->
-                        <div class="z-10 bg-zinc-950/80 border border-zinc-700 rounded-md px-2 py-0.5 text-center mb-2">
+                        <div class="z-10 bg-zinc-950/80 border border-zinc-800 rounded-md px-2 py-0.5 text-center mb-2">
                             <p class="text-[7px] text-zinc-300 font-medium">Full Video on YouTube</p>
                         </div>
                     </div>
@@ -222,7 +225,7 @@
                     <h4 class="text-xs font-bold text-zinc-300">
                         Configured Chops (<span id="chopCountLabel">0</span>)
                     </h4>
-                    <span class="text-[11px] text-zinc-400">Click preview on any card to test audio/video</span>
+                    <span class="text-[11px] text-zinc-500">Click preview on any card to test audio/video</span>
                 </div>
 
                 <div id="chopsListContainer" class="space-y-3 max-h-96 overflow-y-auto pr-1">
@@ -234,35 +237,35 @@
         <!-- Step 3: Vertical 9:16 Aspect & Theme Styling -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Aspect Ratio Mode -->
-            <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-3">
+            <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-3">
                 <label class="block text-xs font-bold text-zinc-300">
                     Vertical 9:16 Aspect Mode
                 </label>
 
                 <div class="space-y-2">
-                    <label class="flex items-center justify-between p-3 rounded-xl border-2 border-amber-600 bg-amber-600/10 cursor-pointer aspect-choice-card">
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer aspect-choice-card">
                         <div class="flex items-center gap-3">
-                            <input type="radio" name="aspect_mode" value="BLURRED_FIT" checked class="text-amber-500 focus:ring-amber-500">
+                            <input type="radio" name="aspect_mode" value="BLURRED_FIT" checked class="accent-emerald-500">
                             <div>
                                 <p class="text-xs font-bold text-white">Blurred Background (Recommended)</p>
-                                <p class="text-[10px] text-zinc-400">Retains full 16:9 frame with aesthetic blurred ambient background.</p>
+                                <p class="text-[10px] text-zinc-400">Retains full 16:9 frame with blurred ambient background.</p>
                             </div>
                         </div>
                     </label>
 
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer aspect-choice-card">
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card">
                         <div class="flex items-center gap-3">
-                            <input type="radio" name="aspect_mode" value="CENTER_CROP" class="text-amber-500 focus:ring-amber-500">
+                            <input type="radio" name="aspect_mode" value="CENTER_CROP" class="accent-emerald-500">
                             <div>
                                 <p class="text-xs font-bold text-white">Center Crop 9:16 (Fill Screen)</p>
-                                <p class="text-[10px] text-zinc-400">Fills full vertical display by cropping left and right edges.</p>
+                                <p class="text-[10px] text-zinc-400">Fills vertical display by cropping left and right edges.</p>
                             </div>
                         </div>
                     </label>
 
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer aspect-choice-card">
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card">
                         <div class="flex items-center gap-3">
-                            <input type="radio" name="aspect_mode" value="LETTERBOX" class="text-amber-500 focus:ring-amber-500">
+                            <input type="radio" name="aspect_mode" value="LETTERBOX" class="accent-emerald-500">
                             <div>
                                 <p class="text-xs font-bold text-white">Letterbox (Solid Black Bars)</p>
                                 <p class="text-[10px] text-zinc-400">Centers original video with clean black letterbox bars.</p>
@@ -273,35 +276,35 @@
             </div>
 
             <!-- Hook Overlay Theme -->
-            <div class="p-6 rounded-2xl border border-zinc-800 bg-dark-900 shadow-xl space-y-3">
+            <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-3">
                 <label class="block text-xs font-bold text-zinc-300">
                     Hook Typography & Overlay Theme
                 </label>
 
                 <div class="space-y-2">
-                    <label class="flex items-center justify-between p-3 rounded-xl border-2 border-amber-600 bg-amber-600/10 cursor-pointer theme-choice-card">
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer theme-choice-card">
                         <div class="flex items-center gap-3">
-                            <input type="radio" name="theme_style" value="VIRAL_HOOK" checked class="text-amber-500 focus:ring-amber-500">
+                            <input type="radio" name="theme_style" value="VIRAL_HOOK" checked class="accent-emerald-500">
                             <div>
                                 <p class="text-xs font-bold text-white">Viral Hook Banner</p>
-                                <p class="text-[10px] text-zinc-400">High-contrast top banner pill & bottom channel watermark.</p>
+                                <p class="text-[10px] text-zinc-400">Top banner pill & bottom channel watermark.</p>
                             </div>
                         </div>
                     </label>
 
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer theme-choice-card">
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
                         <div class="flex items-center gap-3">
-                            <input type="radio" name="theme_style" value="GLOW_NEON" class="text-amber-500 focus:ring-amber-500">
+                            <input type="radio" name="theme_style" value="GLOW_NEON" class="accent-emerald-500">
                             <div>
                                 <p class="text-xs font-bold text-white">Cyber Neon Glow</p>
-                                <p class="text-[10px] text-zinc-400">Cyan & neon borders with bold cyber typography.</p>
+                                <p class="text-[10px] text-zinc-400">Cyan & neon borders with cyber typography.</p>
                             </div>
                         </div>
                     </label>
 
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer theme-choice-card">
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
                         <div class="flex items-center gap-3">
-                            <input type="radio" name="theme_style" value="CLEAN" class="text-amber-500 focus:ring-amber-500">
+                            <input type="radio" name="theme_style" value="CLEAN" class="accent-emerald-500">
                             <div>
                                 <p class="text-xs font-bold text-white">Minimal (No Overlays)</p>
                                 <p class="text-[10px] text-zinc-400">Clean video cut without text overlays.</p>
@@ -316,10 +319,10 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-zinc-900 rounded-2xl border border-zinc-800 gap-4">
             <div>
                 <h4 class="text-sm font-bold text-white">Ready to Render Vertical Shorts</h4>
-                <p class="text-xs text-zinc-400">Chops your long media into individual 1080x1920 MP4 clips locally.</p>
+                <p class="text-xs text-zinc-400">Chops your media into individual 1080x1920 MP4 clips locally.</p>
             </div>
 
-            <button type="submit" id="renderShortsBtn" class="px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition-colors">
+            <button type="submit" id="renderShortsBtn" class="px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors">
                 <span id="btnSubmitText">Render Vertical Shorts</span>
             </button>
         </div>
@@ -327,8 +330,8 @@
 </div>
 
 <!-- Live Rendering Progress Modal Overlay -->
-<div id="progressModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-dark-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
+<div id="progressModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
         <div>
             <h3 class="text-base font-bold text-white" id="progressTitle">Rendering Vertical Shorts...</h3>
             <p class="text-xs text-zinc-400 mt-1" id="progressSubtitle">Chopping video & applying 9:16 vertical styling with FFmpeg.</p>
@@ -338,16 +341,16 @@
         <div class="space-y-2">
             <div class="flex items-center justify-between text-xs font-mono">
                 <span id="progressStep" class="text-zinc-300 font-semibold truncate max-w-[260px] text-left">Processing video segments...</span>
-                <span id="progressPercent" class="text-amber-400 font-bold">15%</span>
+                <span id="progressPercent" class="text-emerald-400 font-bold">15%</span>
             </div>
-            <div class="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div id="progressBar" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 15%"></div>
+            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 15%"></div>
             </div>
         </div>
 
         <div class="flex items-center justify-between pt-2 border-t border-zinc-800 text-[11px] text-zinc-400">
             <span id="elapsedTimer" class="font-mono">00:00</span>
-            <span class="text-emerald-400 font-medium">Local FFmpeg Processing</span>
+            <span class="text-emerald-400 font-medium">FFmpeg Local Processing</span>
         </div>
     </div>
 </div>
@@ -392,7 +395,7 @@
             document.querySelectorAll('.source-tab').forEach(t => {
                 t.className = "px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors text-zinc-400 hover:text-zinc-200 source-tab";
             });
-            tab.className = "px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors bg-amber-600 text-white source-tab";
+            tab.className = "px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors bg-zinc-800 text-white source-tab";
 
             const mode = tab.getAttribute('data-source');
             if (mode === 'VIDEO') {
@@ -695,12 +698,11 @@
         container.innerHTML = '';
 
         const colors = [
-            'bg-amber-600/60 border-amber-500 text-white',
-            'bg-rose-600/60 border-rose-500 text-white',
-            'bg-indigo-600/60 border-indigo-500 text-white',
-            'bg-blue-600/60 border-blue-500 text-white',
-            'bg-emerald-600/60 border-emerald-500 text-white',
-            'bg-teal-600/60 border-teal-500 text-white',
+            'bg-zinc-800 border-zinc-700 text-zinc-200',
+            'bg-zinc-750 border-zinc-700 text-zinc-200',
+            'bg-zinc-700 border-zinc-600 text-white',
+            'bg-zinc-800 border-zinc-700 text-zinc-200',
+            'bg-zinc-750 border-zinc-700 text-zinc-200',
         ];
 
         chopsData.forEach((chop, idx) => {
@@ -709,7 +711,7 @@
             const colorClass = colors[idx % colors.length];
 
             const seg = document.createElement('div');
-            seg.className = `absolute top-0 bottom-0 border-r border-l ${colorClass} text-[10px] font-bold flex items-center justify-center overflow-hidden transition-all hover:brightness-125`;
+            seg.className = `absolute top-0 bottom-0 border-r border-l ${colorClass} text-[10px] font-semibold flex items-center justify-center overflow-hidden transition-all hover:brightness-125`;
             seg.style.left = `${Math.min(100, Math.max(0, startPct))}%`;
             seg.style.width = `${Math.min(100, Math.max(2, durPct))}%`;
             seg.title = `${chop.title}: ${chop.start_seconds}s to ${chop.end_seconds}s (${chop.duration}s)`;
@@ -730,54 +732,54 @@
         chopsData.forEach((chop, idx) => {
             const isPlaying = currentActiveChopId === chop.id;
             const card = document.createElement('div');
-            card.className = `p-4 rounded-xl border ${isPlaying ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-800 bg-dark-850 hover:border-zinc-700'} transition-all space-y-3`;
+            card.className = `p-4 rounded-xl border ${isPlaying ? 'border-zinc-600 bg-zinc-800/40' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'} transition-all space-y-3`;
 
             card.innerHTML = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-lg ${isPlaying ? 'bg-amber-500 text-zinc-950 font-bold' : 'bg-zinc-800 text-zinc-300'} font-bold text-xs flex items-center justify-center">
+                        <span class="w-6 h-6 rounded-lg ${isPlaying ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'} font-bold text-xs flex items-center justify-center">
                             ${chop.id}
                         </span>
-                        <input type="text" value="${chop.title}" onchange="updateChop(${idx}, 'title', this.value)" class="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs font-bold text-white w-28 focus:outline-none focus:border-amber-500">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-zinc-800 text-amber-400 border border-zinc-700">
+                        <input type="text" value="${chop.title}" onchange="updateChop(${idx}, 'title', this.value)" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white w-28 focus:outline-none focus:border-zinc-600">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-zinc-800">
                             ${chop.duration}s
                         </span>
                     </div>
 
                     <div class="flex items-center gap-1.5 self-end sm:self-auto">
-                        <button type="button" onclick="previewChop(${idx})" class="px-3 py-1.5 rounded-lg ${isPlaying ? 'bg-amber-400 text-zinc-950 font-bold' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'} text-xs font-bold transition-colors">
+                        <button type="button" onclick="previewChop(${idx})" class="px-3 py-1.5 rounded-lg ${isPlaying ? 'bg-emerald-500 text-zinc-950 font-bold' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60'} text-xs font-semibold transition-colors">
                             ${isPlaying ? 'Playing Preview' : 'Preview'}
                         </button>
 
-                        <button type="button" onclick="moveChop(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 px-2 py-1 text-zinc-600 text-xs"' : 'class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs"'} title="Move Up">↑</button>
-                        <button type="button" onclick="moveChop(${idx}, 1)" ${idx === chopsData.length - 1 ? 'disabled class="opacity-30 px-2 py-1 text-zinc-600 text-xs"' : 'class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs"'} title="Move Down">↓</button>
-                        <button type="button" onclick="deleteChop(${idx})" class="px-2 py-1 bg-zinc-800 hover:bg-rose-900/60 text-zinc-400 hover:text-rose-300 rounded text-xs transition-colors" title="Delete Chop">✕</button>
+                        <button type="button" onclick="moveChop(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 px-2 py-1 text-zinc-600 text-xs"' : 'class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs border border-zinc-700/60"'} title="Move Up">↑</button>
+                        <button type="button" onclick="moveChop(${idx}, 1)" ${idx === chopsData.length - 1 ? 'disabled class="opacity-30 px-2 py-1 text-zinc-600 text-xs"' : 'class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs border border-zinc-700/60"'} title="Move Down">↓</button>
+                        <button type="button" onclick="deleteChop(${idx})" class="px-2 py-1 bg-zinc-800 hover:bg-rose-900/60 text-zinc-400 hover:text-rose-300 rounded text-xs border border-zinc-700/60 transition-colors" title="Delete Chop">✕</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
                     <!-- Hook Text Banner Input -->
                     <div class="md:col-span-6 space-y-1">
-                        <label class="text-[10px] font-bold uppercase text-zinc-400">Viral Hook Banner Text</label>
-                        <input type="text" value="${chop.hook_text || ''}" placeholder="e.g. Wait for the drop... 🔥" onchange="updateChop(${idx}, 'hook_text', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500">
+                        <label class="text-[10px] font-bold uppercase text-zinc-500">Viral Hook Banner Text</label>
+                        <input type="text" value="${chop.hook_text || ''}" placeholder="e.g. Wait for the drop... 🔥" onchange="updateChop(${idx}, 'hook_text', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                     </div>
 
                     <!-- Start Timestamp -->
                     <div class="md:col-span-3 space-y-1">
-                        <label class="text-[10px] font-bold uppercase text-zinc-400">Start (sec)</label>
+                        <label class="text-[10px] font-bold uppercase text-zinc-500">Start (sec)</label>
                         <div class="flex items-center gap-1">
                             <button type="button" onclick="nudgeChop(${idx}, 'start_seconds', -0.5)" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono">-0.5</button>
-                            <input type="number" step="0.1" min="0" value="${chop.start_seconds}" onchange="updateChop(${idx}, 'start_seconds', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs font-mono text-center text-white focus:outline-none">
+                            <input type="number" step="0.1" min="0" value="${chop.start_seconds}" onchange="updateChop(${idx}, 'start_seconds', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs font-mono text-center text-white focus:outline-none">
                             <button type="button" onclick="nudgeChop(${idx}, 'start_seconds', 0.5)" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono">+0.5</button>
                         </div>
                     </div>
 
                     <!-- End Timestamp -->
                     <div class="md:col-span-3 space-y-1">
-                        <label class="text-[10px] font-bold uppercase text-zinc-400">End (sec)</label>
+                        <label class="text-[10px] font-bold uppercase text-zinc-500">End (sec)</label>
                         <div class="flex items-center gap-1">
                             <button type="button" onclick="nudgeChop(${idx}, 'end_seconds', -0.5)" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono">-0.5</button>
-                            <input type="number" step="0.1" min="0" value="${chop.end_seconds}" onchange="updateChop(${idx}, 'end_seconds', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs font-mono text-center text-white focus:outline-none">
+                            <input type="number" step="0.1" min="0" value="${chop.end_seconds}" onchange="updateChop(${idx}, 'end_seconds', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs font-mono text-center text-white focus:outline-none">
                             <button type="button" onclick="nudgeChop(${idx}, 'end_seconds', 0.5)" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono">+0.5</button>
                         </div>
                     </div>
@@ -803,9 +805,9 @@
     document.querySelectorAll('.aspect-choice-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.aspect-choice-card').forEach(c => {
-                c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer aspect-choice-card";
+                c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card";
             });
-            card.className = "flex items-center justify-between p-3 rounded-xl border-2 border-amber-600 bg-amber-600/10 cursor-pointer aspect-choice-card";
+            card.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer aspect-choice-card";
             const radio = card.querySelector('input[type="radio"]');
             if (radio) radio.checked = true;
         });
@@ -814,9 +816,9 @@
     document.querySelectorAll('.theme-choice-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.theme-choice-card').forEach(c => {
-                c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-dark-850 cursor-pointer theme-choice-card";
+                c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card";
             });
-            card.className = "flex items-center justify-between p-3 rounded-xl border-2 border-amber-600 bg-amber-600/10 cursor-pointer theme-choice-card";
+            card.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer theme-choice-card";
             const radio = card.querySelector('input[type="radio"]');
             if (radio) radio.checked = true;
         });

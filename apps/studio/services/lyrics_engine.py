@@ -571,14 +571,29 @@ class LyricsEngineService:
         if is_vertical:
             actual_font_size = int(font_size * 1.15)
             margin_lr = 60
-            margin_v = 240 if position_mode == 'BOTTOM' else (450 if position_mode == 'CENTER' else 180)
+            if position_mode == 'BOTTOM':
+                margin_v = 240
+            elif position_mode == 'TOP':
+                margin_v = 240
+            else:
+                margin_v = 450
         else:
             actual_font_size = int(font_size)
             margin_lr = 120
-            margin_v = 120 if position_mode == 'BOTTOM' else (280 if position_mode == 'CENTER' else 90)
+            if position_mode == 'BOTTOM':
+                margin_v = 120
+            elif position_mode == 'TOP':
+                margin_v = 120
+            else:
+                margin_v = 280
 
         # ASS alignment: 2 = Bottom-Center, 5 = Mid-Center, 8 = Top-Center
-        alignment = 5 if position_mode == 'CENTER' else 2
+        if position_mode == 'TOP':
+            alignment = 8
+        elif position_mode == 'CENTER':
+            alignment = 5
+        else:
+            alignment = 2
 
         # Primary = Active Highlight Color; Secondary = Inactive Text Color (Wipe effect)
         primary_ass = cls.hex_to_ass_color(highlight_color, alpha=0)
@@ -673,9 +688,12 @@ class LyricsEngineService:
                     f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{karaoke_line}"
                 )
 
-            elif animation_style == 'ROLLING_3LINE':
-                # Displays previous line (dimmed above), current line (bright center), and next line (dimmed below)
-                y_center = (res_y // 2) if position_mode == 'CENTER' else (res_y - margin_v)
+                if position_mode == 'TOP':
+                    y_center = margin_v + int(actual_font_size * 1.5)
+                elif position_mode == 'CENTER':
+                    y_center = res_y // 2
+                else:
+                    y_center = res_y - margin_v - int(actual_font_size * 0.5)
                 y_prev = y_center - int(actual_font_size * 1.5)
                 y_next = y_center + int(actual_font_size * 1.5)
                 x_center = res_x // 2

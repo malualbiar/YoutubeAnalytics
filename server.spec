@@ -37,6 +37,8 @@ hiddenimports = [
     'waitress',
     'googleapiclient',
     'googleapiclient.discovery',
+    'googleapiclient.http',
+    'googleapiclient.errors',
     'google_auth_httplib2',
     'dotenv',
     'PIL',
@@ -66,6 +68,12 @@ hiddenimports = [
     'apps.studio.apps',
     'apps.radar',
     'apps.radar.apps',
+    'apps.publishing',
+    'apps.publishing.apps',
+    'apps.publishing.services',
+    'apps.publishing.services.oauth_service',
+    'apps.publishing.services.uploader_service',
+    'apps.publishing.services.playwright_uploader',
 ] + pil_hiddenimports + imageio_hiddenimports
 
 a = Analysis(

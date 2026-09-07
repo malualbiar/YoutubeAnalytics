@@ -16,6 +16,7 @@ urlpatterns = [
     path('', include('apps.youtube.urls')),
     path('', include('apps.studio.urls')),
     path('', include('apps.radar.urls')),
+    path('', include('apps.publishing.urls')),
 ]
 
 if settings.DEBUG or getattr(sys, 'frozen', False) or getattr(settings, 'DEBUG', False) or os.getenv('YT_QUID_DESKTOP') == '1':

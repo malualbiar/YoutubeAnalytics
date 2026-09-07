@@ -139,6 +139,20 @@
                     <span>AI Music Radar</span>
                 </a>
 
+                <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Publishing
+                </div>
+
+                <a href="{% url 'publishing_dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'publishing_dashboard' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="upload-cloud" class="w-4 h-4 text-white"></i>
+                    <span>YouTube Publishing</span>
+                </a>
+
+                <a href="{% url 'publishing_queue' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'publishing_queue' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="list-ordered" class="w-4 h-4 text-white"></i>
+                    <span>Queue & History</span>
+                </a>
+
                 <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Intelligence</div>
 
                 <a href="{% url 'artist_comparison' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'comparison' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
@@ -408,7 +422,7 @@
             modal.classList.remove('hidden');
             if (progressBar) {
                 progressBar.style.width = '15%';
-                progressBar.className = 'bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500 ease-out';
+                progressBar.className = 'bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out';
             }
             if (percentLabel) {
                 percentLabel.textContent = '15%';
@@ -527,7 +541,7 @@
                     <span id="syncPercentLabel" class="text-emerald-400 font-mono font-bold">15%</span>
                 </div>
                 <div class="w-full bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800 relative">
-                    <div id="syncProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500 ease-out" style="width: 15%;"></div>
+                    <div id="syncProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 15%;"></div>
                 </div>
             </div>
 

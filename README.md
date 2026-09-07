@@ -1,6 +1,6 @@
-# YT Quid - YouTube Artist Analytics, AI Music Radar & Video Studio Platform
+# YT Quid - YouTube Artist Analytics, AI Music Radar, Creator Studio & Publishing Platform
 
-A full-featured music analytics, channel monitoring, historical growth intelligence, AI discovery radar, and automated video rendering platform built with **Django**, **Tailwind CSS**, **Chart.js**, **Waitress**, and **Electron**.
+A full-featured music analytics, channel monitoring, historical growth intelligence, AI discovery radar, automated video rendering factory, and YouTube automated publishing dispatcher built with **Django**, **Tailwind CSS**, **Chart.js**, **Waitress**, and **Electron**.
 
 Available as both a **Web Server** and a **Standalone Native Windows Desktop Application** (`.exe` Installer & Portable).
 
@@ -18,7 +18,7 @@ Get the latest version of YT Quid for Windows directly from the GitHub releases:
 
 ---
 
-## Key Features
+## 🌟 Key Features
 
 ### 1. 📊 Interactive Analytics & Catalog Monitoring
 - **Real-Time Channel & Video Tracking**: Connect official YouTube channels via channel URL, `@handle`, or raw Channel ID (`UC...`).
@@ -32,38 +32,51 @@ Get the latest version of YT Quid for Windows directly from the GitHub releases:
 - **Granular Time Filtering**: Real-time discovery of breakout AI music (Suno, Udio, Lofi, Synthwave, Hip-Hop, Pop, Rock) published in the past 30m, 1h, 6h, 12h, 24h, 48h, 7d, or 30d.
 - **Velocity Arbitrage**: Sort by views/hour or filter by underdogs (<10K views) to catch rising trends before they saturate.
 - **Lossless Extraction**: 1-click lossless WAV / MP3 audio downloader powered by `yt-dlp`.
-- **Direct Studio Bridge**: 1-click export from Radar into the Video Studio.
+- **Direct Studio Bridge**: 1-click export from Radar directly into the Creator Studio.
 
 ### 3. 🎬 Creator Studio & Automated Video Factory (`/studio/`)
 - **Synced Lyric Video Generator (`/studio/lyrics/`)**:
-  - **Interactive Tap-to-Sync (Karaoke Mode)**: Play any audio file (.mp3, .wav, .flac) and tap the **`Spacebar`** on each lyric hit in real-time to capture rhythmic timestamps.
-  - **Import / Export `.LRC` & `.SRT`**: Full two-way compatibility with standard synchronized lyrics files and auto-distribution for raw text.
-  - **Multi-Style Typography & Karaoke FX**:
-    - *Karaoke Wipe & Glow*: Active left-to-right word-by-word glowing highlight wipes as lyrics are sung.
-    - *Rolling 3-Line*: 3-line rolling teleprompter display with active line illuminated.
-    - *Cyber Neon*: Glowing neon borders and futuristic typography.
-    - *Cinematic Minimal*: Elegant serif fades with ambient zoom backdrop.
-  - **Multi-Format 1080p Export**: Instant 16:9 Landscape (YouTube) and 9:16 Vertical (Shorts/Reels/TikTok).
-  - **100% Free & Unlimited**: Runs locally offline with zero API costs, zero subscriptions, and no watermarks.
+  - **Whisper AI & LRCLIB Integration**: Auto-transcribe vocals or query synced lyric databases in seconds.
+  - **Interactive Tap-to-Sync (Karaoke Mode)**: Play audio and tap `Spacebar` on lyric hits for rhythm precision.
+  - **Import / Export `.LRC` & `.SRT`**: Full two-way compatibility with standard synchronized lyrics files.
+  - **Multi-Style Typography & Karaoke FX**: Real-time karaoke glow wipes, 3-line teleprompters, cinematic minimal, and cyber neon styles.
+  - **Multi-Format Export**: 1080p 16:9 Landscape (YouTube) and 9:16 Vertical (Shorts/Reels/TikTok).
 - **Short Video Generator & Multi-Clip Chopper (`/studio/shorts/`)**:
-  - **1 Long Video → Multiple Shorts**: Upload any long video (.mp4, .mov, .mkv) or track and chop it into multiple vertical 9:16 clips (15s, 30s, 60s, or custom intervals).
-  - **Move & Preview Chops**: Interactive visual timeline to adjust boundaries, reorder chops, and preview segments in the player before rendering.
+  - **1 Long Video → Multiple Shorts**: Upload any long video or audio track and chop it into vertical 9:16 clips (15s, 30s, 60s, or custom intervals).
+  - **Timeline Scrubber**: Interactive visual timeline to adjust boundaries, reorder clips, and preview before rendering.
   - **9:16 Vertical Re-Framing**: Blurred ambient backdrop, center crop, or letterbox modes.
-  - **Viral Hook Badges & Typography**: Custom banner pills (`"Wait for the beat drop! 🎧"`), top part badges, and channel watermark CTA.
-  - **Batch & ZIP Export**: Download individual vertical shorts or all chops in a single ZIP package.
+  - **Viral Hook Badges & Watermarks**: Banner pills, part counters, and channel branding.
 - **Non-Stop Continuous Mix Maker (`/studio/mix/`)**:
   - DJ-style seamless multi-track blending with 5 crossfade curves (Equal-Power Quarter-Sine, Linear, Triangular, Exponential, Quick Club Cut).
   - Automatic YouTube chapters and descriptions generator.
 - **1-Hour Extended Study Loops & Visualizers**:
   - 60-minute seamless watch-time loops and 1080p official visualizers.
 
+### 4. 🚀 YouTube Automated Publishing & Drafts Dispatcher (`/publishing/`)
+- **Multi-Engine Publishing Architecture**:
+  - ⚡ **YouTube Data API v3**: Background resumable chunked upload engine (10MB chunks) via official Google OAuth 2.0.
+  - 🤖 **Zero-Quota Browser Bot Automation**: Playwright-powered background bot for automated YouTube Studio upload sessions with 0 API quota consumption.
+  - 📋 **1-Click Studio Assistant**: Pre-populates video titles, descriptions, and chapters to clipboard, reveals files in Explorer, and opens YouTube Studio.
+- **Full Video Format Coverage**:
+  - Direct 1-click dispatch from all Creator Studio modules (Lyric Videos, Shorts/Chops, Non-Stop Mixes, 1-Hour Loops, or Custom MP4 files).
+  - **Batch Shorts Dispatch**: Drip-schedule multiple generated Shorts over consecutive days.
+- **Publishing Modes**:
+  - **Private Drafts**: Safely upload videos to YouTube Studio for final inspection before going live.
+  - **Unlisted Previews**: Share preview links with your team/artists.
+  - **Scheduled Drops**: Auto-publish at a specific future date and time.
+  - **Immediate Public Posts**: Instant public release.
+- **Queue & History Tracker (`/publishing/queue/`)**:
+  - Real-time progress monitoring (0–100%) with live auto-polling.
+  - Filter by status, search by video ID, cancel active uploads, or retry failed jobs.
+  - One-click **"Edit in YouTube Studio"** button directly to the video's management page.
+
 ---
 
-## 💻 Standalone Desktop Application
+## 💻 Standalone Desktop Application (v1.3.0)
 
 YT Quid runs as a native desktop application with an embedded Python/Django WSGI server powered by **Waitress** and an **Electron** frontend.
 
-👉 **[Download the Latest Windows Release (v1.2.0)](https://github.com/malualbiar/YoutubeAnalytics/releases/latest)**
+👉 **[Download the Latest Windows Release (v1.3.0)](https://github.com/malualbiar/YoutubeAnalytics/releases/latest)**
 
 ### Desktop Architecture
 - **Zero Configuration**: Automatically applies database migrations and seeds initial demo data on first launch.
@@ -102,8 +115,8 @@ npm run dist
 
 ### Build Artifacts
 Outputs are generated in `dist-electron/`:
-- **`YT Quid Setup 1.0.0.exe`**: Full NSIS Windows installer (desktop shortcut, start menu shortcut, uninstaller).
-- **`YT Quid 1.0.0.exe`**: Standalone zero-install portable executable.
+- **`YT Quid Setup 1.3.0.exe`**: Full NSIS Windows installer (desktop shortcut, start menu shortcut, uninstaller).
+- **`YT Quid 1.3.0.exe`**: Standalone zero-install portable executable.
 
 ---
 
@@ -114,13 +127,13 @@ The repository includes a GitHub Actions workflow located at [`.github/workflows
 ### How to Trigger a Release
 1. **Via Git Tag**:
    ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag v1.3.0
+   git push origin v1.3.0
    ```
 2. **Via GitHub Actions Web UI**:
    - Go to the **Actions** tab on GitHub.
    - Select **Release Desktop App**.
-   - Click **Run workflow** and specify the version tag (e.g. `v1.0.0`).
+   - Click **Run workflow** and specify the version tag (e.g. `v1.3.0`).
 
 ### Automated Workflow Pipeline
 1. Sets up clean Windows runners with Python 3.11 and Node.js 20.
@@ -153,28 +166,46 @@ Visit **`http://127.0.0.1:8000/`** in your browser.
 
 ---
 
-## Demo Accounts
+## 🔑 YouTube & Google Cloud API Setup
+
+1. **YouTube Data API v3 Key** (for syncing analytics, video stats, and Radar):
+   - Obtain an API key from Google Cloud Console.
+   - Add to `.env`: `YOUTUBE_API_KEY=your_key_here`.
+
+2. **Google OAuth 2.0 Web Client** (for direct YouTube Publishing):
+   - Create OAuth 2.0 Credentials (Web Application) in Google Cloud Console.
+   - Add authorized redirect URI: `http://127.0.0.1:8000/publishing/oauth/callback/`.
+   - Add to `.env`:
+     ```env
+     GOOGLE_OAUTH_CLIENT_ID=your_client_id.apps.googleusercontent.com
+     GOOGLE_OAUTH_CLIENT_SECRET=your_client_secret
+     GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:8000/publishing/oauth/callback/
+     ```
+
+---
+
+## 👥 Demo Accounts
 
 The database comes pre-seeded with 4 active artists (*Luna Vance*, *Kairo Beats*, *Nova Sound*, *Aria Vega*), 22+ songs, 30 days of historical snapshots, and 3 demo user roles:
 
 | Role | Email | Password | Permissions |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@analytics.com` | `admin123` | Full Control, Channel Sync, User Management |
+| **Super Admin** | `admin@analytics.com` | `admin123` | Full Control, Channel Sync, Creator Studio, Publishing |
 | **Manager** | `manager@analytics.com` | `manager123` | Artist Management, Reports, Dashboard |
 | **Viewer** | `viewer@analytics.com` | `viewer123` | Read-only access to Analytics & Charts |
 
 ---
 
-## Running Automated Tests
+## 🧪 Running Automated Tests
 
-Run the test suite:
+Run the test suite across all modules:
 ```bash
-python manage.py test apps.authentication.test_auth apps.artists.test_artists apps.videos.test_videos apps.youtube.test_youtube apps.analytics.test_analytics apps.analytics.test_views apps.studio.test_mix_engine apps.radar.tests
+python manage.py test
 ```
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 YoutubeAnalytics/
@@ -189,7 +220,7 @@ YoutubeAnalytics/
 ├── requirements.txt                # Python backend dependencies
 ├── bin/
 │   └── ffmpeg.exe                  # Bundled FFmpeg multimedia engine
-├── core/                           # Django project settings & URLs
+├── core/                           # Django project settings, WSGI & URLs
 ├── apps/
 │   ├── authentication/             # Custom User, Auth & RBAC
 │   ├── artists/                    # Artist & YouTubeChannel models & views
@@ -197,26 +228,17 @@ YoutubeAnalytics/
 │   ├── analytics/                  # Core metrics engine & comparisons
 │   ├── milestones/                 # Milestones & velocity alerts
 │   ├── reports/                    # CSV & printable report generator
-<<<<<<< HEAD
-│   └── youtube/                    # YouTube Data API v3 services & quota tracker
-├── templates/                      # Tailwind CSS + Chart.js Django templates
-│   ├── base.html                   # Sidebar, TopBar, global search modal (Ctrl+K)
-│   ├── auth/                       # Login & user management
-│   ├── dashboard/                  # Main analytics dashboard
-│   ├── artists/                    # Artist profiles & channel connect
-│   ├── videos/                     # Video library & track deep-dive
-│   ├── comparisons/                # Artist & Video comparisons
-│   ├── reports/                    # Custom date-range reports & export
-│   ├── milestones/                 # Milestones timeline & notifications
-│   └── system/                     # API quota tracker, sync logs & settings
-└── static/
-    └── css/styles.css
-```
-=======
 │   ├── youtube/                    # YouTube Data API v3 services & quota tracker
-│   ├── studio/                     # Video Studio & Non-Stop Mix Engine
-│   └── radar/                      # AI Music Discovery Radar
+│   ├── studio/                     # Creator Studio: Lyrics, Shorts, Mix, 1-Hour Loop
+│   ├── radar/                      # AI Music Discovery Radar
+│   └── publishing/                 # YouTube Publishing & Automated Drafts Dispatcher
 ├── templates/                      # Tailwind CSS Django templates
+│   ├── base.html                   # Global sidebar, navigation, search modal
+│   ├── auth/                       # Authentication templates
+│   ├── dashboard/                  # Analytics dashboard
+│   ├── studio/                     # Creator Studio generator templates
+│   ├── publishing/                 # YouTube Publishing Hub & Queue templates
+│   └── ...
+├── static/                         # Static assets (icons, JS, styles)
 └── dist-electron/                  # Compiled desktop installer & portable .exe
 ```
->>>>>>> e0da034 (Release: Compile desktop app, add GitHub Actions release workflow, update README with download links)

@@ -164,7 +164,7 @@ class LyricsStudioTestCase(TestCase):
                 content = f.read()
             self.assertIn("PlayResX: 1080", content)
             self.assertIn("PlayResY: 1920", content)
-            self.assertIn(r"\pos(", content)
+            self.assertIn("Style: Main", content)
         finally:
             if os.path.exists(ass_path):
                 os.remove(ass_path)
@@ -188,7 +188,7 @@ class LyricsStudioTestCase(TestCase):
         response = self.client.get(reverse('lyrics_maker'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Synced Lyric Video Generator")
-        self.assertContains(response, "Tap-To-Sync")
+        self.assertContains(response, "Lyrics Input & Synchronization")
 
         # Viewer forbidden
         self.client.login(email='viewer@lyrics.com', password='viewerpassword123')

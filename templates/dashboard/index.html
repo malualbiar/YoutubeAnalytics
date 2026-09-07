@@ -16,49 +16,13 @@
 
         <div class="flex items-center gap-3 self-start md:self-auto flex-wrap">
             <!-- Time Range Selector -->
-            <div class="flex items-center gap-1.5 p-1 rounded-xl bg-dark-900 border border-zinc-800">
+            <div class="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
                 <a href="?days=7{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 7 or range_days == '7' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">7D</a>
                 <a href="?days=30{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 30 or range_days == '30' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">30D</a>
                 <a href="?days=90{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 90 or range_days == '90' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">90D</a>
                 <a href="?days=365{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 365 or range_days == '365' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">1Y</a>
                 <a href="?days=all{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 'all' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">ALL</a>
             </div>
-
-            <!-- Creator Studio Quick Launch Action -->
-            <a href="{% url 'shorts_maker' %}" class="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all hover:scale-105">
-                <i data-lucide="scissors" class="w-3.5 h-3.5"></i>
-                Chop Shorts (9:16)
-            </a>
-        </div>
-    </div>
-
-    <!-- Quick Studio Launch Banner -->
-    <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-dark-900 to-purple-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
-                <i data-lucide="scissors" class="w-5 h-5"></i>
-            </div>
-            <div>
-                <h4 class="text-xs font-bold text-white flex items-center gap-2">
-                    Viral Video Chopper & Shorts Factory
-                    <span class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">NEW</span>
-                </h4>
-                <p class="text-[11px] text-zinc-400">Chop long videos into 15s, 30s, 60s vertical shorts with draggable timeline, instant preview, and 9:16 vertical rendering.</p>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
-            <a href="{% url 'lyrics_maker' %}" class="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-dark-950 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                Lyrics Video
-            </a>
-            <a href="{% url 'shorts_maker' %}" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
-                <i data-lucide="scissors" class="w-3.5 h-3.5"></i>
-                Chop Shorts
-            </a>
-            <a href="{% url 'mix_maker' %}" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition-colors">
-                DJ Mix
-            </a>
         </div>
     </div>
 
@@ -123,7 +87,7 @@
 
     <!-- Growth KPIs (Calculated Deltas from Snapshots) -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-gradient-to-br from-dark-900 to-dark-850 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-zinc-400">Views Gained Today</p>
                 <h3 class="text-xl font-bold text-emerald-400 mt-1 flex items-center gap-1.5">
@@ -132,12 +96,12 @@
                 </h3>
                 <p class="text-[10px] text-zinc-400 mt-0.5">Calculated from stored snapshots</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-750 text-emerald-400 flex items-center justify-center">
                 <i data-lucide="trending-up" class="w-5 h-5"></i>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-dark-900 to-dark-850 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-zinc-400">Views This Week</p>
                 <h3 class="text-xl font-bold text-teal-400 mt-1 flex items-center gap-1.5">
@@ -146,12 +110,12 @@
                 </h3>
                 <p class="text-[10px] text-zinc-400 mt-0.5">Last 7 calendar days</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-750 text-teal-400 flex items-center justify-center">
                 <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-dark-900 to-dark-850 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-zinc-400">Views This Month</p>
                 <h3 class="text-xl font-bold text-sky-400 mt-1 flex items-center gap-1.5">
@@ -160,7 +124,7 @@
                 </h3>
                 <p class="text-[10px] text-zinc-400 mt-0.5">Last 30 days growth</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-750 text-sky-400 flex items-center justify-center">
                 <i data-lucide="calendar" class="w-5 h-5"></i>
             </div>
         </div>

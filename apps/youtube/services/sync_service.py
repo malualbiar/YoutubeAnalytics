@@ -168,9 +168,13 @@ class SyncService:
                             link=f"/videos/{video.id}/"
                         )
 
-            # Refresh calculated today/week/month growth metrics on video records
-            from apps.analytics.services import AnalyticsService
-            AnalyticsService.update_video_growth_metrics(artist_id=channel.artist_id)
+            # Trigger real-time growth metrics update for this artist/channel
+            try:
+                from apps.analytics.services import AnalyticsService
+                if channel.artist_id:
+                    AnalyticsService.update_video_growth_metrics(artist_id=channel.artist_id)
+            except Exception:
+                pass
 
             # Finish Log
             duration = round(time.time() - start_time, 2)

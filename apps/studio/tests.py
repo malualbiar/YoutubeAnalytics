@@ -25,7 +25,7 @@ class StudioViewsTestCase(TestCase):
     def test_studio_home_view(self):
         response = self.client.get(reverse('studio_home'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'YouTube Video Studio')
+        self.assertContains(response, 'Creator Studio')
         self.assertContains(response, '1-Hour Study / Chill Loop')
 
     @patch.object(VideoStudioRenderer, 'render_visualizer')

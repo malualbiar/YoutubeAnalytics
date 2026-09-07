@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Publishing Queue - YT Quid{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto pb-20">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'publishing_dashboard' %}" class="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 transition-colors" title="Back to Publishing">
+                <i data-lucide="arrow-left" class="w-4 h-4 text-white"></i>
+            </a>
+            <div>
+                <h2 class="text-2xl font-bold text-white tracking-tight">
+                    Publishing Queue
+                </h2>
+                <p class="text-xs text-zinc-400">Track video uploads, drafts, and scheduled dispatches</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'publishing_dashboard' %}" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Publish Video</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search Bar -->
+    <div class="glass-panel p-3.5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <!-- Status Filter Tabs -->
+        <div class="flex items-center gap-1.5 flex-wrap w-full md:w-auto">
+            <a href="?status=ALL&privacy={{ privacy_filter }}&q={{ search_query }}" 
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors {% if status_filter == 'ALL' %}bg-zinc-800 text-white{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                All ({{ jobs.count }})
+            </a>
+            <a href="?status=ACTIVE&privacy={{ privacy_filter }}&q={{ search_query }}" 
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 {% if status_filter == 'ACTIVE' %}bg-zinc-800 text-white{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                <span>Active</span>
+                {% if active_count > 0 %}
+                <span class="px-1.5 py-0.2 rounded-full bg-zinc-700 text-[10px] text-zinc-200 font-bold">{{ active_count }}</span>
+                {% endif %}
+            </a>
+            <a href="?status=SUCCESS&privacy={{ privacy_filter }}&q={{ search_query }}" 
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors {% if status_filter == 'SUCCESS' %}bg-zinc-800 text-white{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                Completed
+            </a>
+            <a href="?status=FAILED&privacy={{ privacy_filter }}&q={{ search_query }}" 
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors {% if status_filter == 'FAILED' %}bg-zinc-800 text-white{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                Failed
+            </a>
+        </div>
+
+        <!-- Search Form -->
+        <form method="GET" action="" class="w-full md:w-72 relative">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <input type="hidden" name="privacy" value="{{ privacy_filter }}">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search title or ID..."
+                   class="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-2.5"></i>
+        </form>
+    </div>
+
+    <!-- Queue Table -->
+    <div class="glass-panel rounded-2xl overflow-hidden">
+        {% if jobs %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400 uppercase text-[10px] font-semibold tracking-wider">
+                        <th class="py-3.5 px-4">Video / Project</th>
+                        <th class="py-3.5 px-4">Target Channel</th>
+                        <th class="py-3.5 px-4">Privacy</th>
+                        <th class="py-3.5 px-4">Status & Progress</th>
+                        <th class="py-3.5 px-4">Created</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-800/60 text-zinc-300 font-normal">
+                    {% for job in jobs %}
+                    <tr class="hover:bg-zinc-800/30 transition-colors">
+                        <!-- Title & Source -->
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-3 max-w-sm">
+                                <div class="w-9 h-9 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 text-zinc-400">
+                                    {% if job.source_type == 'LONG_MIX' %}
+                                    <i data-lucide="disc" class="w-4 h-4 text-white"></i>
+                                    {% elif job.source_type == 'SHORT_VIDEO' %}
+                                    <i data-lucide="scissors" class="w-4 h-4 text-white"></i>
+                                    {% elif job.source_type == 'LYRIC_VIDEO' %}
+                                    <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                                    {% elif job.source_type == 'VIDEO_LOOP' %}
+                                    <i data-lucide="video" class="w-4 h-4 text-white"></i>
+                                    {% else %}
+                                    <i data-lucide="film" class="w-4 h-4 text-white"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-white truncate">{{ job.title }}</p>
+                                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                        <span class="text-[10px] text-zinc-500 uppercase">{{ job.get_source_type_display }}</span>
+                                        <span class="text-[9px] px-1.5 py-0.2 rounded font-mono font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                                            {% if job.upload_engine == 'API_V3' %}API v3
+                                            {% elif job.upload_engine == 'BROWSER_AUTOMATION' %}Browser Bot
+                                            {% else %}Studio Assistant{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Target Channel -->
+                        <td class="py-3.5 px-4">
+                            <span class="font-semibold text-zinc-200">{{ job.account.channel_title|default:"Default Channel" }}</span>
+                        </td>
+
+                        <!-- Privacy / Mode -->
+                        <td class="py-3.5 px-4">
+                            <div class="space-y-0.5">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium inline-block bg-zinc-800 text-zinc-300">
+                                    {{ job.get_privacy_status_display }}
+                                </span>
+                                {% if job.publish_at %}
+                                <p class="text-[10px] text-zinc-500 font-mono">{{ job.publish_at|date:"M d, H:i" }} UTC</p>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Status & Progress -->
+                        <td class="py-3.5 px-4">
+                            <div class="space-y-1.5 min-w-[130px]">
+                                <div class="flex items-center gap-2">
+                                    {% if job.status == 'SUCCESS' %}
+                                    <span class="flex items-center gap-1 text-emerald-400 font-medium text-xs">
+                                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                                        Completed
+                                    </span>
+                                    {% elif job.status == 'UPLOADING' %}
+                                    <span class="flex items-center gap-1 text-zinc-200 font-medium text-xs">
+                                        <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin text-zinc-400"></i>
+                                        Uploading ({{ job.progress_percent }}%)
+                                    </span>
+                                    {% elif job.status == 'QUEUED' %}
+                                    <span class="text-zinc-400 font-medium text-xs flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5"></i> Queued
+                                    </span>
+                                    {% elif job.status == 'FAILED' %}
+                                    <span class="text-rose-400 font-medium text-xs flex items-center gap-1" title="{{ job.error_message }}">
+                                        <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Failed
+                                    </span>
+                                    {% else %}
+                                    <span class="text-zinc-500 text-xs">{{ job.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if job.status == 'UPLOADING' or job.status == 'PROCESSING' %}
+                                <div class="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                                    <div class="bg-zinc-300 h-1.5 rounded-full" style="width: {{ job.progress_percent }}%"></div>
+                                </div>
+                                {% endif %}
+
+                                {% if job.error_message and job.status == 'FAILED' %}
+                                <p class="text-[10px] text-rose-400 truncate max-w-xs">{{ job.error_message }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Date -->
+                        <td class="py-3.5 px-4 text-zinc-500 font-mono text-[11px]">
+                            {{ job.created_at|date:"M d, H:i" }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                {% if job.youtube_studio_url %}
+                                <a href="{{ job.youtube_studio_url }}" target="_blank" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg transition-colors text-[11px] font-medium flex items-center gap-1" title="Edit in YouTube Studio">
+                                    <i data-lucide="external-link" class="w-3 h-3 text-white"></i>
+                                    <span>Studio</span>
+                                </a>
+                                {% endif %}
+
+                                {% if job.youtube_watch_url and job.privacy_status != 'private' %}
+                                <a href="{{ job.youtube_watch_url }}" target="_blank" class="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors" title="Watch Video">
+                                    <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                </a>
+                                {% endif %}
+
+                                {% if job.status == 'FAILED' %}
+                                <form method="POST" action="{% url 'publishing_retry_job' job.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors" title="Retry Upload">
+                                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% if job.status == 'UPLOADING' or job.status == 'QUEUED' %}
+                                <form method="POST" action="{% url 'publishing_cancel_job' job.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors" title="Cancel Upload">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                <form method="POST" action="{% url 'publishing_delete_job' job.id %}" onsubmit="return confirm('Delete record for \'{{ job.title }}\'?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors" title="Delete record">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center space-y-2">
+            <div class="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-500 flex items-center justify-center mx-auto">
+                <i data-lucide="inbox" class="w-5 h-5 text-zinc-400"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white">No Publishing Jobs Found</h3>
+            <p class="text-xs text-zinc-500 max-w-sm mx-auto">Upload a video or dispatch from Studio to start building your YouTube publishing queue.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

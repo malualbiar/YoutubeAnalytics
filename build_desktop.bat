@@ -57,6 +57,6 @@ echo.
 echo ======================================================================
 echo [SUCCESS] Desktop build completed successfully!
 echo Binaries available in: dist-electron\
-echo   - Installer: dist-electron\YT Quid Setup 1.0.0.exe
-echo   - Portable:  dist-electron\YT Quid 1.0.0.exe
+echo   - Installer: dist-electron\YT Quid Setup 1.3.0.exe
+echo   - Portable:  dist-electron\YT Quid 1.3.0.exe
 echo ======================================================================

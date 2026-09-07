@@ -1,158 +1,148 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}YouTube Video Studio & 1-Hour Loop Factory - YT Quid{% endblock %}
+{% block title %}Creator Studio - YT Quid{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-6xl mx-auto">
+<div class="space-y-6 max-w-6xl mx-auto pb-20">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 mb-1">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                    YOUTUBE VIDEO FACTORY
-                </span>
-                <span class="text-xs text-zinc-400">• Unlock 4,000 Watch Hours</span>
-            </div>
-            <h2 class="text-xl font-bold text-white tracking-tight">YouTube Video Studio & 1-Hour Loop Generator</h2>
-            <p class="text-xs text-zinc-400">Turn your audio and cover art into ready-to-upload YouTube videos (.mp4) in seconds</p>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Creator Studio</h2>
+            <p class="text-xs text-zinc-400">Create 1-hour loops, continuous mixes, vertical shorts, and synced lyric videos</p>
         </div>
 
-        <a href="https://studio.youtube.com" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-600/20 transition-all hover:scale-105 self-start">
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-            Open YouTube Studio
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'publishing_dashboard' %}" class="flex items-center gap-2 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-800 transition-colors">
+                <i data-lucide="upload-cloud" class="w-4 h-4 text-white"></i>
+                <span>Publishing Hub</span>
+            </a>
+        </div>
     </div>
 
     <!-- Studio Hero & Mode Switcher -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Card 1: AI & Tap-to-Sync Lyrics Video Generator -->
-        <a href="{% url 'lyrics_maker' %}" class="glass-panel p-5 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-dark-900 via-cyan-950/25 to-dark-900 hover:border-cyan-500/70 transition-all group relative overflow-hidden shadow-xl">
-            <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/25 transition-colors pointer-events-none"></div>
+        <!-- Card 1: Synced Lyric Video Generator -->
+        <a href="{% url 'lyrics_maker' %}" class="glass-panel p-5 rounded-2xl hover:border-zinc-700 transition-colors group relative overflow-hidden">
             <div class="flex items-start justify-between">
-                <div class="w-11 h-11 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 group-hover:scale-110 transition-transform">
-                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <div class="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
                 </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                    NEW • KARAOKE
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300">
+                    Lyrics
                 </span>
             </div>
             <div class="mt-4">
-                <h3 class="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors flex items-center gap-1.5">
+                <h3 class="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors">
                     Synced Lyric Generator
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                 </h3>
-                <p class="text-[11px] text-zinc-400 mt-1">Tap-to-sync spacebar rhythm capture, 1080p karaoke wipes, and 9:16 vertical lyrics videos.</p>
+                <p class="text-[11px] text-zinc-400 mt-1">Whisper AI transcription, 1080p karaoke wipes, and 9:16 vertical videos.</p>
             </div>
         </a>
 
-        <!-- Card 2: Shorts & Reels Video Chopper -->
-        <a href="{% url 'shorts_maker' %}" class="glass-panel p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-dark-900 via-amber-950/20 to-dark-900 hover:border-amber-500/70 transition-all group relative overflow-hidden shadow-xl">
-            <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-colors pointer-events-none"></div>
+        <!-- Card 2: Shorts Maker -->
+        <a href="{% url 'shorts_maker' %}" class="glass-panel p-5 rounded-2xl hover:border-zinc-700 transition-colors group relative overflow-hidden">
             <div class="flex items-start justify-between">
-                <div class="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 group-hover:scale-110 transition-transform">
-                    <i data-lucide="scissors" class="w-5 h-5"></i>
+                <div class="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center">
+                    <i data-lucide="scissors" class="w-4 h-4 text-white"></i>
                 </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    VIRAL 9:16
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300">
+                    Shorts
                 </span>
             </div>
             <div class="mt-4">
-                <h3 class="text-sm font-bold text-white group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                <h3 class="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors">
                     Shorts Maker
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                 </h3>
-                <p class="text-[11px] text-zinc-400 mt-1">Chop 1 long video into multiple vertical clips with interactive timeline and movable chops.</p>
+                <p class="text-[11px] text-zinc-400 mt-1">Chop long media into multiple vertical 9:16 clips with timeline control.</p>
             </div>
         </a>
 
         <!-- Card 3: Non-Stop Long Mix Maker -->
-        <a href="{% url 'mix_maker' %}" class="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-dark-900 via-purple-950/20 to-dark-900 hover:border-purple-500/60 transition-all group relative overflow-hidden shadow-xl">
-            <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors pointer-events-none"></div>
+        <a href="{% url 'mix_maker' %}" class="glass-panel p-5 rounded-2xl hover:border-zinc-700 transition-colors group relative overflow-hidden">
             <div class="flex items-start justify-between">
-                <div class="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 group-hover:scale-110 transition-transform">
-                    <i data-lucide="disc-3" class="w-5 h-5"></i>
+                <div class="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center">
+                    <i data-lucide="disc-3" class="w-4 h-4 text-white"></i>
                 </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    FEATURED
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300">
+                    Mix
                 </span>
             </div>
             <div class="mt-4">
-                <h3 class="text-sm font-bold text-white group-hover:text-purple-300 transition-colors flex items-center gap-1.5">
+                <h3 class="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors">
                     Non-Stop Long Mix
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                 </h3>
-                <p class="text-[11px] text-zinc-400 mt-1">Blend multiple tracks into continuous DJ long-mixes with smooth equal-power crossfades.</p>
+                <p class="text-[11px] text-zinc-400 mt-1">Blend multiple tracks into continuous DJ long-mixes with smooth crossfades.</p>
             </div>
         </a>
 
         <!-- Card 4: 1-Hour Single Loop Factory -->
-        <div class="glass-panel p-5 rounded-2xl border border-rose-500/20 bg-gradient-to-br from-dark-900 via-rose-950/10 to-dark-900 shadow-xl relative overflow-hidden">
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
             <div class="flex items-start justify-between">
-                <div class="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
-                    <i data-lucide="repeat" class="w-5 h-5"></i>
+                <div class="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center">
+                    <i data-lucide="video" class="w-4 h-4 text-white"></i>
                 </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                    4,000 HRS
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300">
+                    1-Hour
                 </span>
             </div>
             <div class="mt-4">
-                <h3 class="text-sm font-bold text-white">1-Hour Loop Factory</h3>
-                <p class="text-[11px] text-zinc-400 mt-1">Turn a single track into a seamless 60-minute extended study/focus loop for YouTube.</p>
+                <h3 class="text-xs font-bold text-white">1-Hour Loop Factory</h3>
+                <p class="text-[11px] text-zinc-400 mt-1">Turn a single track into a seamless 60-minute extended study/focus loop.</p>
             </div>
         </div>
     </div>
 
     <!-- Lyrics Video Projects Section (if any exist) -->
     {% if lyric_projects %}
-    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+    <div class="glass-panel p-6 rounded-2xl space-y-4">
         <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+                    <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
                     Synced Lyric Videos ({{ lyric_projects.count }})
                 </h3>
                 <p class="text-xs text-zinc-400">Karaoke wipes, rolling typography & vertical lyric videos</p>
             </div>
-            <a href="{% url 'lyrics_maker' %}" class="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-dark-950 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <a href="{% url 'lyrics_maker' %}" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 border border-zinc-700">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-white"></i>
                 New Lyric Video
             </a>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for l in lyric_projects %}
-            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3 group">
+            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-zinc-700 transition-colors flex flex-col justify-between space-y-3 group">
                 <div class="flex items-start gap-3">
-                    <div class="w-16 h-16 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-700/60 flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-800 flex items-center justify-center">
                         {% if l.background_image %}
                         <img src="{{ l.background_image.url }}" class="w-full h-full object-cover">
                         {% else %}
-                        <i data-lucide="music" class="w-7 h-7 text-cyan-400"></i>
+                        <i data-lucide="music" class="w-5 h-5 text-zinc-500"></i>
                         {% endif %}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <a href="{% url 'lyrics_detail' l.id %}" class="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                        <a href="{% url 'lyrics_detail' l.id %}" class="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors line-clamp-1">
                             {{ l.title }}
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
-                            <span class="text-cyan-400 font-bold">{{ l.get_animation_style_display }}</span>
+                            <span class="text-zinc-300 font-medium">{{ l.get_animation_style_display }}</span>
                             <span>•</span>
                             <span>{{ l.duration_formatted }}</span>
                         </div>
-                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-zinc-400 font-mono">
+                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-zinc-500 font-mono">
                             {{ l.get_aspect_ratio_display }}
                         </span>
                     </div>
                 </div>
 
                 <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
-                    <a href="{% url 'lyrics_detail' l.id %}" class="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
-                        Open Player & LRC →
+                    <a href="{% url 'lyrics_detail' l.id %}" class="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1">
+                        Open Player →
                     </a>
                     <form method="POST" action="{% url 'lyrics_delete' l.id %}" onsubmit="return confirm('Delete lyric video project?');" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="p-1 text-zinc-500 hover:text-red-400" title="Delete Project">
+                        <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Project">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </form>
@@ -165,54 +155,54 @@
 
     <!-- Shorts & Reels Projects Section (if any exist) -->
     {% if short_projects %}
-    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+    <div class="glass-panel p-6 rounded-2xl space-y-4">
         <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i data-lucide="scissors" class="w-4 h-4 text-amber-400"></i>
-                    Shorts & Reels Projects ({{ short_projects.count }})
+                    <i data-lucide="scissors" class="w-4 h-4 text-white"></i>
+                    Shorts Projects ({{ short_projects.count }})
                 </h3>
                 <p class="text-xs text-zinc-400">Multi-clip 9:16 vertical video packages ready for upload</p>
             </div>
-            <a href="{% url 'shorts_maker' %}" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <a href="{% url 'shorts_maker' %}" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 border border-zinc-700">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-white"></i>
                 Chop New Video
             </a>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for s in short_projects %}
-            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-amber-500/40 transition-all flex flex-col justify-between space-y-3 group">
+            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-zinc-700 transition-colors flex flex-col justify-between space-y-3 group">
                 <div class="flex items-start gap-3">
-                    <div class="w-16 h-16 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-700/60 flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-800 flex items-center justify-center">
                         {% if s.cover_image %}
                         <img src="{{ s.cover_image.url }}" class="w-full h-full object-cover">
                         {% else %}
-                        <i data-lucide="film" class="w-7 h-7 text-amber-400"></i>
+                        <i data-lucide="film" class="w-5 h-5 text-zinc-500"></i>
                         {% endif %}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-bold text-white group-hover:text-amber-300 transition-colors line-clamp-1">
+                        <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors line-clamp-1">
                             {{ s.title }}
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
-                            <span class="text-amber-400 font-bold">{{ s.chop_count }} clips</span>
+                            <span class="text-zinc-300 font-medium">{{ s.chop_count }} clips</span>
                             <span>•</span>
                             <span>{{ s.duration_formatted }}</span>
                         </div>
-                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-zinc-400 font-mono">
+                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-zinc-500 font-mono">
                             {{ s.get_aspect_mode_display|truncatechars:22 }}
                         </span>
                     </div>
                 </div>
 
                 <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
-                    <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                    <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1">
                         Open Shorts Gallery →
                     </a>
                     <form method="POST" action="{% url 'shorts_delete' s.id %}" onsubmit="return confirm('Delete shorts project?');" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="p-1 text-zinc-500 hover:text-red-400" title="Delete Project">
+                        <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Project">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </form>
@@ -225,36 +215,34 @@
 
     <!-- Non-Stop Mix Projects Section (if any exist) -->
     {% if mix_projects %}
-    <div class="glass-panel p-6 rounded-2xl border border-zinc-800 space-y-4">
+    <div class="glass-panel p-6 rounded-2xl space-y-4">
         <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i data-lucide="disc-3" class="w-4 h-4 text-purple-400"></i>
+                    <i data-lucide="disc-3" class="w-4 h-4 text-white"></i>
                     Continuous Non-Stop Mixes ({{ mix_projects.count }})
                 </h3>
                 <p class="text-xs text-zinc-400">Multi-track blended long mixes with YouTube chapters</p>
             </div>
-            <a href="{% url 'mix_maker' %}" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <a href="{% url 'mix_maker' %}" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 border border-zinc-700">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-white"></i>
                 Create New Mix
             </a>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for m in mix_projects %}
-            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-3 group">
+            <div class="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-zinc-700 transition-colors flex flex-col justify-between space-y-3 group">
                 <div class="flex items-start gap-3">
-                    <div class="w-16 h-16 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-700/60">
+                    <div class="w-14 h-14 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-zinc-800 flex items-center justify-center">
                         {% if m.cover_image %}
                         <img src="{{ m.cover_image.url }}" class="w-full h-full object-cover">
                         {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-purple-400 bg-purple-950/20 font-bold text-xs">
-                            MIX
-                        </div>
+                        <i data-lucide="disc" class="w-5 h-5 text-zinc-500"></i>
                         {% endif %}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <a href="{% url 'mix_detail' m.id %}" class="text-xs font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-1">
+                        <a href="{% url 'mix_detail' m.id %}" class="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors line-clamp-1">
                             {{ m.title }}
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
@@ -262,19 +250,19 @@
                             <span>•</span>
                             <span>{{ m.duration_formatted }}</span>
                         </div>
-                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-purple-400 font-mono">
+                        <span class="inline-flex items-center gap-1 mt-1 text-[10px] text-zinc-500 font-mono">
                             {{ m.crossfade_seconds }}s crossfade
                         </span>
                     </div>
                 </div>
 
                 <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
-                    <a href="{% url 'mix_detail' m.id %}" class="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1">
-                        Open Player & Chapters →
+                    <a href="{% url 'mix_detail' m.id %}" class="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1">
+                        Open Mix →
                     </a>
                     <form method="POST" action="{% url 'mix_delete' m.id %}" onsubmit="return confirm('Delete mix?');" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="p-1 text-zinc-500 hover:text-red-400" title="Delete Mix">
+                        <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Mix">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </form>
@@ -286,67 +274,66 @@
     {% endif %}
 
     <!-- Video Creator Panel (1-Hour Loop) -->
-    <form method="POST" action="{% url 'studio_render' %}" enctype="multipart/form-data" id="studioForm" class="bg-dark-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6 relative overflow-hidden">
+    <form method="POST" action="{% url 'studio_render' %}" enctype="multipart/form-data" id="studioForm" class="glass-panel rounded-2xl p-6 space-y-6 relative overflow-hidden">
         {% csrf_token %}
-        <div class="absolute -top-16 -right-16 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div class="border-b border-zinc-800 pb-4">
             <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i data-lucide="repeat" class="w-4 h-4 text-rose-400"></i>
-                Create 1-Hour Extended Loop or Shorts Video (.mp4)
+                <i data-lucide="video" class="w-4 h-4 text-white"></i>
+                Create 1-Hour Extended Loop or Video (.mp4)
             </h3>
-            <p class="text-xs text-zinc-400 mt-0.5">Upload single audio and artwork to generate an extended YouTube watch-time loop.</p>
+            <p class="text-xs text-zinc-400 mt-0.5">Upload audio and artwork to generate an extended YouTube video</p>
         </div>
 
         <!-- 1. File Uploads (Side by Side) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Audio Upload -->
             <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
+                <label class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
                     <span class="flex items-center gap-2">
-                        <i data-lucide="music" class="w-4 h-4 text-rose-400"></i>
+                        <i data-lucide="music" class="w-4 h-4 text-white"></i>
                         1. Audio File (.WAV or .MP3)
                     </span>
                     <span class="text-[10px] text-zinc-500 font-normal">Master audio</span>
                 </label>
 
-                <div id="audioDropZone" class="border-2 border-dashed border-zinc-700 hover:border-rose-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-dark-850/60 hover:bg-rose-500/5 group min-h-[130px] flex flex-col items-center justify-center">
+                <div id="audioDropZone" class="border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer transition-colors bg-zinc-950/60 hover:bg-zinc-900/60 group min-h-[130px] flex flex-col items-center justify-center">
                     <input type="file" name="audio_file" id="audioInput" accept=".wav,.mp3,.flac,.m4a" class="hidden" required>
                     <div id="audioEmpty">
-                        <i data-lucide="file-audio" class="w-7 h-7 text-zinc-500 group-hover:text-rose-400 mx-auto mb-2 transition-colors"></i>
+                        <i data-lucide="file-audio" class="w-6 h-6 text-zinc-500 group-hover:text-zinc-300 mx-auto mb-2 transition-colors"></i>
                         <p class="text-xs font-semibold text-zinc-200">Click or Drag Audio (.WAV / .MP3)</p>
                     </div>
-                    <div id="audioSelected" class="hidden text-left w-full bg-zinc-800/90 p-3 rounded-lg border border-rose-500/30 flex items-center justify-between">
+                    <div id="audioSelected" class="hidden text-left w-full bg-zinc-900 p-3 rounded-lg border border-zinc-800 flex items-center justify-between">
                         <div class="overflow-hidden">
                             <p id="audioFileName" class="text-xs font-bold text-white truncate"></p>
                             <p id="audioFileSize" class="text-[10px] text-zinc-400"></p>
                         </div>
-                        <span class="text-[10px] text-rose-400 font-semibold uppercase">Loaded</span>
+                        <span class="text-[10px] text-zinc-400 font-semibold uppercase">Loaded</span>
                     </div>
                 </div>
             </div>
 
             <!-- Cover Image Upload -->
             <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
+                <label class="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
                     <span class="flex items-center gap-2">
-                        <i data-lucide="image" class="w-4 h-4 text-rose-400"></i>
+                        <i data-lucide="image" class="w-4 h-4 text-white"></i>
                         2. Cover Artwork Image
                     </span>
-                    <span class="text-[10px] text-zinc-500 font-normal">Any ratio/size</span>
+                    <span class="text-[10px] text-zinc-500 font-normal">Any ratio</span>
                 </label>
 
-                <div id="imageDropZone" class="border-2 border-dashed border-zinc-700 hover:border-rose-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-dark-850/60 hover:bg-rose-500/5 group min-h-[130px] flex flex-col items-center justify-center">
+                <div id="imageDropZone" class="border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer transition-colors bg-zinc-950/60 hover:bg-zinc-900/60 group min-h-[130px] flex flex-col items-center justify-center">
                     <input type="file" name="cover_image" id="imageInput" accept="image/*" class="hidden" required>
                     <div id="imageEmpty">
-                        <i data-lucide="image-plus" class="w-7 h-7 text-zinc-500 group-hover:text-rose-400 mx-auto mb-2 transition-colors"></i>
+                        <i data-lucide="image-plus" class="w-6 h-6 text-zinc-500 group-hover:text-zinc-300 mx-auto mb-2 transition-colors"></i>
                         <p class="text-xs font-semibold text-zinc-200">Click or Drag Artwork Image</p>
                     </div>
                     <div id="imageSelected" class="hidden text-left w-full flex items-center gap-3">
-                        <img id="imagePreview" src="" alt="Cover" class="w-14 h-14 rounded-lg object-cover border border-rose-500/30 shadow-md shrink-0">
+                        <img id="imagePreview" src="" alt="Cover" class="w-12 h-12 rounded-lg object-cover border border-zinc-800 shadow-md shrink-0">
                         <div class="overflow-hidden">
                             <p id="imageFileName" class="text-xs font-bold text-white truncate"></p>
-                            <p class="text-[10px] text-rose-400">Ready for 1080p canvas</p>
+                            <p class="text-[10px] text-zinc-400">Ready for 1080p canvas</p>
                         </div>
                     </div>
                 </div>
@@ -358,122 +345,132 @@
             <label class="block text-xs font-semibold text-zinc-300 mb-1.5">
                 Song / Video Title
             </label>
-            <input type="text" name="title" id="titleInput" placeholder="e.g. Neon Horizon (Deep Focus Chill Beats)" class="w-full bg-dark-850 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 text-xs">
+            <input type="text" name="title" id="titleInput" placeholder="e.g. Neon Horizon (Deep Focus Chill Beats)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 text-xs">
         </div>
 
         <!-- 3. Choose Video Format -->
         <div class="space-y-3">
-            <label class="block text-xs font-bold uppercase tracking-wider text-zinc-300">
-                3. Select Output Video Format
+            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                3. Select Video Format
             </label>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Option 1: 1-Hour Loop -->
-                <label class="format-card relative p-4 rounded-xl border-2 border-emerald-500/80 bg-dark-850 cursor-pointer transition-all hover:scale-[1.01] block">
+                <label class="format-card relative p-4 rounded-xl border border-zinc-700 bg-zinc-850 cursor-pointer transition-colors block">
                     <input type="radio" name="video_format" value="1HOUR_LOOP" class="hidden" checked>
                     <div class="flex items-center justify-between mb-2">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            #1 FOR 4,000 WATCH HOURS
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-300">
+                            60 Minutes
                         </span>
-                        <div class="w-4 h-4 rounded-full border-2 border-emerald-400 flex items-center justify-center bg-emerald-400 radio-dot">
+                        <div class="w-4 h-4 rounded-full border-2 border-zinc-300 flex items-center justify-center bg-zinc-300 radio-dot">
                             <div class="w-1.5 h-1.5 bg-zinc-950 rounded-full"></div>
                         </div>
                     </div>
-                    <h4 class="text-sm font-bold text-white">1-Hour Study / Chill Loop</h4>
-                    <p class="text-[11px] text-zinc-400 mt-1">Loops seamlessly for 60 minutes. Viewers listening while studying generate 20–40 min of watch time each.</p>
+                    <h4 class="text-xs font-bold text-white">1-Hour Study / Chill Loop</h4>
+                    <p class="text-[11px] text-zinc-400 mt-1">Loops seamlessly for 60 minutes for high watch time.</p>
                 </label>
 
                 <!-- Option 2: 1080p Visualizer -->
-                <label class="format-card relative p-4 rounded-xl border-2 border-zinc-700/80 bg-dark-850 cursor-pointer transition-all hover:scale-[1.01] block opacity-80 hover:opacity-100">
+                <label class="format-card relative p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 cursor-pointer transition-colors block">
                     <input type="radio" name="video_format" value="VISUALIZER" class="hidden">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                            STANDARD VIDEO (16:9)
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400">
+                            16:9 Landscape
                         </span>
-                        <div class="w-4 h-4 rounded-full border-2 border-zinc-500 flex items-center justify-center radio-dot">
+                        <div class="w-4 h-4 rounded-full border-2 border-zinc-700 flex items-center justify-center radio-dot">
                             <div class="w-1.5 h-1.5 bg-transparent rounded-full"></div>
                         </div>
                     </div>
-                    <h4 class="text-sm font-bold text-white">1080p Official Visualizer</h4>
-                    <p class="text-[11px] text-zinc-400 mt-1">Full-length single video matching exact song duration with blurred widescreen canvas.</p>
+                    <h4 class="text-xs font-bold text-white">1080p Visualizer</h4>
+                    <p class="text-[11px] text-zinc-400 mt-1">Full-length single video matching exact song duration.</p>
                 </label>
 
                 <!-- Option 3: 15s Shorts Hook -->
-                <label class="format-card relative p-4 rounded-xl border-2 border-zinc-700/80 bg-dark-850 cursor-pointer transition-all hover:scale-[1.01] block opacity-80 hover:opacity-100">
+                <label class="format-card relative p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 cursor-pointer transition-colors block">
                     <input type="radio" name="video_format" value="SHORT" class="hidden">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                            VIRAL SHORTS (9:16)
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400">
+                            9:16 Vertical
                         </span>
-                        <div class="w-4 h-4 rounded-full border-2 border-zinc-500 flex items-center justify-center radio-dot">
+                        <div class="w-4 h-4 rounded-full border-2 border-zinc-700 flex items-center justify-center radio-dot">
                             <div class="w-1.5 h-1.5 bg-transparent rounded-full"></div>
                         </div>
                     </div>
-                    <h4 class="text-sm font-bold text-white">15s YouTube Shorts Hook</h4>
-                    <p class="text-[11px] text-zinc-400 mt-1">Vertical video snippet cut at the chorus hook to rapidly attract new subscribers.</p>
+                    <h4 class="text-xs font-bold text-white">15s Shorts Hook</h4>
+                    <p class="text-[11px] text-zinc-400 mt-1">Vertical video snippet cut at the chorus hook.</p>
                 </label>
             </div>
         </div>
 
         <!-- Submit Button -->
         <div class="flex items-center justify-end pt-2">
-            <button type="submit" id="renderBtn" class="px-7 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-600/30 transition-all hover:scale-[1.02] flex items-center gap-2">
-                <i data-lucide="play-circle" class="w-4 h-4"></i>
-                <span id="btnText">⚡ Generate Video (.mp4)</span>
+            <button type="submit" id="renderBtn" class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors flex items-center gap-2">
+                <span id="btnText">Generate Video (.mp4)</span>
             </button>
         </div>
     </form>
 
     <!-- Rendered Videos Library -->
-    <div class="bg-dark-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl space-y-4 p-6">
+    <div class="glass-panel rounded-2xl overflow-hidden space-y-4 p-6">
         <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
             <div>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i data-lucide="film" class="w-4 h-4 text-rose-400"></i>
-                    Rendered Video Library (Ready for YouTube)
+                    <i data-lucide="film" class="w-4 h-4 text-white"></i>
+                    Rendered Video Library
                 </h3>
-                <p class="text-xs text-zinc-400 mt-0.5">Download your MP4 videos and copy YouTube titles & descriptions.</p>
+                <p class="text-xs text-zinc-400 mt-0.5">Download your MP4 videos and copy YouTube titles & descriptions</p>
             </div>
-            <span class="text-xs font-mono text-zinc-400">{{ projects.count }} Videos</span>
+            <span class="text-xs font-mono text-zinc-500">{{ projects.count }} Videos</span>
         </div>
 
         {% if projects %}
         <div class="space-y-4">
             {% for p in projects %}
-            <div class="p-5 bg-dark-850 border border-zinc-800 rounded-xl space-y-4 hover:border-zinc-700 transition-colors">
+            <div class="p-4 bg-zinc-950/70 border border-zinc-800 rounded-xl space-y-4 hover:border-zinc-700 transition-colors">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
                         {% if p.cover_image %}
-                        <img src="{{ p.cover_image.url }}" alt="{{ p.title }}" class="w-16 h-16 rounded-xl object-cover border border-zinc-700 shadow-md shrink-0">
+                        <img src="{{ p.cover_image.url }}" alt="{{ p.title }}" class="w-14 h-14 rounded-xl object-cover border border-zinc-800 shadow-md shrink-0">
                         {% endif %}
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if p.video_format == '1HOUR_LOOP' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% elif p.video_format == 'SHORT' %}bg-purple-500/10 text-purple-400 border border-purple-500/20{% else %}bg-blue-500/10 text-blue-400 border border-blue-500/20{% endif %}">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-300">
                                     {{ p.get_video_format_display }}
                                 </span>
                                 <span class="text-[10px] text-zinc-500">• {{ p.created_at|naturaltime }}</span>
                             </div>
-                            <h4 class="text-base font-bold text-white">{{ p.title }}</h4>
+                            <h4 class="text-sm font-bold text-white">{{ p.title }}</h4>
                         </div>
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center gap-2.5 flex-wrap">
+                    <div class="flex items-center gap-2 flex-wrap">
                         {% if p.output_video %}
-                        <a href="{{ p.output_video.url }}" download class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm transition-transform hover:scale-105">
-                            <i data-lucide="download" class="w-4 h-4"></i>
+                        <button type="button" 
+                                onclick="openPublishModal({
+                                    sourceType: 'VIDEO_LOOP',
+                                    sourceId: {{ p.id }},
+                                    title: `{{ p.youtube_title|escapejs }}`,
+                                    description: `{{ p.youtube_description|escapejs }}`,
+                                    tags: 'studybeats, 1hourloop, chillvibes, focusmusic',
+                                    videoFilePath: `{{ p.output_video.path|escapejs }}`,
+                                    thumbnailPath: `{% if p.cover_image %}{{ p.cover_image.path|escapejs }}{% endif %}`,
+                                    thumbnailUrl: `{% if p.cover_image %}{{ p.cover_image.url }}{% endif %}`
+                                })"
+                                class="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors">
+                            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                            <span>Send to YouTube</span>
+                        </button>
+
+                        <a href="{{ p.output_video.url }}" download class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors border border-zinc-700">
+                            <i data-lucide="download" class="w-3.5 h-3.5 text-white"></i>
                             Download .MP4
                         </a>
                         {% endif %}
 
-                        <a href="https://studio.youtube.com" target="_blank" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold rounded-xl border border-rose-500/20 transition-colors flex items-center gap-1.5">
-                            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-                            Upload on YouTube
-                        </a>
-
                         <form method="POST" action="{% url 'studio_delete' p.id %}" onsubmit="return confirm('Delete this video project?')">
                             {% csrf_token %}
-                            <button type="submit" class="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" title="Delete Video">
+                            <button type="submit" class="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Video">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </form>
@@ -491,15 +488,15 @@
 
                     <div class="lg:col-span-8 space-y-2 text-xs">
                         <div>
-                            <label class="text-[10px] font-bold text-zinc-400 uppercase">Recommended YouTube Title</label>
-                            <div class="p-2 bg-dark-900 rounded-lg border border-zinc-800 font-mono text-zinc-200 text-[11px] select-all mt-0.5">
+                            <label class="text-[10px] font-semibold text-zinc-400 uppercase">Recommended Title</label>
+                            <div class="p-2 bg-zinc-900 rounded-lg border border-zinc-800 font-mono text-zinc-200 text-[11px] select-all mt-0.5">
                                 {{ p.youtube_title }}
                             </div>
                         </div>
 
                         <div>
-                            <label class="text-[10px] font-bold text-zinc-400 uppercase">Description (with Chapters)</label>
-                            <textarea readonly class="w-full h-20 p-2 bg-dark-900 rounded-lg border border-zinc-800 font-mono text-zinc-200 text-[11px] resize-none select-all focus:outline-none mt-0.5">{{ p.youtube_description }}</textarea>
+                            <label class="text-[10px] font-semibold text-zinc-400 uppercase">Description (with Chapters)</label>
+                            <textarea readonly class="w-full h-20 p-2 bg-zinc-900 rounded-lg border border-zinc-800 font-mono text-zinc-200 text-[11px] resize-none select-all focus:outline-none mt-0.5">{{ p.youtube_description }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -508,13 +505,13 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="py-12 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-zinc-800/80 flex items-center justify-center text-zinc-500 mx-auto mb-3">
-                <i data-lucide="video" class="w-7 h-7 text-rose-400"></i>
+        <div class="py-12 text-center space-y-2">
+            <div class="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-500 flex items-center justify-center mx-auto">
+                <i data-lucide="video" class="w-5 h-5 text-zinc-400"></i>
             </div>
-            <h4 class="text-sm font-bold text-white mb-1">No Videos Generated Yet</h4>
-            <p class="text-xs text-zinc-400 max-w-sm mx-auto">
-                Upload your audio and artwork above to render your first 1-Hour Study Loop or 1080p visualizer!
+            <h4 class="text-sm font-bold text-white">No Videos Generated Yet</h4>
+            <p class="text-xs text-zinc-500 max-w-sm mx-auto">
+                Upload your audio and artwork above to render your first 1-Hour Study Loop or visualizer.
             </p>
         </div>
         {% endif %}
@@ -522,42 +519,35 @@
 </div>
 
 <!-- Live Rendering Progress Modal Overlay -->
-<div id="progressModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-dark-900 border border-zinc-700/80 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center relative overflow-hidden">
-        <div class="absolute -top-12 -right-12 w-40 h-40 bg-rose-500/20 rounded-full blur-2xl pointer-events-none"></div>
-
-        <!-- Animated Pulse Spinner -->
-        <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
-            <div class="absolute inset-0 rounded-full border-4 border-rose-500/20 animate-ping"></div>
-            <div class="w-16 h-16 rounded-full border-4 border-t-rose-500 border-r-rose-500/30 border-b-rose-500/10 border-l-rose-500/50 animate-spin"></div>
-            <i data-lucide="film" class="w-7 h-7 text-rose-400 absolute"></i>
+<div id="progressModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center relative overflow-hidden">
+        <div class="w-12 h-12 rounded-xl bg-zinc-800 text-white flex items-center justify-center mx-auto">
+            <i data-lucide="loader" class="w-6 h-6 text-zinc-300 animate-spin"></i>
         </div>
 
         <div>
-            <h3 class="text-base font-bold text-white tracking-tight" id="progressTitle">Rendering YouTube Video...</h3>
+            <h3 class="text-base font-bold text-white tracking-tight" id="progressTitle">Rendering Video...</h3>
             <p class="text-xs text-zinc-400 mt-1" id="progressSubtitle">Please wait while FFmpeg compiles your video locally.</p>
         </div>
 
-        <!-- Glowing Animated Progress Bar -->
+        <!-- Progress Bar -->
         <div class="space-y-2">
             <div class="flex items-center justify-between text-xs font-mono">
-                <span id="progressStep" class="text-zinc-300 font-semibold truncate max-w-[260px] text-left">Uploading audio & artwork...</span>
-                <span id="progressPercent" class="text-rose-400 font-bold">12%</span>
+                <span id="progressStep" class="text-zinc-300 font-medium truncate max-w-[260px] text-left">Uploading audio & artwork...</span>
+                <span id="progressPercent" class="text-zinc-300 font-bold">12%</span>
             </div>
-            <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700/60 shadow-inner">
-                <div id="progressBar" class="h-full bg-gradient-to-r from-rose-600 via-red-500 to-amber-500 rounded-full transition-all duration-300 shadow-lg shadow-rose-500/40" style="width: 12%"></div>
+            <div class="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+                <div id="progressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 12%"></div>
             </div>
         </div>
 
         <!-- Live Elapsed Timer & Notice -->
-        <div class="flex items-center justify-between pt-2 border-t border-zinc-800 text-[11px] text-zinc-400">
+        <div class="flex items-center justify-between pt-2 border-t border-zinc-800 text-[11px] text-zinc-500">
             <div class="flex items-center gap-1.5 font-mono">
-                <i data-lucide="clock" class="w-3.5 h-3.5 text-rose-400"></i>
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-zinc-400"></i>
                 <span id="elapsedTimer">00:00</span>
             </div>
-            <span class="text-emerald-400 font-medium flex items-center gap-1">
-                <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Fast Local Render
-            </span>
+            <span class="text-zinc-400 font-medium">Fast Local Render</span>
         </div>
     </div>
 </div>
@@ -689,5 +679,7 @@
         });
     });
 </script>
+
+{% include 'publishing/_publish_modal.html' %}
 {% endblock %}
 
