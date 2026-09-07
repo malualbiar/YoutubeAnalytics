@@ -23,6 +23,38 @@
                 <a href="?days=365{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 365 or range_days == '365' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">1Y</a>
                 <a href="?days=all{% if top_sort %}&top_sort={{ top_sort }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all {% if range_days == 'all' %}bg-emerald-500 text-zinc-950 shadow-sm{% else %}text-zinc-400 hover:text-white{% endif %}">ALL</a>
             </div>
+
+            <!-- Creator Studio Quick Launch Action -->
+            <a href="{% url 'shorts_maker' %}" class="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all hover:scale-105">
+                <i data-lucide="scissors" class="w-3.5 h-3.5"></i>
+                Chop Shorts (9:16)
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Studio Launch Banner -->
+    <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-dark-900 to-purple-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                <i data-lucide="scissors" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-white flex items-center gap-2">
+                    Viral Video Chopper & Shorts Factory
+                    <span class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">NEW</span>
+                </h4>
+                <p class="text-[11px] text-zinc-400">Chop long videos into 15s, 30s, 60s vertical shorts with draggable timeline, instant preview, and 9:16 vertical rendering.</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            <a href="{% url 'shorts_maker' %}" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                Open Chopper Studio
+            </a>
+            <a href="{% url 'mix_maker' %}" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition-colors">
+                DJ Mix Maker
+            </a>
         </div>
     </div>
 
