@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.artists.models import YouTubeChannel
@@ -13,30 +14,92 @@ def channels_list_view(request):
 @login_required
 def trigger_sync_channel_view(request, pk):
     channel = get_object_or_404(YouTubeChannel, pk=pk)
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or
+        request.GET.get('format') == 'json' or
+        'application/json' in request.headers.get('Accept', '')
+    )
+
     if not request.user.can_manage_channels:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
         messages.error(request, "Permission denied.")
         return redirect('channels_list')
 
-    sync_service = SyncService()
-    log = sync_service.sync_channel(channel)
-    if log.status == SyncLog.Status.SUCCESS:
-        messages.success(request, f"Successfully synced channel '{channel.channel_name}' (+{log.new_videos} new, {log.videos_updated} updated videos in {log.duration_seconds}s).")
-    else:
-        messages.error(request, f"Sync failed for '{channel.channel_name}': {log.error_message}")
+    try:
+        sync_service = SyncService()
+        log = sync_service.sync_channel(channel)
+        is_success = log.status == SyncLog.Status.SUCCESS
 
-    return redirect('channels_list')
+        if is_ajax:
+            return JsonResponse({
+                'success': is_success,
+                'channel_name': channel.channel_name,
+                'new_videos': log.new_videos,
+                'videos_updated': log.videos_updated,
+                'duration_seconds': log.duration_seconds,
+                'error_message': log.error_message if not is_success else None,
+                'logs_url': '/system/logs/' if not is_success else None
+            })
+
+        if is_success:
+            messages.success(request, f"Successfully synced channel '{channel.channel_name}' (+{log.new_videos} new, {log.videos_updated} updated videos in {log.duration_seconds}s).")
+            return redirect(request.META.get('HTTP_REFERER') or 'channels_list')
+        else:
+            messages.error(request, f"Sync failed for '{channel.channel_name}': {log.error_message}")
+            return redirect('sync_logs')
+    except Exception as e:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': str(e), 'logs_url': '/system/logs/'}, status=500)
+        messages.error(request, f"Sync failed: {e}")
+        return redirect('sync_logs')
 
 @login_required
 def trigger_sync_all_view(request):
-    if not request.user.can_manage_channels:
-        messages.error(request, "Permission denied.")
-        return redirect('channels_list')
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or
+        request.GET.get('format') == 'json' or
+        'application/json' in request.headers.get('Accept', '')
+    )
 
-    sync_service = SyncService()
-    logs = sync_service.sync_all_channels()
-    success_count = sum(1 for l in logs if l.status == SyncLog.Status.SUCCESS)
-    messages.success(request, f"Synchronization complete: {success_count} / {len(logs)} channels succeeded.")
-    return redirect('sync_logs')
+    if not request.user.can_manage_channels:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
+        messages.error(request, "Permission denied.")
+        return redirect(request.META.get('HTTP_REFERER') or 'channels_list')
+
+    try:
+        sync_service = SyncService()
+        logs = sync_service.sync_all_channels()
+        success_count = sum(1 for l in logs if l.status == SyncLog.Status.SUCCESS)
+        failed_count = len(logs) - success_count
+        total = len(logs)
+        has_error = (failed_count > 0 and total > 0)
+
+        if is_ajax:
+            return JsonResponse({
+                'success': not has_error,
+                'total': total,
+                'success_count': success_count,
+                'failed_count': failed_count,
+                'has_error': has_error,
+                'message': f"Synchronization complete: {success_count} / {total} channels succeeded." if not has_error else f"Sync encountered errors on {failed_count} channel(s).",
+                'logs_url': '/system/logs/' if has_error else None
+            })
+
+        if has_error:
+            messages.error(request, f"Sync completed with errors on {failed_count} channel(s). View audit logs below for details.")
+            return redirect('sync_logs')
+        else:
+            messages.success(request, f"Synchronization complete: {success_count} / {total} channels succeeded.")
+            return redirect(request.META.get('HTTP_REFERER') or 'dashboard')
+    except Exception as e:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': str(e), 'logs_url': '/system/logs/'}, status=500)
+        messages.error(request, f"Sync failed: {e}")
+        return redirect('sync_logs')
 
 @login_required
 def sync_logs_view(request):

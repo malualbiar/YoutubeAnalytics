@@ -12,10 +12,10 @@
         </div>
 
         {% if user.can_manage_channels %}
-        <a href="{% url 'sync_all_channels' %}" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all self-start">
+        <button onclick="triggerChannelSync('{% url 'sync_all_channels' %}')" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all self-start cursor-pointer">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
             Run Sync Now
-        </a>
+        </button>
         {% endif %}
     </div>
 

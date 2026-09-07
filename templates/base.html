@@ -230,18 +230,11 @@
 
                 <!-- Action Controls -->
                 <div class="flex items-center gap-3">
-                    {% if user.is_super_admin %}
-                    <a href="{% url 'studio_home' %}" class="flex items-center gap-2 px-3 py-1.5 bg-dark-850 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-xs font-semibold rounded-lg shadow-sm transition-all hover:border-rose-500/50">
-                        <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
-                        1-Hr Video Studio
-                    </a>
-                    {% endif %}
-
                     {% if user.can_manage_channels %}
-                    <a href="{% url 'sync_all_channels' %}" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all">
+                    <button onclick="triggerChannelSync('{% url 'sync_all_channels' %}')" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 text-xs font-semibold rounded-lg shadow-sm shadow-emerald-500/20 transition-all cursor-pointer">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                         Sync All Channels
-                    </a>
+                    </button>
                     {% endif %}
 
                     <!-- Notifications Bell -->
@@ -391,7 +384,159 @@
                 }
             }
         }
+
+        let isSyncing = false;
+        let syncProgressInterval = null;
+
+        function triggerChannelSync(url) {
+            if (isSyncing) return;
+            isSyncing = true;
+
+            const modal = document.getElementById('syncLoadingModal');
+            const progressBar = document.getElementById('syncProgressBar');
+            const percentLabel = document.getElementById('syncPercentLabel');
+            const statusLabel = document.getElementById('syncStatusLabel');
+            const modalTitle = document.getElementById('syncModalTitle');
+            const modalSubtitle = document.getElementById('syncModalSubtitle');
+            const iconContainer = document.getElementById('syncIconContainer');
+            const spinnerIcon = document.getElementById('syncSpinnerIcon');
+            const modalGlow = document.getElementById('syncModalGlow');
+
+            if (!modal) {
+                window.location.href = url;
+                return;
+            }
+
+            // Reset UI
+            modal.classList.remove('hidden');
+            if (progressBar) {
+                progressBar.style.width = '15%';
+                progressBar.className = 'bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500 ease-out';
+            }
+            if (percentLabel) {
+                percentLabel.textContent = '15%';
+                percentLabel.className = 'text-emerald-400 font-mono font-bold';
+            }
+            if (statusLabel) statusLabel.textContent = 'Connecting to YouTube API...';
+            if (modalTitle) modalTitle.textContent = 'Syncing YouTube Data...';
+            if (modalSubtitle) modalSubtitle.textContent = 'Fetching latest channel metrics & video analytics';
+            if (iconContainer) iconContainer.className = 'w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0';
+            if (modalGlow) modalGlow.className = 'absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none';
+            if (spinnerIcon) spinnerIcon.classList.add('animate-spin');
+
+            // Simulate progress while backend works
+            let currentPct = 15;
+            const stages = [
+                { pct: 35, text: 'Fetching channel statistics...' },
+                { pct: 55, text: 'Scanning latest video uploads...' },
+                { pct: 75, text: 'Recording analytics snapshots...' },
+                { pct: 90, text: 'Finalizing database updates...' }
+            ];
+            let stageIdx = 0;
+
+            syncProgressInterval = setInterval(() => {
+                if (stageIdx < stages.length) {
+                    currentPct = stages[stageIdx].pct;
+                    if (progressBar) progressBar.style.width = currentPct + '%';
+                    if (percentLabel) percentLabel.textContent = currentPct + '%';
+                    if (statusLabel) statusLabel.textContent = stages[stageIdx].text;
+                    stageIdx++;
+                }
+            }, 900);
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(async res => {
+                clearInterval(syncProgressInterval);
+                const data = await res.json().catch(() => null);
+                if (!res.ok) {
+                    throw new Error((data && (data.error || data.message)) || `Server returned ${res.status}`);
+                }
+                return data;
+            })
+            .then(data => {
+                clearInterval(syncProgressInterval);
+                if (data && data.success) {
+                    if (progressBar) progressBar.style.width = '100%';
+                    if (percentLabel) percentLabel.textContent = '100%';
+                    if (statusLabel) statusLabel.textContent = data.message || 'Sync completed successfully!';
+                    if (modalTitle) modalTitle.textContent = 'Sync Complete!';
+                    if (modalSubtitle) modalSubtitle.textContent = 'Metrics updated successfully.';
+                    if (spinnerIcon) spinnerIcon.classList.remove('animate-spin');
+
+                    // Stay on current page and reload after short delay so fresh metrics render
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 750);
+                } else {
+                    const errMsg = (data && (data.error || data.message || data.error_message)) || 'Encountered sync errors';
+                    handleSyncFailure(errMsg, (data && data.logs_url) || '/system/logs/');
+                }
+            })
+            .catch(err => {
+                clearInterval(syncProgressInterval);
+                handleSyncFailure(err.message || 'Network error during sync', '/system/logs/');
+            });
+
+            function handleSyncFailure(errorText, redirectUrl) {
+                if (progressBar) {
+                    progressBar.style.width = '100%';
+                    progressBar.className = 'bg-rose-500 h-full rounded-full transition-all duration-300';
+                }
+                if (percentLabel) {
+                    percentLabel.textContent = 'Error';
+                    percentLabel.className = 'text-rose-400 font-mono font-bold';
+                }
+                if (statusLabel) statusLabel.textContent = errorText;
+                if (modalTitle) modalTitle.textContent = 'Sync Failed';
+                if (modalSubtitle) modalSubtitle.textContent = 'Redirecting to audit logs for error details...';
+                if (iconContainer) iconContainer.className = 'w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0';
+                if (modalGlow) modalGlow.className = 'absolute -top-24 -left-24 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none';
+                if (spinnerIcon) spinnerIcon.classList.remove('animate-spin');
+
+                // Only redirect to logs when there's an error
+                setTimeout(() => {
+                    window.location.href = redirectUrl || '/system/logs/';
+                }, 1400);
+            }
+        }
     </script>
+
+    <!-- Synchronization Loading Modal -->
+    <div id="syncLoadingModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="bg-dark-900 border border-zinc-700/80 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl relative overflow-hidden">
+            <!-- Glow background accent -->
+            <div id="syncModalGlow" class="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex items-center gap-4 mb-4 relative z-10">
+                <div id="syncIconContainer" class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                    <i data-lucide="refresh-cw" id="syncSpinnerIcon" class="w-6 h-6 animate-spin"></i>
+                </div>
+                <div>
+                    <h3 id="syncModalTitle" class="text-base font-bold text-white tracking-tight">Syncing YouTube Data...</h3>
+                    <p id="syncModalSubtitle" class="text-xs text-zinc-400 mt-0.5">Fetching latest channel metrics & video analytics</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar Container -->
+            <div class="space-y-2 mt-4 relative z-10">
+                <div class="flex justify-between text-xs">
+                    <span id="syncStatusLabel" class="text-zinc-300 font-medium truncate max-w-[280px]">Connecting to YouTube API...</span>
+                    <span id="syncPercentLabel" class="text-emerald-400 font-mono font-bold">15%</span>
+                </div>
+                <div class="w-full bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800 relative">
+                    <div id="syncProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500 ease-out" style="width: 15%;"></div>
+                </div>
+            </div>
+
+            <p class="text-[11px] text-zinc-400 mt-4 text-center relative z-10">Please keep the application open while updates are processed.</p>
+        </div>
+    </div>
     <!-- Daily Quota & Notification Reminders Engine -->
     <script src="/static/js/daily_reminders.js"></script>
     {% block extra_scripts %}{% endblock %}
