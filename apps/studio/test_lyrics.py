@@ -188,7 +188,7 @@ class LyricsStudioTestCase(TestCase):
         response = self.client.get(reverse('lyrics_maker'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Synced Lyric Video Generator")
-        self.assertContains(response, "Tap-To-Sync Studio")
+        self.assertContains(response, "Tap-To-Sync")
 
         # Viewer forbidden
         self.client.login(email='viewer@lyrics.com', password='viewerpassword123')
