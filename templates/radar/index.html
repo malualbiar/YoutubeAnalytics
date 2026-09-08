@@ -4,23 +4,27 @@
 {% block title %}AI Music Radar | YT Quid{% endblock %}
 
 {% block content %}
-<div class="space-y-6 pb-12">
+<div class="space-y-6 pb-24">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
         <div>
             <div class="flex items-center gap-2.5">
                 <h1 class="text-xl font-bold tracking-tight text-white">AI Music Radar</h1>
-                <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                    Scanner
+                <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    YouTube Music Verified
                 </span>
             </div>
             <p class="text-xs text-zinc-400 mt-1">
-                Discover recently posted AI music, filter by upload time, duration, and channel reach, or download lossless WAVs.
+                Discover recently posted AI music tracks flagged by YouTube's platform disclosures. Audition previews directly, download lossless WAVs, or send to Video Studio.
             </p>
         </div>
 
         <div class="flex items-center gap-2">
-            <a href="{% url 'studio_home' %}" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-colors">
+            <a href="{% url 'studio_home' %}" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-colors flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
                 Video Studio
             </a>
         </div>
@@ -29,11 +33,34 @@
     <!-- Filter Control Panel -->
     <div class="bg-dark-900 rounded-xl border border-zinc-800 p-4 space-y-4">
         <form method="GET" action="{% url 'radar_feed' %}" class="space-y-3" id="radarFilterForm">
+            <input type="hidden" name="genre" id="selectedGenreInput" value="{{ current_genre }}">
+            <input type="hidden" name="mode" id="selectedModeInput" value="{{ current_mode }}">
+
+            <!-- Detection Mode Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/80">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-zinc-400 font-medium">Detection Filter:</span>
+                    <div class="inline-flex rounded-lg bg-dark-950 p-1 border border-zinc-800">
+                        {% for dm in detection_modes %}
+                        <button type="button" onclick="selectDetectionMode('{{ dm.id }}')"
+                                class="px-3 py-1 rounded-md text-xs font-semibold transition-all {% if current_mode == dm.id %}bg-emerald-600 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200{% endif %}">
+                            {{ dm.label }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Category 10 (Music) & YouTube Altered Content Disclosures Only</span>
+                </div>
+            </div>
+
             <!-- Search & Filter Controls Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 pt-1">
                 <!-- Search -->
                 <div class="lg:col-span-4">
-                    <input type="text" name="q" value="{{ query }}" placeholder="Search AI keywords..." 
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search AI songs, artists, prompts..." 
                            class="w-full bg-dark-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors">
                 </div>
 
@@ -76,14 +103,13 @@
                         {% endfor %}
                     </select>
                     <button type="submit" class="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium border border-zinc-700 transition-colors shrink-0">
-                        Apply
+                        Filter
                     </button>
                 </div>
             </div>
 
             <!-- Genre Tabs -->
             <div class="flex items-center gap-1.5 overflow-x-auto pt-1 no-scrollbar">
-                <input type="hidden" name="genre" id="selectedGenreInput" value="{{ current_genre }}">
                 {% for g in genres %}
                 <button type="button" onclick="selectGenre('{{ g.id }}')"
                         class="px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors {% if current_genre == g.id %}bg-violet-600 text-white{% else %}bg-dark-950 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800/80{% endif %}">
@@ -97,16 +123,22 @@
     <!-- Active Count & Status -->
     <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 px-1">
         <div class="flex items-center gap-3">
-            <span>Showing <strong class="text-zinc-200">{{ total_tracks }}</strong> tracks</span>
-            <span class="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                Quota-Safe (0 API Units)
+            <span>Showing <strong class="text-zinc-100">{{ total_tracks }}</strong> pure music tracks</span>
+            <span class="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-medium flex items-center gap-1">
+                <svg class="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                YouTube Flag Heuristics Active
             </span>
         </div>
         <div class="flex items-center gap-3">
-            <a href="?q={{ query }}&genre={{ current_genre }}&time={{ current_time }}&duration={{ current_duration }}&popularity={{ current_popularity }}&sort={{ current_sort }}&refresh=1" class="text-zinc-300 hover:text-white underline text-xs">
+            <a href="?q={{ query }}&genre={{ current_genre }}&mode={{ current_mode }}&time={{ current_time }}&duration={{ current_duration }}&popularity={{ current_popularity }}&sort={{ current_sort }}&refresh=1" class="text-zinc-300 hover:text-white underline text-xs flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 Refresh Live
             </a>
-            {% if query or current_time != '48h' or current_duration != 'all' or current_popularity != 'all' %}
+            {% if query or current_time != '48h' or current_duration != 'all' or current_popularity != 'all' or current_mode != 'all' %}
             <a href="{% url 'radar_feed' %}" class="text-violet-400 hover:underline">Reset filters</a>
             {% endif %}
         </div>
@@ -114,99 +146,153 @@
 
     <!-- Tracks Grid -->
     {% if tracks %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="tracksGrid">
         {% for track in tracks %}
-        <div class="bg-dark-900 rounded-xl border border-zinc-800 overflow-hidden flex flex-col justify-between hover:border-zinc-700 transition-colors">
+        <div class="bg-dark-900 rounded-xl border border-zinc-800 overflow-hidden flex flex-col justify-between hover:border-zinc-700 transition-all duration-200 track-card"
+             id="card-{{ track.video_id }}"
+             data-video-id="{{ track.video_id }}"
+             data-title="{{ track.title }}"
+             data-artist="{{ track.artist }}"
+             data-generator="{{ track.generator }}"
+             data-thumb="{{ track.thumbnail_url }}">
             <div>
                 <!-- Thumbnail -->
                 <div class="relative aspect-video w-full bg-dark-950 overflow-hidden group">
-                    <img src="{{ track.thumbnail_url }}" alt="{{ track.title }}" class="w-full h-full object-cover" loading="lazy">
+                    <img src="{{ track.thumbnail_url }}" alt="{{ track.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
                     
-                    <!-- Top Left Generator -->
-                    <div class="absolute top-2.5 left-2.5">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-black/80 text-zinc-200 border border-white/10">
+                    <!-- Top Left Generator & Genre -->
+                    <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-black/85 text-violet-300 border border-violet-500/30 backdrop-blur-sm">
                             {{ track.generator }}
                         </span>
+                        {% if track.detected_genre and track.detected_genre != 'AI Music' %}
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-black/85 text-zinc-300 border border-white/10 backdrop-blur-sm">
+                            {{ track.detected_genre }}
+                        </span>
+                        {% endif %}
                     </div>
 
                     <!-- Top Right Relative Time -->
                     <div class="absolute top-2.5 right-2.5">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-black/80 text-zinc-300 border border-white/10">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-black/85 text-zinc-300 border border-white/10 backdrop-blur-sm">
                             {{ track.relative_time }}
                         </span>
                     </div>
 
                     <!-- Bottom Right Duration -->
                     <div class="absolute bottom-2.5 right-2.5">
-                        <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/80 text-zinc-300">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/85 text-zinc-300 backdrop-blur-sm">
                             {{ track.duration }}
                         </span>
                     </div>
 
                     <!-- Bottom Left Velocity -->
                     <div class="absolute bottom-2.5 left-2.5">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/90 text-emerald-400 border border-emerald-500/30">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/90 text-emerald-400 border border-emerald-500/30 backdrop-blur-sm flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                             {{ track.velocity_vph|floatformat:0|intcomma }} views/hr
                         </span>
                     </div>
 
-                    <!-- Clean Hover Play Overlay -->
-                    <a href="{{ track.youtube_url }}" target="_blank" rel="noopener noreferrer" 
-                       class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                        <span class="px-3 py-1.5 rounded-lg bg-white/90 text-black text-xs font-semibold shadow-md">
-                            Preview on YouTube
+                    <!-- Clean Hover Play Overlay / Audition Trigger -->
+                    <button type="button"
+                            onclick="toggleAudition('{{ track.video_id }}', '{{ track.title|escapejs }}', '{{ track.artist|escapejs }}', '{{ track.thumbnail_url|escapejs }}', '{{ track.generator|escapejs }}')"
+                            class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 backdrop-blur-[2px]">
+                        <span class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-xl flex items-center gap-2 transform group-hover:scale-105 transition-all">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                            Audition Song
                         </span>
-                    </a>
+                    </button>
                 </div>
 
-                <!-- Info -->
-                <div class="p-4 space-y-2">
-                    <h3 class="text-sm font-semibold text-zinc-100 line-clamp-2 leading-snug" title="{{ track.title }}">
-                        {{ track.title }}
-                    </h3>
-
-                    <div class="flex items-center justify-between text-xs text-zinc-400">
-                        <span class="truncate max-w-[180px]">{{ track.channel_title }}</span>
-                        {% if track.is_popular %}
-                        <span class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-                            Popular
-                        </span>
-                        {% else %}
-                        <span class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-violet-950/60 text-violet-300 border border-violet-500/20">
-                            Rising
-                        </span>
+                <!-- Info & Metadata -->
+                <div class="p-4 space-y-2.5">
+                    <!-- YouTube Synthetic Flag Disclosure Badge -->
+                    {% if track.is_youtube_flagged %}
+                    <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-semibold">
+                        <svg class="w-3.5 h-3.5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span class="truncate">{{ track.flag_badge }}</span>
+                        {% if track.music_confidence %}
+                        <span class="text-[9px] text-emerald-300/80 font-mono ml-auto">{{ track.music_confidence }}% match</span>
                         {% endif %}
                     </div>
+                    {% endif %}
 
-                    <!-- Metrics -->
-                    <div class="flex items-center gap-4 text-xs text-zinc-400 pt-1">
-                        <span><strong>{{ track.views|intcomma }}</strong> views</span>
-                        <span><strong>{{ track.likes|intcomma }}</strong> likes</span>
+                    <!-- Clean Song Title -->
+                    <div>
+                        <h3 class="text-sm font-bold text-zinc-100 line-clamp-1 leading-snug hover:text-violet-400 transition-colors" title="{{ track.title }}">
+                            {{ track.title }}
+                        </h3>
+                        <div class="flex items-center gap-1 text-xs text-zinc-400 mt-0.5">
+                            <span class="text-violet-400 font-medium truncate max-w-[160px]">{{ track.artist }}</span>
+                            {% if track.channel_title != track.artist %}
+                            <span class="text-zinc-600">•</span>
+                            <span class="text-zinc-500 truncate text-[11px] max-w-[120px]">{{ track.channel_title }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Channel Reach & Metrics -->
+                    <div class="flex items-center justify-between text-xs text-zinc-400 pt-1 border-t border-zinc-800/60">
+                        <div class="flex items-center gap-3">
+                            <span><strong>{{ track.views|intcomma }}</strong> views</span>
+                            <span><strong>{{ track.likes|intcomma }}</strong> likes</span>
+                        </div>
+                        <div>
+                            {% if track.is_popular %}
+                            <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                Popular
+                            </span>
+                            {% else %}
+                            <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-950/60 text-violet-300 border border-violet-500/20">
+                                Rising
+                            </span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Actions Bar -->
             <div class="p-4 pt-0 space-y-2">
-                <div class="grid grid-cols-2 gap-2">
+                <!-- Inline Audition & Direct Downloads -->
+                <div class="grid grid-cols-12 gap-2">
+                    <!-- Audition Play Button -->
+                    <button type="button" 
+                            id="btn-play-{{ track.video_id }}"
+                            onclick="toggleAudition('{{ track.video_id }}', '{{ track.title|escapejs }}', '{{ track.artist|escapejs }}', '{{ track.thumbnail_url|escapejs }}', '{{ track.generator|escapejs }}')"
+                            class="col-span-4 inline-flex items-center justify-center px-2 py-2 rounded-lg bg-violet-600/20 hover:bg-violet-600 text-violet-300 hover:text-white text-xs font-semibold border border-violet-500/30 transition-all">
+                        <svg class="w-3.5 h-3.5 mr-1 play-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                        <span class="play-label">Audition</span>
+                    </button>
+
                     <!-- Download WAV -->
                     <a href="{% url 'radar_download_audio' %}?video_id={{ track.video_id }}&format=wav&title={{ track.title|urlencode }}" 
                        onclick="showDownloadFeedback(this, 'WAV')"
-                       class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition-colors">
-                        <span>Download WAV</span>
+                       class="col-span-5 inline-flex items-center justify-center px-2 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition-colors">
+                        <span>Lossless WAV</span>
                     </a>
 
                     <!-- Download MP3 -->
                     <a href="{% url 'radar_download_audio' %}?video_id={{ track.video_id }}&format=mp3&title={{ track.title|urlencode }}" 
                        onclick="showDownloadFeedback(this, 'MP3')"
-                       class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-dark-950 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-colors">
+                       class="col-span-3 inline-flex items-center justify-center px-2 py-2 rounded-lg bg-dark-950 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-colors">
                         <span>MP3</span>
                     </a>
                 </div>
 
-                <!-- Send to Studio -->
+                <!-- Send to Video Studio -->
                 <button type="button" onclick="openStudioModal('{{ track.video_id }}', '{{ track.title|escapejs }}', '{{ track.thumbnail_url }}')"
-                        class="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium border border-zinc-700/60 transition-colors">
+                        class="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium border border-zinc-700/60 transition-colors gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
                     Send to Video Studio
                 </button>
             </div>
@@ -216,15 +302,104 @@
     {% else %}
     <!-- Empty State -->
     <div class="bg-dark-900 rounded-xl border border-zinc-800 p-12 text-center space-y-3">
+        <div class="w-12 h-12 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center mx-auto border border-violet-500/20">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+        </div>
         <h3 class="text-sm font-semibold text-white">No tracks match your current filters</h3>
         <p class="text-xs text-zinc-400 max-w-sm mx-auto">
-            Try adjusting your time window (e.g. Past 7 days), track length, or channel popularity filter.
+            Try switching detection mode to "All AI Music Tracks" or widening your time window (e.g. Past 7 days).
         </p>
         <a href="{% url 'radar_feed' %}" class="inline-block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium border border-zinc-700 transition-colors mt-2">
             Reset Filters
         </a>
     </div>
     {% endif %}
+</div>
+
+<!-- Floating Audition Audio Dock Bar -->
+<div id="auditionDockBar" class="fixed bottom-4 left-4 right-4 max-w-5xl mx-auto z-40 bg-dark-900/95 backdrop-blur-md border border-zinc-700 rounded-2xl shadow-2xl p-3 sm:p-4 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <!-- Track Thumbnail & Info -->
+        <div class="flex items-center gap-3 w-full sm:w-auto min-w-0">
+            <div class="relative w-12 h-12 rounded-lg overflow-hidden bg-dark-950 shrink-0 border border-zinc-700">
+                <img id="dockThumb" src="" alt="" class="w-full h-full object-cover">
+                <div id="dockWaveAnimation" class="absolute inset-0 bg-black/40 flex items-center justify-center gap-0.5 hidden">
+                    <span class="w-0.5 h-3 bg-emerald-400 animate-pulse"></span>
+                    <span class="w-0.5 h-5 bg-emerald-400 animate-pulse delay-75"></span>
+                    <span class="w-0.5 h-2 bg-emerald-400 animate-pulse delay-150"></span>
+                </div>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                    <h4 id="dockTitle" class="text-xs font-bold text-white truncate max-w-[200px] sm:max-w-xs">Song Title</h4>
+                    <span id="dockEngine" class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30">AI</span>
+                </div>
+                <p id="dockArtist" class="text-[11px] text-zinc-400 truncate">Artist Name</p>
+            </div>
+        </div>
+
+        <!-- Player Controls & Progress -->
+        <div class="flex flex-col items-center gap-1.5 w-full sm:w-1/2 max-w-md">
+            <div class="flex items-center gap-4">
+                <!-- Rewind 10s -->
+                <button type="button" onclick="seekAudition(-10)" class="text-zinc-400 hover:text-white transition-colors" title="Rewind 10s">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
+                    </svg>
+                </button>
+
+                <!-- Play/Pause Main -->
+                <button type="button" id="dockPlayBtn" onclick="toggleDockPlay()" class="w-10 h-10 rounded-full bg-white hover:bg-zinc-200 text-black flex items-center justify-center shadow-lg transition-transform active:scale-95">
+                    <svg id="dockPlayIcon" class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <svg id="dockPauseIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                </button>
+
+                <!-- Forward 10s -->
+                <button type="button" onclick="seekAudition(10)" class="text-zinc-400 hover:text-white transition-colors" title="Forward 10s">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Scrubber -->
+            <div class="flex items-center gap-2 w-full text-[10px] font-mono text-zinc-400">
+                <span id="dockCurrentTime">0:00</span>
+                <input type="range" id="dockScrubber" min="0" max="100" value="0" oninput="onScrubberInput(this.value)"
+                       class="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-violet-500">
+                <span id="dockTotalTime">0:00</span>
+            </div>
+        </div>
+
+        <!-- Actions & Close -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <!-- Studio quick send -->
+            <button type="button" id="dockStudioBtn" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Studio
+            </button>
+
+            <!-- Close Dock -->
+            <button type="button" onclick="closeAuditionDock()" class="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors" title="Close Audition">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden YouTube Embed Player Container -->
+<div id="ytPlayerContainer" class="hidden pointer-events-none" style="position: absolute; left: -9999px; top: -9999px;">
+    <div id="ytAudioPlayer"></div>
 </div>
 
 <!-- Studio Import Modal -->
@@ -236,7 +411,7 @@
 
         <div>
             <h3 class="text-base font-bold text-white">Send Track to Video Studio</h3>
-            <p class="text-xs text-zinc-400 mt-0.5">Download track audio & artwork and configure project format</p>
+            <p class="text-xs text-zinc-400 mt-0.5">Download pure track audio & artwork and configure 1-Hour Loop project format</p>
         </div>
 
         <form method="POST" action="{% url 'radar_import_studio' %}" class="space-y-4">
@@ -271,9 +446,199 @@
     </div>
 </div>
 
+<!-- YouTube IFrame API Script for Audition Player -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
 <script>
+    let ytPlayer = null;
+    let isYtReady = false;
+    let currentAuditionVideoId = null;
+    let currentTrackInfo = {};
+    let progressTimer = null;
+
+    // YouTube IFrame API Callback
+    function onYouTubeIframeAPIReady() {
+        ytPlayer = new YT.Player('ytAudioPlayer', {
+            height: '180',
+            width: '320',
+            playerVars: {
+                'playsinline': 1,
+                'controls': 0,
+                'disablekb': 1,
+                'fs': 0,
+                'rel': 0,
+                'modestbranding': 1
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    }
+
+    function onPlayerReady(event) {
+        isYtReady = true;
+    }
+
+    function onPlayerStateChange(event) {
+        const isPlaying = (event.data === YT.PlayerState.PLAYING);
+        updateDockState(isPlaying);
+
+        if (isPlaying) {
+            startProgressTracker();
+        } else {
+            stopProgressTracker();
+        }
+    }
+
+    function toggleAudition(videoId, title, artist, thumb, generator) {
+        if (currentAuditionVideoId === videoId && ytPlayer && isYtReady) {
+            const state = ytPlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                ytPlayer.pauseVideo();
+            } else {
+                ytPlayer.playVideo();
+            }
+            return;
+        }
+
+        // Switch to new track
+        currentAuditionVideoId = videoId;
+        currentTrackInfo = { videoId, title, artist, thumb, generator };
+
+        // Open Dock Bar
+        const dock = document.getElementById('auditionDockBar');
+        dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+        dock.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+        document.getElementById('dockThumb').src = thumb;
+        document.getElementById('dockTitle').innerText = title;
+        document.getElementById('dockArtist').innerText = artist;
+        document.getElementById('dockEngine').innerText = generator;
+        document.getElementById('dockStudioBtn').onclick = () => openStudioModal(videoId, title, thumb);
+
+        // Highlight active card
+        document.querySelectorAll('.track-card').forEach(c => c.classList.remove('ring-2', 'ring-violet-500', 'border-transparent'));
+        const activeCard = document.getElementById(`card-${videoId}`);
+        if (activeCard) {
+            activeCard.classList.add('ring-2', 'ring-violet-500', 'border-transparent');
+        }
+
+        if (ytPlayer && isYtReady) {
+            ytPlayer.loadVideoById(videoId);
+            ytPlayer.playVideo();
+        } else {
+            // Fallback if player not ready yet
+            setTimeout(() => {
+                if (ytPlayer && isYtReady) {
+                    ytPlayer.loadVideoById(videoId);
+                    ytPlayer.playVideo();
+                }
+            }, 800);
+        }
+    }
+
+    function toggleDockPlay() {
+        if (!ytPlayer || !isYtReady) return;
+        const state = ytPlayer.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+            ytPlayer.pauseVideo();
+        } else {
+            ytPlayer.playVideo();
+        }
+    }
+
+    function updateDockState(isPlaying) {
+        const playIcon = document.getElementById('dockPlayIcon');
+        const pauseIcon = document.getElementById('dockPauseIcon');
+        const wave = document.getElementById('dockWaveAnimation');
+
+        if (isPlaying) {
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            wave.classList.remove('hidden');
+        } else {
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            wave.classList.add('hidden');
+        }
+
+        // Update card button label
+        if (currentAuditionVideoId) {
+            const btn = document.getElementById(`btn-play-${currentAuditionVideoId}`);
+            if (btn) {
+                const label = btn.querySelector('.play-label');
+                if (label) {
+                    label.innerText = isPlaying ? 'Pause' : 'Audition';
+                }
+            }
+        }
+    }
+
+    function seekAudition(offsetSecs) {
+        if (!ytPlayer || !isYtReady) return;
+        const current = ytPlayer.getCurrentTime() || 0;
+        const duration = ytPlayer.getDuration() || 0;
+        const target = Math.max(0, Math.min(duration, current + offsetSecs));
+        ytPlayer.seekTo(target, true);
+    }
+
+    function onScrubberInput(percent) {
+        if (!ytPlayer || !isYtReady) return;
+        const duration = ytPlayer.getDuration() || 0;
+        const target = (percent / 100) * duration;
+        ytPlayer.seekTo(target, true);
+    }
+
+    function startProgressTracker() {
+        stopProgressTracker();
+        progressTimer = setInterval(() => {
+            if (!ytPlayer || !isYtReady) return;
+            const current = ytPlayer.getCurrentTime() || 0;
+            const duration = ytPlayer.getDuration() || 0;
+
+            if (duration > 0) {
+                const percent = (current / duration) * 100;
+                document.getElementById('dockScrubber').value = percent;
+                document.getElementById('dockCurrentTime').innerText = formatTime(current);
+                document.getElementById('dockTotalTime').innerText = formatTime(duration);
+            }
+        }, 500);
+    }
+
+    function stopProgressTracker() {
+        if (progressTimer) {
+            clearInterval(progressTimer);
+            progressTimer = null;
+        }
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function closeAuditionDock() {
+        if (ytPlayer && isYtReady) {
+            ytPlayer.stopVideo();
+        }
+        stopProgressTracker();
+        const dock = document.getElementById('auditionDockBar');
+        dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+        dock.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+        document.querySelectorAll('.track-card').forEach(c => c.classList.remove('ring-2', 'ring-violet-500', 'border-transparent'));
+        currentAuditionVideoId = null;
+    }
+
     function selectGenre(genreId) {
         document.getElementById('selectedGenreInput').value = genreId;
+        document.getElementById('radarFilterForm').submit();
+    }
+
+    function selectDetectionMode(modeId) {
+        document.getElementById('selectedModeInput').value = modeId;
         document.getElementById('radarFilterForm').submit();
     }
 
@@ -300,3 +665,4 @@
     }
 </script>
 {% endblock %}
+

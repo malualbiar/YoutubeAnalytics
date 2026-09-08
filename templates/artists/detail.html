@@ -33,7 +33,11 @@
                         {{ channel.channel_name }}
                     </a>
                     <span class="text-zinc-700">•</span>
+                    {% if channel.last_synced_at %}
                     <span>Last synced {{ channel.last_synced_at|timesince }} ago</span>
+                    {% else %}
+                    <span class="text-amber-400">Sync pending</span>
+                    {% endif %}
                     {% else %}
                     <span class="text-amber-400/90 font-medium flex items-center gap-1">
                         <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> No channel connected

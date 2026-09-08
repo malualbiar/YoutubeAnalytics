@@ -11,6 +11,7 @@ class VideoProject(models.Model):
         RENDERING = 'RENDERING', 'Rendering'
         COMPLETED = 'COMPLETED', 'Completed'
         FAILED = 'FAILED', 'Failed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
     title = models.CharField(max_length=255, default='My 1-Hour Chill Loop')
     audio_file = models.FileField(upload_to='studio/audio/')
@@ -77,6 +78,7 @@ class LongMixProject(models.Model):
         RENDERING = 'RENDERING', 'Rendering'
         COMPLETED = 'COMPLETED', 'Completed'
         FAILED = 'FAILED', 'Failed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
     title = models.CharField(max_length=255, default='My Non-Stop Music Mix')
     description = models.TextField(blank=True, default='')
@@ -153,6 +155,16 @@ class LongMixProject(models.Model):
         return "\n".join(lines)
 
     @property
+    def export_filename(self):
+        title_clean = "".join(c for c in self.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        return f"{title_clean}_Continuous_Mix.mp4" if title_clean else f"Mix_{self.id}.mp4"
+
+    @property
+    def export_audio_filename(self):
+        title_clean = "".join(c for c in self.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        return f"{title_clean}_Continuous_Mix.mp3" if title_clean else f"Mix_{self.id}.mp3"
+
+    @property
     def youtube_description(self):
         chapters = self.youtube_chapters_text
         return (
@@ -182,11 +194,17 @@ class ShortVideoProject(models.Model):
         GLOW_NEON = 'GLOW_NEON', 'Cyber Neon Glow'
         CHILL_LOFI = 'CHILL_LOFI', 'Aesthetic Lo-Fi / Ambient'
 
+    class HookPosition(models.TextChoices):
+        TOP = 'TOP', 'Top (Header Overlay)'
+        CENTER = 'CENTER', 'Center (Focal Drop)'
+        BOTTOM = 'BOTTOM', 'Bottom (Lower Third / CTA Area)'
+
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         RENDERING = 'RENDERING', 'Rendering'
         COMPLETED = 'COMPLETED', 'Completed'
         FAILED = 'FAILED', 'Failed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
     title = models.CharField(max_length=255, default='My Viral Shorts & Reels')
     source_type = models.CharField(
@@ -203,10 +221,16 @@ class ShortVideoProject(models.Model):
         choices=AspectMode.choices,
         default=AspectMode.BLURRED_FIT
     )
+    crop_focal_percent = models.IntegerField(default=50)
     theme_style = models.CharField(
         max_length=30,
         choices=ThemeStyle.choices,
         default=ThemeStyle.VIRAL_HOOK
+    )
+    hook_position = models.CharField(
+        max_length=20,
+        choices=HookPosition.choices,
+        default=HookPosition.TOP
     )
 
     duration_seconds = models.FloatField(default=0.0)
@@ -246,6 +270,18 @@ class ShortVideoProject(models.Model):
     def completed_chops_count(self):
         return sum(1 for c in (self.chops_data or []) if c.get('status') == 'COMPLETED' or c.get('output_url'))
 
+    def export_filename_for_chop(self, chop_index=0):
+        chops = self.chops_data or []
+        chop = chops[chop_index] if chop_index < len(chops) else {}
+        part_num = chop.get('id', chop_index + 1)
+        title_clean = "".join(c for c in self.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        return f"{title_clean}_Part_{part_num}.mp4" if title_clean else f"Short_{self.id}_Part_{part_num}.mp4"
+
+    @property
+    def export_zip_filename(self):
+        title_clean = "".join(c for c in self.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        return f"{title_clean}_Shorts_Package.zip" if title_clean else f"Shorts_Package_{self.id}.zip"
+
     def youtube_title_for_chop(self, chop_index=0):
         chops = self.chops_data or []
         chop = chops[chop_index] if chop_index < len(chops) else {}
@@ -282,16 +318,26 @@ class LyricVideoProject(models.Model):
         ROLLING_3LINE = 'ROLLING_3LINE', 'Smooth 3-Line Rolling Display'
         CYBER_NEON = 'CYBER_NEON', 'Cyber Neon Glow'
         CINEMATIC = 'CINEMATIC', 'Cinematic Minimal Serif'
+        BOUNCE_IN = 'BOUNCE_IN', 'Bounce Pop-In'
+        TYPEWRITER = 'TYPEWRITER', 'Typewriter Reveal'
+        WAVE_PULSE = 'WAVE_PULSE', 'Wave Color Pulse'
+        SLIDE_UP = 'SLIDE_UP', 'Smooth Slide Up'
 
     class AspectRatio(models.TextChoices):
         LANDSCAPE_16_9 = '16:9', '16:9 Landscape (YouTube Full HD 1080p)'
         VERTICAL_9_16 = '9:16', '9:16 Vertical (Shorts / Reels / TikTok)'
+
+    class PositionMode(models.TextChoices):
+        CENTER = 'CENTER', 'Center'
+        BOTTOM = 'BOTTOM', 'Bottom Third'
+        TOP = 'TOP', 'Top'
 
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         RENDERING = 'RENDERING', 'Rendering'
         COMPLETED = 'COMPLETED', 'Completed'
         FAILED = 'FAILED', 'Failed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
     title = models.CharField(max_length=255, default='My Song Lyrics')
     artist_name = models.CharField(max_length=255, blank=True, default='')
@@ -321,7 +367,19 @@ class LyricVideoProject(models.Model):
     font_size = models.IntegerField(default=48)
     highlight_color = models.CharField(max_length=20, default='#00E5FF')
     text_color = models.CharField(max_length=20, default='#FFFFFF')
-    position_mode = models.CharField(max_length=20, default='CENTER')
+    position_mode = models.CharField(max_length=20, choices=PositionMode.choices, default=PositionMode.CENTER)
+    
+    # Advanced Typography Settings
+    font_weight = models.CharField(max_length=10, default='bold')
+    font_italic = models.BooleanField(default=False)
+    letter_spacing = models.FloatField(default=0.0)
+    line_height = models.FloatField(default=1.4)
+    text_transform = models.CharField(max_length=15, default='none')
+    text_stroke_width = models.FloatField(default=2.5)
+    text_shadow_depth = models.FloatField(default=2.0)
+    font_scale_x = models.IntegerField(default=100)
+    font_scale_y = models.IntegerField(default=100)
+    bg_opacity = models.IntegerField(default=0)
 
     output_video = models.FileField(upload_to='studio/lyrics_output/', blank=True, null=True)
     duration_seconds = models.FloatField(default=0.0)
@@ -358,6 +416,16 @@ class LyricVideoProject(models.Model):
     def lrc_content(self):
         from .services.lyrics_engine import LyricsEngineService
         return LyricsEngineService.export_lrc_string(self.lyrics_data or [], self.title, self.artist_name)
+
+    @property
+    def export_filename(self):
+        title_clean = "".join(c for c in self.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        artist_clean = "".join(c for c in self.artist_name if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        if artist_clean and title_clean:
+            return f"{artist_clean}_{title_clean}_Lyric_Video.mp4"
+        elif title_clean:
+            return f"{title_clean}_Lyric_Video.mp4"
+        return f"Lyric_Video_{self.id}.mp4"
 
     @property
     def youtube_title(self):

@@ -4,7 +4,7 @@
 {% block title %}Synced Lyric Video Generator - YT Quid Studio{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-6xl mx-auto pb-20">
+<div class="space-y-6 max-w-7xl mx-auto pb-20">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -13,6 +13,13 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <!-- Draft Banner Indicator -->
+            <div id="draftStatusBanner" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-emerald-400 font-mono">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="draftStatusText">Draft Auto-Saved</span>
+                <button type="button" id="clearDraftBtn" class="ml-2 text-zinc-500 hover:text-rose-400 transition-colors font-sans text-[11px]" title="Clear saved draft">Clear</button>
+            </div>
+
             <a href="{% url 'studio_home' %}?tab=lyrics" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 Studio Dashboard
             </a>
@@ -23,414 +30,622 @@
     </div>
 
     <!-- Main Studio Form -->
-    <form method="POST" action="{% url 'lyrics_render' %}" enctype="multipart/form-data" id="lyricsForm" class="space-y-6">
+    <form method="POST" action="{% url 'lyrics_render' %}" enctype="multipart/form-data" id="lyricsForm">
         {% csrf_token %}
         <input type="hidden" name="lyrics_data" id="lyricsDataInput" value="[]">
 
-        <!-- STEP 1: Media & Live Video Preview -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
-                    <h3 class="text-sm font-bold text-white">Media Source & Live Video Preview</h3>
-                </div>
+        <!-- 2-Column Split Layout Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: Scrollable Config, Lyrics & Styling Controls (lg:col-span-7) -->
+            <div class="lg:col-span-7 space-y-6">
 
-                <div class="flex items-center gap-3 flex-wrap">
-                    <!-- Source Mode Selector (Audio vs Video) -->
-                    <div class="flex items-center p-1 bg-zinc-950 rounded-xl border border-zinc-800">
-                        <button type="button" id="modeAudioBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white flex items-center gap-1.5" data-mode="AUDIO">
-                            <i data-lucide="music" class="w-3.5 h-3.5"></i>
-                            <span>Audio + Cover</span>
-                        </button>
-                        <button type="button" id="modeVideoBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white flex items-center gap-1.5" data-mode="VIDEO">
-                            <i data-lucide="video" class="w-3.5 h-3.5"></i>
-                            <span>Video File (Overlay)</span>
-                        </button>
-                    </div>
-                    <input type="hidden" name="source_type" id="sourceTypeInput" value="AUDIO_IMAGE">
-
-                    <!-- Aspect Ratio -->
-                    <div class="flex items-center gap-1.5">
-                        <label class="text-xs text-zinc-400">Aspect:</label>
-                        <select name="aspect_ratio" id="aspectRatioSelect" class="px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
-                            <option value="16:9" selected>16:9 Landscape (YouTube)</option>
-                            <option value="9:16">9:16 Vertical (Shorts / Reels)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <!-- Left: Song Details & File Uploads -->
-                <div class="lg:col-span-7 space-y-4">
-                    <!-- Title & Artist -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-zinc-300">Song / Video Title <span class="text-rose-400">*</span></label>
-                            <input type="text" name="title" id="songTitleInput" required placeholder="e.g. Midnight Waves" 
-                                   class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                <!-- STEP 1: Song Info & Media Uploads -->
+                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
+                            <h3 class="text-sm font-bold text-white">Media Source & Track Info</h3>
                         </div>
 
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-zinc-300">Artist Name</label>
-                            <input type="text" name="artist_name" id="artistNameInput" placeholder="e.g. Luna Echoes" 
-                                   class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                        <!-- Source Mode Selector (Audio vs Video) -->
+                        <div class="flex items-center p-1 bg-zinc-950 rounded-xl border border-zinc-800">
+                            <button type="button" id="modeAudioBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white flex items-center gap-1.5" data-mode="AUDIO">
+                                <i data-lucide="music" class="w-3.5 h-3.5"></i>
+                                <span>Audio + Cover</span>
+                            </button>
+                            <button type="button" id="modeVideoBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white flex items-center gap-1.5" data-mode="VIDEO">
+                                <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                                <span>Video File (Overlay)</span>
+                            </button>
                         </div>
+                        <input type="hidden" name="source_type" id="sourceTypeInput" value="AUDIO_IMAGE">
                     </div>
 
-                    <!-- MODE A: Audio + Cover Artwork Uploads -->
-                    <div id="audioModeContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <!-- Audio File -->
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-zinc-300">Audio Track (.mp3, .wav) <span class="text-rose-400">*</span></label>
-                            <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
-                                <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
-                                
-                                <div id="audioEmpty" class="py-2">
-                                    <i data-lucide="music" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
-                                    <p class="text-xs font-bold text-white">Select Audio File</p>
-                                    <p class="text-[10px] text-zinc-500 mt-0.5">MP3, WAV, AAC, or FLAC</p>
-                                </div>
-
-                                <div id="audioSelected" class="hidden text-left w-full">
-                                    <p id="audioFileName" class="text-xs font-bold text-white truncate">audio.mp3</p>
-                                    <p id="audioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Cover Artwork -->
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-zinc-300">Cover Artwork (Optional)</label>
-                            <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
-                                <input type="file" name="background_image" id="coverInput" accept="image/*" class="hidden">
-                                
-                                <div id="coverEmpty" class="py-2">
-                                    <i data-lucide="image" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
-                                    <p class="text-xs font-bold text-white">Select Cover Image</p>
-                                    <p class="text-[10px] text-zinc-500 mt-0.5">Square album art or wallpaper</p>
-                                </div>
-
-                                <div id="coverSelected" class="hidden flex items-center justify-center gap-2">
-                                    <img id="coverPreviewImg" class="w-8 h-8 rounded-lg object-cover border border-zinc-800 shrink-0" src="" alt="Cover">
-                                    <p id="coverFileName" class="text-xs font-bold text-zinc-200 truncate">cover.jpg</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MODE B: Video File Uploads (Overlay Lyrics on Video) -->
-                    <div id="videoModeContainer" class="hidden space-y-3">
+                    <!-- Song Details & File Uploads -->
+                    <div class="space-y-4">
+                        <!-- Title & Artist -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <!-- Source Video File -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-zinc-300">Song / Video Title <span class="text-rose-400">*</span></label>
+                                <input type="text" name="title" id="songTitleInput" required placeholder="e.g. Midnight Waves" 
+                                       class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-zinc-300">Artist Name</label>
+                                <input type="text" name="artist_name" id="artistNameInput" placeholder="e.g. Luna Echoes" 
+                                       class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                            </div>
+                        </div>
+
+                        <!-- MODE A: Audio + Cover Artwork Uploads -->
+                        <div id="audioModeContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Audio File -->
                             <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-zinc-300">Source Video File (.mp4, .mov) <span class="text-rose-400">*</span></label>
-                                <div id="videoDropZone" class="border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
-                                    <input type="file" name="video_file" id="videoInput" accept="video/*,.mp4,.mov,.webm,.mkv" class="hidden">
+                                <label class="text-xs font-bold text-zinc-300">Audio Track (.mp3, .wav) <span class="text-rose-400">*</span></label>
+                                <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                    <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
                                     
-                                    <div id="videoEmpty" class="py-2">
-                                        <i data-lucide="film" class="w-5 h-5 text-zinc-400 mx-auto mb-1"></i>
-                                        <p class="text-xs font-bold text-white">Select Video File</p>
-                                        <p class="text-[10px] text-zinc-500 mt-0.5">MP4, MOV, MKV, or WebM</p>
+                                    <div id="audioEmpty" class="py-2">
+                                        <i data-lucide="music" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
+                                        <p class="text-xs font-bold text-white">Select Audio File</p>
+                                        <p class="text-[10px] text-zinc-500 mt-0.5">MP3, WAV, AAC, or FLAC</p>
                                     </div>
 
-                                    <div id="videoSelected" class="hidden text-left w-full">
-                                        <div class="flex items-center gap-2">
-                                            <i data-lucide="video" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-                                            <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
-                                        </div>
-                                        <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-1">00:00 • 1080p • 0.0 MB</p>
+                                    <div id="audioSelected" class="hidden text-left w-full">
+                                        <p id="audioFileName" class="text-xs font-bold text-white truncate">audio.mp3</p>
+                                        <p id="audioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Optional Master Audio Replacement -->
+                            <!-- Cover Artwork -->
                             <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-zinc-300">Replace Audio Track (Optional)</label>
-                                <div id="videoAudioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
-                                    <input type="file" name="replacement_audio" id="videoReplaceAudioInput" accept="audio/*" class="hidden">
+                                <label class="text-xs font-bold text-zinc-300">Cover Artwork (Optional)</label>
+                                <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                    <input type="file" name="background_image" id="coverInput" accept="image/*" class="hidden">
                                     
-                                    <div id="videoAudioEmpty" class="py-2">
-                                        <i data-lucide="disc" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
-                                        <p class="text-xs font-bold text-zinc-300">Custom Master Audio</p>
-                                        <p class="text-[10px] text-zinc-500 mt-0.5">Default uses video's soundtrack</p>
+                                    <div id="coverEmpty" class="py-2">
+                                        <i data-lucide="image" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
+                                        <p class="text-xs font-bold text-white">Select Cover Image</p>
+                                        <p class="text-[10px] text-zinc-500 mt-0.5">Square album art or wallpaper</p>
                                     </div>
 
-                                    <div id="videoAudioSelected" class="hidden text-left w-full flex items-center justify-between">
-                                        <div class="overflow-hidden mr-2">
-                                            <p id="videoAudioFileName" class="text-xs font-bold text-emerald-400 truncate">master.wav</p>
-                                            <p id="videoAudioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">Custom audio loaded • Video muted</p>
+                                    <div id="coverSelected" class="hidden flex items-center justify-center gap-2">
+                                        <img id="coverPreviewImg" class="w-8 h-8 rounded-lg object-cover border border-zinc-800 shrink-0" src="" alt="Cover">
+                                        <p id="coverFileName" class="text-xs font-bold text-zinc-200 truncate">cover.jpg</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODE B: Video File Uploads (Overlay Lyrics on Video) -->
+                        <div id="videoModeContainer" class="hidden space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Source Video File -->
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-bold text-zinc-300">Source Video File (.mp4, .mov) <span class="text-rose-400">*</span></label>
+                                    <div id="videoDropZone" class="border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                        <input type="file" name="video_file" id="videoInput" accept="video/*,.mp4,.mov,.webm,.mkv" class="hidden">
+                                        
+                                        <div id="videoEmpty" class="py-2">
+                                            <i data-lucide="film" class="w-5 h-5 text-zinc-400 mx-auto mb-1"></i>
+                                            <p class="text-xs font-bold text-white">Select Video File</p>
+                                            <p class="text-[10px] text-zinc-500 mt-0.5">MP4, MOV, MKV, or WebM</p>
                                         </div>
-                                        <button type="button" id="removeReplacementAudioBtn" class="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" title="Remove custom audio and unmute video">
-                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+
+                                        <div id="videoSelected" class="hidden text-left w-full">
+                                            <div class="flex items-center gap-2">
+                                                <i data-lucide="video" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                                                <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
+                                            </div>
+                                            <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-1">00:00 • 1080p • 0.0 MB</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Optional Master Audio Replacement -->
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-bold text-zinc-300">Replace Audio Track (Optional)</label>
+                                    <div id="videoAudioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                        <input type="file" name="replacement_audio" id="videoReplaceAudioInput" accept="audio/*" class="hidden">
+                                        
+                                        <div id="videoAudioEmpty" class="py-2">
+                                            <i data-lucide="disc" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
+                                            <p class="text-xs font-bold text-zinc-300">Custom Master Audio</p>
+                                            <p class="text-[10px] text-zinc-500 mt-0.5">Default uses video's soundtrack</p>
+                                        </div>
+
+                                        <div id="videoAudioSelected" class="hidden text-left w-full flex items-center justify-between">
+                                            <div class="overflow-hidden mr-2">
+                                                <p id="videoAudioFileName" class="text-xs font-bold text-emerald-400 truncate">master.wav</p>
+                                                <p id="videoAudioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">Custom audio loaded • Video muted</p>
+                                            </div>
+                                            <button type="button" id="removeReplacementAudioBtn" class="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" title="Remove custom audio and unmute video">
+                                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loop Video Checkbox Option -->
+                            <div>
+                                <label class="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-colors">
+                                    <input type="checkbox" name="loop_video" id="loopVideoCheckbox" checked value="true" class="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-emerald-500 focus:ring-0 cursor-pointer">
+                                    <div>
+                                        <p class="text-xs font-bold text-zinc-200">Loop video if shorter than audio/lyrics</p>
+                                        <p class="text-[10px] text-zinc-400">Seamlessly repeats short background clips to finish the complete song</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Lyrics Sync & Tap-to-Fix Studio -->
+                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
+                            <h3 class="text-sm font-bold text-white">Lyrics Input & Synchronization</h3>
+                        </div>
+
+                        <!-- Utility actions -->
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <button type="button" id="toggleFindReplaceBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors flex items-center gap-1" title="Find and Replace misspelled words">
+                                <i data-lucide="search" class="w-3 h-3 text-zinc-400"></i>
+                                <span>Find & Replace</span>
+                            </button>
+                            <!-- Format Case Dropdown -->
+                            <div class="relative inline-block text-left" id="caseDropdownContainer">
+                                <button type="button" id="caseDropdownBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors flex items-center gap-1">
+                                    <i data-lucide="case-sensitive" class="w-3 h-3 text-zinc-400"></i>
+                                    <span>Format</span>
+                                    <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-400"></i>
+                                </button>
+                                <div id="caseDropdownMenu" class="hidden absolute right-0 mt-1 w-44 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl z-40 p-1.5 space-y-0.5 text-xs">
+                                    <button type="button" onclick="formatLyricsCase('sentence')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">Sentence case</button>
+                                    <button type="button" onclick="formatLyricsCase('title')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">Title Case</button>
+                                    <button type="button" onclick="formatLyricsCase('upper')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">ALL CAPS</button>
+                                    <button type="button" onclick="formatLyricsCase('lower')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">lowercase</button>
+                                    <button type="button" onclick="formatLyricsCase('clean_quotes')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-emerald-400 font-medium border-t border-zinc-800 mt-1 pt-1">Fix Smart Quotes</button>
+                                </div>
+                            </div>
+                            <button type="button" id="searchOnlineBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors" title="Search LRCLIB">
+                                Search Online
+                            </button>
+                            <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 cursor-pointer transition-colors">
+                                Import .LRC
+                                <input type="file" id="lrcFileInput" accept=".lrc,.txt" class="hidden">
+                            </label>
+                            <button type="button" id="exportLrcBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
+                                Export .LRC
+                            </button>
+                            <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
+                                Even Space
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Find & Replace Bar -->
+                    <div id="findReplaceBar" class="hidden p-3 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
+                        <div class="flex items-center justify-between text-[11px] text-zinc-400 font-bold uppercase">
+                            <span>Find & Replace Spellings Across All Lines</span>
+                            <button type="button" onclick="toggleFindReplace(false)" class="text-zinc-500 hover:text-zinc-300">✕ Close</button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                            <div class="sm:col-span-5">
+                                <input type="text" id="findInput" placeholder="Misspelled word (e.g. teh)" class="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                            </div>
+                            <div class="sm:col-span-5">
+                                <input type="text" id="replaceInput" placeholder="Correct spelling (e.g. the)" class="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                            </div>
+                            <div class="sm:col-span-2 flex items-center gap-1">
+                                <button type="button" id="replaceAllBtn" class="w-full py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-lg transition-colors">
+                                    Replace
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar for AI Transcription and Processing -->
+                    <div id="aiProgressBarContainer" class="hidden p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 transition-all">
+                        <div class="flex items-center justify-between text-xs">
+                            <span id="aiProgressStatus" class="text-zinc-200 font-semibold flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Transcribing song audio with Whisper AI...
+                            </span>
+                            <span id="aiProgressPercent" class="text-emerald-400 font-mono font-bold">0%</span>
+                        </div>
+                        <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div id="aiProgressBarFill" class="h-full bg-emerald-500 transition-all duration-300 w-0"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                        <!-- Left: AI Transcribe & Raw Lyrics Textarea -->
+                        <div class="md:col-span-5 space-y-3">
+                            <!-- Primary AI Transcribe Action -->
+                            <button type="button" id="aiTranscribeBtn" class="w-full py-2.5 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/40 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
+                                <span>AI Transcribe & Sync Audio</span>
+                            </button>
+
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-zinc-300">Song Lyrics Text</label>
+                                <span id="lineCountBadge" class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">0 lines</span>
+                            </div>
+
+                            <textarea id="rawLyricsTextarea" name="lyrics_raw_text" rows="7" spellcheck="true" placeholder="Paste lyrics or click 'AI Transcribe & Sync Audio' above to auto-transcribe vocals with Whisper AI..." 
+                                      class="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-zinc-600"></textarea>
+                            
+                            <div class="space-y-2">
+                                <button type="button" id="vocalSyncBtn" class="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700/60 transition-colors flex items-center justify-center gap-1.5">
+                                    <i data-lucide="activity" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span>Vocal Frequency Auto-Sync</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Audio Player & Timeline View -->
+                        <div class="md:col-span-7 space-y-3 bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                            <!-- Player Controls -->
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-white uppercase tracking-wider">Audio Player</span>
+                                    <div class="flex items-center gap-1 text-[10px]">
+                                        <span class="text-zinc-500">Speed:</span>
+                                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="0.75">0.75x</button>
+                                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold" data-speed="1.0">1.0x</button>
+                                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="1.25">1.25x</button>
+                                    </div>
+                                </div>
+
+                                <!-- Audio Playback Widget -->
+                                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 space-y-2">
+                                    <audio id="audioPlayer" class="hidden" preload="auto"></audio>
+                                    <!-- Hidden video element for audio & frame decoding -->
+                                    <video id="previewVideo" class="hidden" playsinline muted preload="auto"></video>
+                                    
+                                    <div class="flex items-center gap-3">
+                                        <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center shrink-0 transition-colors">
+                                            <i data-lucide="play" class="w-4 h-4 fill-current" id="playIcon"></i>
+                                        </button>
+                                        
+                                        <div class="flex-1 space-y-1">
+                                            <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                                                <span id="currentTimeDisplay" class="text-zinc-200 font-semibold">00:00.00</span>
+                                                <span id="totalDurationDisplay">00:00.00</span>
+                                            </div>
+                                            <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.01" 
+                                                   class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Synchronized Lyric Lines List & Header Actions -->
+                            <div class="space-y-1.5 pt-1">
+                                <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-zinc-300">Synced Timeline (<span id="syncedCount">0</span> lines)</span>
+                                        <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-mono">Spellcheck Active</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="insertLineBelow(-1)" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5 transition-colors" title="Add a new lyric line at start">
+                                            <i data-lucide="plus" class="w-3 h-3"></i> Add Line
+                                        </button>
+                                        <button type="button" id="openFullSpellEditorBtn" class="text-[10px] text-zinc-400 hover:text-white font-semibold flex items-center gap-0.5 transition-colors">
+                                            <i data-lucide="edit-3" class="w-3 h-3"></i> Full Editor
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Loop Video Checkbox Option -->
-                        <div>
-                            <label class="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-colors">
-                                <input type="checkbox" name="loop_video" id="loopVideoCheckbox" checked value="true" class="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-emerald-500 focus:ring-0 cursor-pointer">
-                                <div>
-                                    <p class="text-xs font-bold text-zinc-200">Loop video if shorter than audio/lyrics</p>
-                                    <p class="text-[10px] text-zinc-400">Seamlessly repeats short background clips to finish the complete song</p>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Live Video Preview Canvas -->
-                <div class="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
-                    <div class="flex items-center justify-between w-full text-[11px] text-zinc-400 px-1">
-                        <span class="font-bold text-zinc-300">Live Video Preview</span>
-                        <span id="previewAspectBadge" class="font-mono text-zinc-300 font-semibold">16:9 HD</span>
-                    </div>
-
-                    <div id="previewFrame" class="w-full aspect-video bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-lg transition-all">
-                        <canvas id="livePreviewCanvas" width="960" height="540" class="w-full h-full object-contain"></canvas>
-                    </div>
-
-                    <p class="text-[10px] text-zinc-500 text-center">Simulates live video playback, typography styling & word wipes in real-time.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 2: Lyrics Sync & Tap-to-Fix Studio -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
-                    <h3 class="text-sm font-bold text-white">Lyrics Input & Synchronization</h3>
-                </div>
-
-                <!-- Utility actions -->
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <button type="button" id="searchOnlineBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors" title="Search LRCLIB">
-                        Search Online (LRCLIB)
-                    </button>
-                    <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 cursor-pointer transition-colors">
-                        Import .LRC
-                        <input type="file" id="lrcFileInput" accept=".lrc,.txt" class="hidden">
-                    </label>
-                    <button type="button" id="exportLrcBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
-                        Export .LRC
-                    </button>
-                    <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
-                        Even Space
-                    </button>
-                </div>
-            </div>
-
-            <!-- Progress Bar for AI Transcription and Processing -->
-            <div id="aiProgressBarContainer" class="hidden p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 transition-all">
-                <div class="flex items-center justify-between text-xs">
-                    <span id="aiProgressStatus" class="text-zinc-200 font-semibold flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Transcribing song audio with Whisper AI...
-                    </span>
-                    <span id="aiProgressPercent" class="text-emerald-400 font-mono font-bold">0%</span>
-                </div>
-                <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div id="aiProgressBarFill" class="h-full bg-emerald-500 transition-all duration-300 w-0"></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <!-- Left: AI Transcribe & Raw Lyrics Textarea -->
-                <div class="lg:col-span-5 space-y-3">
-                    <!-- Primary AI Transcribe Action -->
-                    <button type="button" id="aiTranscribeBtn" class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700/60 transition-colors flex items-center justify-center gap-2">
-                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-zinc-300"></i>
-                        <span>AI Transcribe & Sync Audio</span>
-                    </button>
-
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-zinc-300">Song Lyrics Text</label>
-                        <span id="lineCountBadge" class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">0 lines</span>
-                    </div>
-
-                    <textarea id="rawLyricsTextarea" name="lyrics_raw_text" rows="7" placeholder="Paste lyrics or click 'AI Transcribe' above to auto-generate short song bars..." 
-                              class="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-zinc-600"></textarea>
-                    
-                    <div class="space-y-2">
-                        <button type="button" id="vocalSyncBtn" class="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700/60 transition-colors flex items-center justify-center gap-1.5">
-                            <i data-lucide="activity" class="w-3.5 h-3.5 text-zinc-400"></i>
-                            <span>Vocal Frequency Auto-Sync</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Right: Audio Player & Timeline View -->
-                <div class="lg:col-span-7 space-y-3 bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                    <!-- Player Controls -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-white uppercase tracking-wider">Audio Player</span>
-                            <div class="flex items-center gap-1 text-[10px]">
-                                <span class="text-zinc-500">Speed:</span>
-                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="0.75">0.75x</button>
-                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold" data-speed="1.0">1.0x</button>
-                                <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="1.25">1.25x</button>
-                            </div>
-                        </div>
-
-                        <!-- Audio Playback Widget -->
-                        <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 space-y-2">
-                            <audio id="audioPlayer" class="hidden" preload="auto"></audio>
-                            <video id="previewVideo" class="hidden" playsinline preload="auto"></video>
-                            
-                            <div class="flex items-center gap-3">
-                                <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center shrink-0 transition-colors">
-                                    <i data-lucide="play" class="w-4 h-4 fill-current" id="playIcon"></i>
-                                </button>
-                                
-                                <div class="flex-1 space-y-1">
-                                    <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                                        <span id="currentTimeDisplay" class="text-zinc-200 font-semibold">00:00.00</span>
-                                        <span id="totalDurationDisplay">00:00.00</span>
+                                <div id="lyricsTimelineList" class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                                    <div class="text-center py-6 text-zinc-500 text-xs">
+                                        Click "AI Transcribe & Sync Audio" or paste lyrics to start.
                                     </div>
-                                    <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.01" 
-                                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Synchronized Lyric Lines List -->
-                    <div class="space-y-1.5 pt-1">
-                        <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-                            <span>Synced Timeline (<span id="syncedCount">0</span> lines)</span>
-                            <span class="text-zinc-500">Preview & adjust timings</span>
-                        </div>
-
-                        <div id="lyricsTimelineList" class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                            <div class="text-center py-6 text-zinc-500 text-xs">
-                                Click "AI Transcribe" or paste lyrics to start.
-                            </div>
+                <!-- STEP 3: Typography Style & Settings -->
+                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">3</span>
+                            <h3 class="text-sm font-bold text-white">Visual Typography & Settings</h3>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- STEP 3: Typography Style & Settings -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">3</span>
-                    <h3 class="text-sm font-bold text-white">Visual Typography & Settings</h3>
-                </div>
-            </div>
+                    <!-- Animation Style Selector Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <!-- Karaoke Wipe -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between" data-style="KARAOKE_WIPE">
+                            <input type="radio" name="animation_style" value="KARAOKE_WIPE" class="hidden" checked>
+                            <span class="text-[11px] font-bold text-white">Karaoke Wipe</span>
+                        </label>
+                        <!-- Rolling 3-Line -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="ROLLING_3LINE">
+                            <input type="radio" name="animation_style" value="ROLLING_3LINE" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Rolling 3-Line</span>
+                        </label>
+                        <!-- Cyber Neon -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CYBER_NEON">
+                            <input type="radio" name="animation_style" value="CYBER_NEON" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Cyber Neon</span>
+                        </label>
+                        <!-- Cinematic -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CINEMATIC">
+                            <input type="radio" name="animation_style" value="CINEMATIC" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Cinematic Serif</span>
+                        </label>
+                        <!-- Bounce In -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="BOUNCE_IN">
+                            <input type="radio" name="animation_style" value="BOUNCE_IN" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Bounce Pop-In</span>
+                        </label>
+                        <!-- Typewriter -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="TYPEWRITER">
+                            <input type="radio" name="animation_style" value="TYPEWRITER" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Typewriter</span>
+                        </label>
+                        <!-- Wave Pulse -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="WAVE_PULSE">
+                            <input type="radio" name="animation_style" value="WAVE_PULSE" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Wave Pulse</span>
+                        </label>
+                        <!-- Slide Up -->
+                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="SLIDE_UP">
+                            <input type="radio" name="animation_style" value="SLIDE_UP" class="hidden">
+                            <span class="text-[11px] font-bold text-white">Smooth Slide Up</span>
+                        </label>
+                    </div>
 
-            <!-- Animation Style Selector Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <!-- Karaoke Wipe -->
-                <label class="style-card p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between" data-style="KARAOKE_WIPE">
-                    <input type="radio" name="animation_style" value="KARAOKE_WIPE" class="hidden" checked>
+                    <!-- Base Settings -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-zinc-300">Font</label>
+                            <select name="font_family" id="fontFamilySelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
+                                <option value="Arial" selected>Arial</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Tahoma">Tahoma</option>
+                                <option value="Trebuchet MS">Trebuchet MS</option>
+                                <option value="Comic Sans MS">Comic Sans MS</option>
+                                <option value="Segoe UI">Segoe UI</option>
+                                <option value="Consolas">Consolas</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-xs font-bold text-zinc-300">Size</label><span id="fontSizeDisplay" class="text-[10px] text-zinc-400">48px</span></div>
+                            <input type="range" name="font_size" id="fontSizeSlider" min="20" max="96" value="48" class="w-full accent-emerald-500">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-zinc-300">Position</label>
+                            <select name="position_mode" id="positionModeSelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
+                                <option value="TOP">Top</option><option value="CENTER" selected>Center</option><option value="BOTTOM">Bottom</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Colors -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-zinc-400">Active Highlight</label>
+                            <div class="flex gap-1.5"><input type="color" name="highlight_color" id="highlightColorPicker" value="#00E5FF" class="w-6 h-6 p-0 border-0 rounded cursor-pointer"><input type="text" id="highlightColorHex" value="#00E5FF" class="w-full px-1.5 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white uppercase"></div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-zinc-400">Base Text</label>
+                            <div class="flex gap-1.5"><input type="color" name="text_color" id="textColorPicker" value="#FFFFFF" class="w-6 h-6 p-0 border-0 rounded cursor-pointer"><input type="text" id="textColorHex" value="#FFFFFF" class="w-full px-1.5 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white uppercase"></div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-zinc-400">Weight</label>
+                            <select name="font_weight" id="fontWeightSelect" class="w-full px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white">
+                                <option value="normal">Normal</option><option value="bold" selected>Bold</option><option value="black">Black</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-zinc-400">Transform</label>
+                            <select name="text_transform" id="textTransformSelect" class="w-full px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white">
+                                <option value="none" selected>None</option><option value="uppercase">UPPERCASE</option><option value="lowercase">lowercase</option><option value="capitalize">Capitalize</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Spacing & Stroke -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Letter Space</label><span id="letterSpacingDisplay" class="text-[9px] text-zinc-500">0px</span></div>
+                            <input type="range" name="letter_spacing" id="letterSpacingSlider" min="-5" max="20" step="0.5" value="0" class="w-full h-1 accent-emerald-500">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Line Height</label><span id="lineHeightDisplay" class="text-[9px] text-zinc-500">1.4x</span></div>
+                            <input type="range" name="line_height" id="lineHeightSlider" min="0.8" max="3.0" step="0.1" value="1.4" class="w-full h-1 accent-emerald-500">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Stroke</label><span id="strokeDisplay" class="text-[9px] text-zinc-500">2.5px</span></div>
+                            <input type="range" name="text_stroke_width" id="textStrokeSlider" min="0" max="10" step="0.5" value="2.5" class="w-full h-1 accent-emerald-500">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Shadow</label><span id="shadowDisplay" class="text-[9px] text-zinc-500">2.0px</span></div>
+                            <input type="range" name="text_shadow_depth" id="textShadowSlider" min="0" max="10" step="0.5" value="2.0" class="w-full h-1 accent-emerald-500">
+                        </div>
+                    </div>
+
+                    <!-- Advanced Box & Skew -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-2 border-b border-zinc-800">
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Scale X</label><span id="scaleXDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                            <input type="range" name="font_scale_x" id="fontScaleXSlider" min="50" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Scale Y</label><span id="scaleYDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                            <input type="range" name="font_scale_y" id="fontScaleYSlider" min="50" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Box Opacity</label><span id="bgOpacityDisplay" class="text-[9px] text-zinc-500">0%</span></div>
+                            <input type="range" name="bg_opacity" id="bgOpacitySlider" min="0" max="100" step="5" value="0" class="w-full h-1 accent-emerald-500">
+                        </div>
+                        <div class="flex items-center gap-2 mt-4">
+                            <input type="checkbox" name="font_italic" id="fontItalicCheck" value="true" class="w-3.5 h-3.5 rounded bg-zinc-900 border-zinc-700 text-emerald-500">
+                            <label class="text-[11px] font-bold text-zinc-300 cursor-pointer" for="fontItalicCheck">Italicize Text</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit & Render Action Bar -->
+                <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <span class="text-xs font-bold text-white">Karaoke Wipe</span>
-                        <p class="text-[11px] text-zinc-400 mt-1">Word-by-word active color wipe.</p>
+                        <h4 class="text-sm font-bold text-white">Ready to Produce Video</h4>
+                        <p class="text-xs text-zinc-400">1080p high quality video rendered locally.</p>
                     </div>
-                </label>
 
-                <!-- Rolling 3-Line -->
-                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="ROLLING_3LINE">
-                    <input type="radio" name="animation_style" value="ROLLING_3LINE" class="hidden">
-                    <div>
-                        <span class="text-xs font-bold text-white">Rolling 3-Line</span>
-                        <p class="text-[11px] text-zinc-400 mt-1">Previous, current, and next line.</p>
-                    </div>
-                </label>
-
-                <!-- Cyber Neon -->
-                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CYBER_NEON">
-                    <input type="radio" name="animation_style" value="CYBER_NEON" class="hidden">
-                    <div>
-                        <span class="text-xs font-bold text-white">Cyber Neon</span>
-                        <p class="text-[11px] text-zinc-400 mt-1">Glow outline and electric typography.</p>
-                    </div>
-                </label>
-
-                <!-- Cinematic Minimal -->
-                <label class="style-card p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CINEMATIC">
-                    <input type="radio" name="animation_style" value="CINEMATIC" class="hidden">
-                    <div>
-                        <span class="text-xs font-bold text-white">Cinematic Serif</span>
-                        <p class="text-[11px] text-zinc-400 mt-1">Serif typography with smooth fades.</p>
-                    </div>
-                </label>
-            </div>
-
-            <!-- Custom Styling Controls -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
-                <!-- Font Family -->
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-zinc-300">Font</label>
-                    <select name="font_family" id="fontFamilySelect" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
-                        <option value="Arial" selected>Arial</option>
-                        <option value="Impact">Impact</option>
-                        <option value="Montserrat">Montserrat</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Verdana">Verdana</option>
-                        <option value="Courier New">Courier New</option>
-                    </select>
-                </div>
-
-                <!-- Font Size -->
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-zinc-300">Font Size</label>
-                        <span id="fontSizeDisplay" class="text-xs font-mono text-zinc-200 font-semibold">48px</span>
-                    </div>
-                    <input type="range" name="font_size" id="fontSizeSlider" min="28" max="76" value="48" step="2"
-                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-                </div>
-
-                <!-- Position Mode -->
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-zinc-300">Position</label>
-                    <select name="position_mode" id="positionModeSelect" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
-                        <option value="TOP">Top</option>
-                        <option value="CENTER" selected>Center</option>
-                        <option value="BOTTOM">Bottom</option>
-                    </select>
-                </div>
-
-                <!-- Highlight Color -->
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-zinc-300">Active Highlight</label>
-                    <div class="flex items-center gap-1.5">
-                        <input type="color" name="highlight_color" id="highlightColorPicker" value="#00E5FF" class="w-7 h-7 rounded cursor-pointer border-0">
-                        <input type="text" id="highlightColorHex" value="#00E5FF" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-white">
-                    </div>
-                </div>
-
-                <!-- Inactive Color -->
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-zinc-300">Base Text</label>
-                    <div class="flex items-center gap-1.5">
-                        <input type="color" name="text_color" id="textColorPicker" value="#FFFFFF" class="w-7 h-7 rounded cursor-pointer border-0">
-                        <input type="text" id="textColorHex" value="#FFFFFF" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-white">
-                    </div>
+                    <button type="submit" id="renderSubmitBtn" class="px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <span>Render Synced Lyric Video</span>
+                    </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Submit & Render Action Bar -->
-        <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h4 class="text-sm font-bold text-white">Ready to Produce Video</h4>
-                <p class="text-xs text-zinc-400">1080p high quality video rendered locally.</p>
+            <!-- RIGHT COLUMN: Sticky Enlarged HD Live Video Preview Side Panel (lg:col-span-5 sticky top-6) -->
+            <div class="lg:col-span-5 sticky top-6 space-y-4">
+                <div class="p-5 bg-zinc-900 rounded-2xl border border-zinc-800 shadow-xl space-y-3">
+                    <div class="flex items-center justify-between w-full border-b border-zinc-800 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-xs font-bold text-white">Enlarged Live Video Preview</span>
+                        </div>
+
+                        <!-- Aspect Ratio Selector Badge -->
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[11px] text-zinc-400 font-semibold">Aspect:</label>
+                            <select name="aspect_ratio" id="aspectRatioSelect" class="px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-[11px] font-semibold text-white focus:outline-none focus:border-zinc-600">
+                                <option value="16:9" selected>16:9 Landscape</option>
+                                <option value="9:16">9:16 Vertical Shorts</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Enlarged High-DPI Canvas Preview Frame -->
+                    <div id="previewFrame" class="w-full aspect-video bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-2xl transition-all">
+                        <canvas id="livePreviewCanvas" width="1280" height="720" class="w-full h-full object-contain"></canvas>
+                    </div>
+
+                    <p class="text-[10px] text-zinc-400 text-center">
+                        Simulates live video playback, typography styling, & word wipes in real-time.
+                    </p>
+                </div>
             </div>
 
-            <button type="submit" id="renderSubmitBtn" class="px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2">
-                <span>Render Synced Lyric Video</span>
-            </button>
         </div>
     </form>
+</div>
+
+<!-- Live Rendering Progress Modal Overlay -->
+<div id="progressModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
+        <div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="video" class="w-6 h-6 animate-pulse"></i>
+            </div>
+            <h3 class="text-base font-bold text-white" id="progressTitle">Rendering Synced Lyric Video...</h3>
+            <p class="text-xs text-zinc-400 mt-1" id="progressSubtitle">Generating 1080p video with typography animations.</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+                <span id="progressStep" class="text-zinc-300 font-semibold truncate max-w-[260px] text-left">Preparing render pipeline...</span>
+                <span id="progressPercent" class="text-emerald-400 font-bold">10%</span>
+            </div>
+            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 10%"></div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-zinc-800 text-[11px] text-zinc-400">
+            <span id="elapsedTimer" class="font-mono">00:00</span>
+            <span class="text-emerald-400 font-medium flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                FFmpeg Local Processing
+            </span>
+        </div>
+
+        <div class="pt-2">
+            <button type="button" id="cancelRenderBtn" class="w-full py-2.5 bg-zinc-800/80 hover:bg-rose-950 hover:border-rose-700 text-zinc-300 hover:text-rose-200 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+                Cancel Rendering
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Full Lyrics & Spellcheck Editor Modal -->
+<div id="fullSpellEditorModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white">Full Lyrics & Spelling Editor</h3>
+                    <p class="text-[11px] text-zinc-400">Edit entire song lyrics with built-in spellcheck and format normalizers</p>
+                </div>
+            </div>
+            <button type="button" id="closeFullSpellEditorBtn" class="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="px-6 py-2.5 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between gap-3 flex-wrap text-xs">
+            <div class="flex items-center gap-2">
+                <span class="text-zinc-400 font-semibold text-[11px]">Quick Format:</span>
+                <button type="button" onclick="formatModalCase('sentence')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">Sentence case</button>
+                <button type="button" onclick="formatModalCase('title')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">Title Case</button>
+                <button type="button" onclick="formatModalCase('upper')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">ALL CAPS</button>
+                <button type="button" onclick="formatModalCase('lower')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">lowercase</button>
+                <button type="button" onclick="formatModalCase('clean_quotes')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-[11px] font-medium border border-zinc-700/60">Fix Smart Quotes</button>
+            </div>
+            <div class="text-[11px] text-zinc-500 font-mono" id="modalLineCount">
+                0 lines
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 flex-1 overflow-y-auto space-y-4">
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs text-zinc-400">
+                    <span>Edit lyrics text below (spellings highlighted automatically by your browser):</span>
+                    <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-mono">Spellcheck Active</span>
+                </div>
+                <textarea id="modalLyricsTextarea" rows="14" spellcheck="true" autocomplete="off" autocapitalize="sentences"
+                          class="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-100 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 resize-y"
+                          placeholder="Paste or type full song lyrics here..."></textarea>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-3.5 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between">
+            <button type="button" id="cancelFullSpellEditorBtn" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/60 transition-colors">
+                Cancel
+            </button>
+            <button type="button" id="saveFullSpellEditorBtn" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-950/40 flex items-center gap-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Apply Lyrics & Sync</span>
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -438,11 +653,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let audioDuration = 0;
     let lyricsArray = []; // [{line: '...', start: 0.0, end: 0.0}]
-    let currentSyncIndex = 0;
     let activeAnimationStyle = 'KARAOKE_WIPE';
     let loadedCoverImage = null;
     let currentMode = 'AUDIO'; // 'AUDIO' or 'VIDEO'
     let videoAnimationId = null;
+
+    const DRAFT_KEY = 'yt_quid_lyrics_draft';
 
     // Elements
     const modeAudioBtn = document.getElementById('modeAudioBtn');
@@ -487,6 +703,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoDistributeBtn = document.getElementById('autoDistributeBtn');
     const lrcFileInput = document.getElementById('lrcFileInput');
     const exportLrcBtn = document.getElementById('exportLrcBtn');
+    const searchOnlineBtn = document.getElementById('searchOnlineBtn');
+    const aiTranscribeBtn = document.getElementById('aiTranscribeBtn');
+    const vocalSyncBtn = document.getElementById('vocalSyncBtn');
+
+    const aiProgressBarContainer = document.getElementById('aiProgressBarContainer');
+    const aiProgressStatus = document.getElementById('aiProgressStatus');
+    const aiProgressBarFill = document.getElementById('aiProgressBarFill');
+    const aiProgressPercent = document.getElementById('aiProgressPercent');
 
     const playPauseBtn = document.getElementById('playPauseBtn');
     const playIcon = document.getElementById('playIcon');
@@ -499,7 +723,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const aspectRatioSelect = document.getElementById('aspectRatioSelect');
     const previewFrame = document.getElementById('previewFrame');
-    const previewAspectBadge = document.getElementById('previewAspectBadge');
     const livePreviewCanvas = document.getElementById('livePreviewCanvas');
     const canvasCtx = livePreviewCanvas.getContext('2d');
 
@@ -511,12 +734,200 @@ document.addEventListener('DOMContentLoaded', () => {
     const textColorPicker = document.getElementById('textColorPicker');
     const textColorHex = document.getElementById('textColorHex');
     const positionModeSelect = document.getElementById('positionModeSelect');
+    
+    // New Advanced Typography Elements
+    const fontWeightSelect = document.getElementById('fontWeightSelect');
+    const textTransformSelect = document.getElementById('textTransformSelect');
+    const letterSpacingSlider = document.getElementById('letterSpacingSlider');
+    const letterSpacingDisplay = document.getElementById('letterSpacingDisplay');
+    const lineHeightSlider = document.getElementById('lineHeightSlider');
+    const lineHeightDisplay = document.getElementById('lineHeightDisplay');
+    const textStrokeSlider = document.getElementById('textStrokeSlider');
+    const strokeDisplay = document.getElementById('strokeDisplay');
+    const textShadowSlider = document.getElementById('textShadowSlider');
+    const shadowDisplay = document.getElementById('shadowDisplay');
+    const fontScaleXSlider = document.getElementById('fontScaleXSlider');
+    const scaleXDisplay = document.getElementById('scaleXDisplay');
+    const fontScaleYSlider = document.getElementById('fontScaleYSlider');
+    const scaleYDisplay = document.getElementById('scaleYDisplay');
+    const bgOpacitySlider = document.getElementById('bgOpacitySlider');
+    const bgOpacityDisplay = document.getElementById('bgOpacityDisplay');
+    const fontItalicCheck = document.getElementById('fontItalicCheck');
+
     const songTitleInput = document.getElementById('songTitleInput');
     const artistNameInput = document.getElementById('artistNameInput');
+    const draftStatusBanner = document.getElementById('draftStatusBanner');
+    const draftStatusText = document.getElementById('draftStatusText');
+    const clearDraftBtn = document.getElementById('clearDraftBtn');
+
+    function getMediaFile() {
+        if (currentMode === 'VIDEO') {
+            if (hasReplacementAudio()) return videoReplaceAudioInput.files[0];
+            if (videoInput.files && videoInput.files[0]) return videoInput.files[0];
+        } else {
+            if (audioInput.files && audioInput.files[0]) return audioInput.files[0];
+        }
+        return null;
+    }
 
     function hasReplacementAudio() {
         return currentMode === 'VIDEO' && videoReplaceAudioInput && videoReplaceAudioInput.files && videoReplaceAudioInput.files[0];
     }
+
+    // Attach video canvas redrawing listeners
+    if (previewVideo) {
+        previewVideo.addEventListener('loadedmetadata', drawLiveCanvas);
+        previewVideo.addEventListener('loadeddata', drawLiveCanvas);
+        previewVideo.addEventListener('canplay', drawLiveCanvas);
+        previewVideo.addEventListener('seeked', drawLiveCanvas);
+    }
+
+    // -------------------------------------------------------------
+    // LOCAL DRAFT MANAGER & AUTO-SAVE ENGINE
+    // -------------------------------------------------------------
+    function saveDraft() {
+        try {
+            const draftData = {
+                timestamp: Date.now(),
+                title: songTitleInput.value,
+                artist: artistNameInput.value,
+                source_type: currentMode,
+                aspect_ratio: aspectRatioSelect.value,
+                raw_text: rawLyricsTextarea.value,
+                lyrics_data: lyricsArray,
+                animation_style: activeAnimationStyle,
+                font_family: fontFamilySelect.value,
+                font_size: fontSizeSlider.value,
+                position_mode: positionModeSelect.value,
+                highlight_color: highlightColorPicker.value,
+                text_color: textColorPicker.value,
+                loop_video: document.getElementById('loopVideoCheckbox')?.checked,
+                font_weight: fontWeightSelect.value,
+                text_transform: textTransformSelect.value,
+                letter_spacing: letterSpacingSlider.value,
+                line_height: lineHeightSlider.value,
+                text_stroke_width: textStrokeSlider.value,
+                text_shadow_depth: textShadowSlider.value,
+                font_scale_x: fontScaleXSlider.value,
+                font_scale_y: fontScaleYSlider.value,
+                bg_opacity: bgOpacitySlider.value,
+                font_italic: fontItalicCheck.checked
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+            if (draftStatusBanner) {
+                draftStatusBanner.classList.remove('hidden');
+                draftStatusBanner.classList.add('flex');
+                draftStatusText.textContent = 'Draft Auto-Saved';
+            }
+        } catch (e) {
+            console.warn('Draft save error:', e);
+        }
+    }
+
+    function loadDraft() {
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (!draft) return;
+
+            if (draft.title) songTitleInput.value = draft.title;
+            if (draft.artist) artistNameInput.value = draft.artist;
+            if (draft.source_type) setSourceMode(draft.source_type);
+            if (draft.aspect_ratio) {
+                aspectRatioSelect.value = draft.aspect_ratio;
+                aspectRatioSelect.dispatchEvent(new Event('change'));
+            }
+            if (draft.raw_text) rawLyricsTextarea.value = draft.raw_text;
+            if (draft.lyrics_data && Array.isArray(draft.lyrics_data)) {
+                lyricsArray = draft.lyrics_data;
+                renderTimelineList();
+                updateHiddenJson();
+            }
+            if (draft.animation_style) {
+                activeAnimationStyle = draft.animation_style;
+                document.querySelectorAll('.style-card').forEach(c => {
+                    const r = c.querySelector('input[type="radio"]');
+                    if (c.dataset.style === activeAnimationStyle) {
+                        c.className = "style-card p-2.5 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between";
+                        if (r) r.checked = true;
+                    } else {
+                        c.className = "style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between";
+                    }
+                });
+            }
+            if (draft.font_family) fontFamilySelect.value = draft.font_family;
+            if (draft.font_size) {
+                fontSizeSlider.value = draft.font_size;
+                fontSizeDisplay.textContent = `${draft.font_size}px`;
+            }
+            if (draft.position_mode) positionModeSelect.value = draft.position_mode;
+            if (draft.highlight_color) {
+                highlightColorPicker.value = draft.highlight_color;
+                highlightColorHex.value = draft.highlight_color.toUpperCase();
+            }
+            if (draft.text_color) {
+                textColorPicker.value = draft.text_color;
+                textColorHex.value = draft.text_color.toUpperCase();
+            }
+            if (draft.font_weight) fontWeightSelect.value = draft.font_weight;
+            if (draft.text_transform) textTransformSelect.value = draft.text_transform;
+            if (draft.letter_spacing) { letterSpacingSlider.value = draft.letter_spacing; letterSpacingDisplay.textContent = `${draft.letter_spacing}px`; }
+            if (draft.line_height) { lineHeightSlider.value = draft.line_height; lineHeightDisplay.textContent = `${draft.line_height}x`; }
+            if (draft.text_stroke_width) { textStrokeSlider.value = draft.text_stroke_width; strokeDisplay.textContent = `${draft.text_stroke_width}px`; }
+            if (draft.text_shadow_depth) { textShadowSlider.value = draft.text_shadow_depth; shadowDisplay.textContent = `${draft.text_shadow_depth}px`; }
+            if (draft.font_scale_x) { fontScaleXSlider.value = draft.font_scale_x; scaleXDisplay.textContent = `${draft.font_scale_x}%`; }
+            if (draft.font_scale_y) { fontScaleYSlider.value = draft.font_scale_y; scaleYDisplay.textContent = `${draft.font_scale_y}%`; }
+            if (draft.bg_opacity) { bgOpacitySlider.value = draft.bg_opacity; bgOpacityDisplay.textContent = `${draft.bg_opacity}%`; }
+            if (draft.font_italic !== undefined) fontItalicCheck.checked = draft.font_italic;
+
+            if (draftStatusBanner) {
+                draftStatusBanner.classList.remove('hidden');
+                draftStatusBanner.classList.add('flex');
+                const timeAgo = Math.round((Date.now() - (draft.timestamp || Date.now())) / 1000 / 60);
+                draftStatusText.textContent = timeAgo > 0 ? `Restored draft (${timeAgo}m ago)` : `Draft Restored`;
+            }
+            drawLiveCanvas();
+        } catch (e) {
+            console.warn('Draft load error:', e);
+        }
+    }
+
+    if (clearDraftBtn) {
+        clearDraftBtn.addEventListener('click', async () => {
+            const confirmed = await AppDialog.confirm({
+                title: 'Clear Saved Draft?',
+                message: 'Clear your saved lyrics draft and reset all form fields?',
+                confirmText: 'Reset Form',
+                cancelText: 'Keep Draft',
+                type: 'danger'
+            });
+            if (confirmed) {
+                localStorage.removeItem(DRAFT_KEY);
+                window.location.reload();
+            }
+        });
+    }
+
+    // Bind slider displays
+    const displayBinds = [
+        [fontSizeSlider, fontSizeDisplay, 'px'],
+        [letterSpacingSlider, letterSpacingDisplay, 'px'],
+        [lineHeightSlider, lineHeightDisplay, 'x'],
+        [textStrokeSlider, strokeDisplay, 'px'],
+        [textShadowSlider, shadowDisplay, 'px'],
+        [fontScaleXSlider, scaleXDisplay, '%'],
+        [fontScaleYSlider, scaleYDisplay, '%'],
+        [bgOpacitySlider, bgOpacityDisplay, '%']
+    ];
+    displayBinds.forEach(([slider, display, suffix]) => {
+        if(slider && display) slider.addEventListener('input', (e) => { display.textContent = `${e.target.value}${suffix}`; drawLiveCanvas(); saveDraft(); });
+    });
+
+    // Auto-save listeners
+    [songTitleInput, artistNameInput, rawLyricsTextarea, fontFamilySelect, positionModeSelect, highlightColorPicker, textColorPicker, fontWeightSelect, textTransformSelect, fontItalicCheck].forEach(el => {
+        if (el) el.addEventListener('input', () => { drawLiveCanvas(); saveDraft(); });
+    });
 
     // 0. Mode Switcher (Audio vs Video)
     function setSourceMode(mode) {
@@ -569,7 +980,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentTimeDisplay.textContent = formatTime(previewVideo.currentTime || 0);
             }
         }
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
+        saveDraft();
         drawLiveCanvas();
     }
 
@@ -585,7 +997,6 @@ document.addEventListener('DOMContentLoaded', () => {
         audioFileName.textContent = file.name;
         const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
         
-        // Auto populate title if blank
         if (!songTitleInput.value) {
             const rawName = file.name.replace(/\.[^/.]+$/, "");
             songTitleInput.value = rawName.replace(/[_-]/g, ' ');
@@ -600,86 +1011,97 @@ document.addEventListener('DOMContentLoaded', () => {
             audioScrubber.max = audioDuration;
             audioEmpty.classList.add('hidden');
             audioSelected.classList.remove('hidden');
+            saveDraft();
             drawLiveCanvas();
         };
     });
 
-    // 2. Video Upload Handling
-    if (videoDropZone) {
-        videoDropZone.addEventListener('click', () => videoInput.click());
-    }
-    if (videoInput) {
-        videoInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    // Cover Image Upload
+    coverDropZone.addEventListener('click', () => coverInput.click());
+    coverInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-            videoFileName.textContent = file.name;
-            const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        coverFileName.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            coverPreviewImg.src = event.target.result;
+            coverEmpty.classList.add('hidden');
+            coverSelected.classList.remove('hidden');
+            coverSelected.classList.add('flex');
 
-            if (!songTitleInput.value) {
-                const rawName = file.name.replace(/\.[^/.]+$/, "");
-                songTitleInput.value = rawName.replace(/[_-]/g, ' ');
-            }
-
-            const objectUrl = URL.createObjectURL(file);
-            previewVideo.src = objectUrl;
-            previewVideo.muted = hasReplacementAudio(); // Mute if custom audio track already present
-            previewVideo.onloadedmetadata = () => {
-                if (!hasReplacementAudio()) {
-                    audioDuration = previewVideo.duration;
-                    totalDurationDisplay.textContent = formatTime(audioDuration);
-                    audioScrubber.max = audioDuration;
-                }
-                videoFileDetails.textContent = `${formatTime(previewVideo.duration)} • ${previewVideo.videoWidth}x${previewVideo.videoHeight} • ${sizeMb} MB`;
-                videoEmpty.classList.add('hidden');
-                videoSelected.classList.remove('hidden');
-
-                // Auto-detect Aspect Ratio from video dimensions
-                if (previewVideo.videoHeight > previewVideo.videoWidth) {
-                    aspectRatioSelect.value = '9:16';
-                    updateAspectRatioUI('9:16');
-                } else {
-                    aspectRatioSelect.value = '16:9';
-                    updateAspectRatioUI('16:9');
-                }
-
-                previewVideo.currentTime = 0;
+            const img = new Image();
+            img.onload = () => {
+                loadedCoverImage = img;
+                saveDraft();
                 drawLiveCanvas();
             };
-        });
-    }
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 
-    // Video Custom Master Audio Replacement
-    if (videoAudioDropZone) {
-        videoAudioDropZone.addEventListener('click', (e) => {
-            if (e.target.closest('#removeReplacementAudioBtn')) return;
-            videoReplaceAudioInput.click();
-        });
-    }
-    if (videoReplaceAudioInput) {
-        videoReplaceAudioInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    // Video Upload
+    videoDropZone.addEventListener('click', () => videoInput.click());
+    videoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-            videoAudioFileName.textContent = file.name;
-            videoAudioFileDetails.textContent = `Custom audio loaded • Video muted (${(file.size / 1048576).toFixed(1)} MB)`;
+        videoFileName.textContent = file.name;
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+
+        if (!songTitleInput.value) {
+            const rawName = file.name.replace(/\.[^/.]+$/, "");
+            songTitleInput.value = rawName.replace(/[_-]/g, ' ');
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        previewVideo.src = objectUrl;
+        previewVideo.load();
+        
+        previewVideo.onloadedmetadata = () => {
+            if (!hasReplacementAudio()) {
+                audioDuration = previewVideo.duration;
+                totalDurationDisplay.textContent = formatTime(audioDuration);
+                audioScrubber.max = audioDuration;
+            }
+            videoFileDetails.textContent = `${formatTime(previewVideo.duration)} • ${previewVideo.videoWidth}x${previewVideo.videoHeight} • ${sizeMb} MB`;
+            videoEmpty.classList.add('hidden');
+            videoSelected.classList.remove('hidden');
+            saveDraft();
+            drawLiveCanvas();
+        };
+
+        previewVideo.onloadeddata = () => {
+            drawLiveCanvas();
+        };
+    });
+
+    // Replacement Audio Upload
+    videoAudioDropZone.addEventListener('click', (e) => {
+        if (e.target.closest('#removeReplacementAudioBtn')) return;
+        videoReplaceAudioInput.click();
+    });
+
+    videoReplaceAudioInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        videoAudioFileName.textContent = file.name;
+        const objectUrl = URL.createObjectURL(file);
+        audioPlayer.src = objectUrl;
+        audioPlayer.onloadedmetadata = () => {
+            audioDuration = audioPlayer.duration;
+            totalDurationDisplay.textContent = formatTime(audioDuration);
+            audioScrubber.max = audioDuration;
+            previewVideo.muted = true;
             videoAudioEmpty.classList.add('hidden');
             videoAudioSelected.classList.remove('hidden');
             videoAudioSelected.classList.add('flex');
-
-            // Immediately mute previewVideo
-            previewVideo.muted = true;
-
-            const objectUrl = URL.createObjectURL(file);
-            audioPlayer.src = objectUrl;
-            audioPlayer.onloadedmetadata = () => {
-                audioDuration = audioPlayer.duration || previewVideo.duration;
-                totalDurationDisplay.textContent = formatTime(audioDuration);
-                audioScrubber.max = audioDuration;
-            };
-            lucide.createIcons();
-        });
-    }
+            saveDraft();
+            drawLiveCanvas();
+        };
+    });
 
     if (removeReplacementAudioBtn) {
         removeReplacementAudioBtn.addEventListener('click', (e) => {
@@ -688,771 +1110,859 @@ document.addEventListener('DOMContentLoaded', () => {
             videoAudioSelected.classList.add('hidden');
             videoAudioSelected.classList.remove('flex');
             videoAudioEmpty.classList.remove('hidden');
-            
-            if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
-            audioPlayer.src = '';
-            
-            // Unmute source video when replacement audio is removed
             previewVideo.muted = false;
-
-            if (previewVideo.duration) {
+            if (previewVideo.src && previewVideo.duration) {
                 audioDuration = previewVideo.duration;
                 totalDurationDisplay.textContent = formatTime(audioDuration);
                 audioScrubber.max = audioDuration;
             }
-            lucide.createIcons();
+            saveDraft();
+            drawLiveCanvas();
         });
     }
 
-    // 3. Cover Artwork Upload
-    coverDropZone.addEventListener('click', () => coverInput.click());
-    coverInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        coverFileName.textContent = file.name;
-        const reader = new FileReader();
-        reader.onload = (re) => {
-            coverPreviewImg.src = re.target.result;
-            coverEmpty.classList.add('hidden');
-            coverSelected.classList.remove('hidden');
-
-            loadedCoverImage = new Image();
-            loadedCoverImage.src = re.target.result;
-            loadedCoverImage.onload = () => drawLiveCanvas();
-        };
-        reader.readAsDataURL(file);
+    // Aspect Ratio Switcher
+    aspectRatioSelect.addEventListener('change', () => {
+        const val = aspectRatioSelect.value;
+        if (val === '9:16') {
+            previewFrame.className = "w-[240px] h-[426px] mx-auto bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-2xl transition-all";
+            livePreviewCanvas.width = 720;
+            livePreviewCanvas.height = 1280;
+        } else {
+            previewFrame.className = "w-full aspect-video bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-2xl transition-all";
+            livePreviewCanvas.width = 1280;
+            livePreviewCanvas.height = 720;
+        }
+        saveDraft();
+        drawLiveCanvas();
     });
 
-    // 4. Playback & Video Frame Render Loop
-    function renderVideoLoop() {
-        if (currentMode === 'VIDEO' && previewVideo && !previewVideo.paused) {
+    // Animation Style Cards Selection
+    document.querySelectorAll('.style-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.style-card').forEach(c => {
+                c.className = "style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between";
+            });
+            card.className = "style-card p-2.5 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between";
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            activeAnimationStyle = card.dataset.style;
+            saveDraft();
             drawLiveCanvas();
-            videoAnimationId = requestAnimationFrame(renderVideoLoop);
-        }
-    }
+        });
+    });
 
+    // Sync Input Controls to Canvas
+    fontFamilySelect.addEventListener('change', () => { saveDraft(); drawLiveCanvas(); });
+    fontSizeSlider.addEventListener('input', () => {
+        fontSizeDisplay.textContent = `${fontSizeSlider.value}px`;
+        saveDraft();
+        drawLiveCanvas();
+    });
+    positionModeSelect.addEventListener('change', () => { saveDraft(); drawLiveCanvas(); });
+    
+    highlightColorPicker.addEventListener('input', () => {
+        highlightColorHex.value = highlightColorPicker.value.toUpperCase();
+        saveDraft();
+        drawLiveCanvas();
+    });
+    highlightColorHex.addEventListener('input', () => {
+        if (/^#[0-9A-F]{6}$/i.test(highlightColorHex.value)) {
+            highlightColorPicker.value = highlightColorHex.value;
+            saveDraft();
+            drawLiveCanvas();
+        }
+    });
+
+    textColorPicker.addEventListener('input', () => {
+        textColorHex.value = textColorPicker.value.toUpperCase();
+        saveDraft();
+        drawLiveCanvas();
+    });
+    textColorHex.addEventListener('input', () => {
+        if (/^#[0-9A-F]{6}$/i.test(textColorHex.value)) {
+            textColorPicker.value = textColorHex.value;
+            saveDraft();
+            drawLiveCanvas();
+        }
+    });
+
+    songTitleInput.addEventListener('input', () => { saveDraft(); drawLiveCanvas(); });
+
+    // Audio / Video Playback & Scrubber Controls
     function getActiveTime() {
-        if (currentMode === 'VIDEO' && previewVideo && previewVideo.src) {
+        if (currentMode === 'VIDEO' && !hasReplacementAudio()) {
             return previewVideo.currentTime || 0;
         }
-        return (audioPlayer && audioPlayer.currentTime) || 0;
+        return audioPlayer.currentTime || 0;
     }
 
-    playPauseBtn.addEventListener('click', () => {
+    function setActiveTime(t) {
         if (currentMode === 'VIDEO') {
-            if (!previewVideo.src) {
-                videoInput.click();
-                return;
-            }
-            if (previewVideo.paused) {
-                if (hasReplacementAudio() && audioPlayer.src) {
-                    previewVideo.muted = true;
-                    audioPlayer.currentTime = previewVideo.currentTime;
-                    audioPlayer.play().catch(() => {});
-                } else {
-                    previewVideo.muted = false;
-                }
-                previewVideo.play().then(() => {
-                    playIcon.setAttribute('data-lucide', 'pause');
-                    lucide.createIcons();
-                    videoAnimationId = requestAnimationFrame(renderVideoLoop);
-                }).catch(() => {});
-            } else {
-                previewVideo.pause();
-                if (audioPlayer.src) audioPlayer.pause();
-                playIcon.setAttribute('data-lucide', 'play');
-                lucide.createIcons();
-                if (videoAnimationId) cancelAnimationFrame(videoAnimationId);
-                drawLiveCanvas();
-            }
-        } else {
-            if (!audioPlayer.src) {
-                audioInput.click();
-                return;
-            }
-            if (audioPlayer.paused) {
-                audioPlayer.play();
-                playIcon.setAttribute('data-lucide', 'pause');
-            } else {
-                audioPlayer.pause();
-                playIcon.setAttribute('data-lucide', 'play');
-            }
-            lucide.createIcons();
-        }
-    });
-
-    // Preview video event listeners
-    if (previewVideo) {
-        previewVideo.addEventListener('timeupdate', () => {
-            if (currentMode === 'VIDEO') {
-                const curTime = previewVideo.currentTime;
-                if (hasReplacementAudio()) {
-                    previewVideo.muted = true;
-                    if (audioPlayer.src && Math.abs(audioPlayer.currentTime - curTime) > 0.3) {
-                        audioPlayer.currentTime = curTime;
-                    }
-                }
-                currentTimeDisplay.textContent = formatTime(curTime);
-                audioScrubber.value = curTime;
-                updateActiveTimelineHighlight(curTime);
-                if (previewVideo.paused) drawLiveCanvas();
-            }
-        });
-        previewVideo.addEventListener('pause', () => {
-            if (hasReplacementAudio() && audioPlayer && !audioPlayer.paused) {
-                audioPlayer.pause();
-            }
-        });
-        previewVideo.addEventListener('play', () => {
-            if (hasReplacementAudio() && audioPlayer && audioPlayer.src && audioPlayer.paused) {
-                previewVideo.muted = true;
-                audioPlayer.currentTime = previewVideo.currentTime;
-                audioPlayer.play().catch(() => {});
-            }
-        });
-        previewVideo.addEventListener('ended', () => {
-            const loopEnabled = document.getElementById('loopVideoCheckbox')?.checked ?? true;
-            if (currentMode === 'VIDEO' && loopEnabled) {
-                if (hasReplacementAudio() && audioPlayer && !audioPlayer.paused && audioPlayer.currentTime < (audioDuration - 0.5)) {
-                    previewVideo.currentTime = 0;
-                    previewVideo.play().catch(() => {});
-                    return;
-                }
-            }
-            if (hasReplacementAudio() && audioPlayer && !audioPlayer.paused) {
-                audioPlayer.pause();
-            }
-            playIcon.setAttribute('data-lucide', 'play');
-            lucide.createIcons();
-            if (videoAnimationId) cancelAnimationFrame(videoAnimationId);
-            drawLiveCanvas();
-        });
-        previewVideo.addEventListener('seeked', () => {
-            if (currentMode === 'VIDEO') {
-                if (hasReplacementAudio() && audioPlayer.src) {
-                    audioPlayer.currentTime = previewVideo.currentTime;
-                }
-                drawLiveCanvas();
-            }
-        });
-    }
-
-    // Audio player event listeners
-    audioPlayer.addEventListener('timeupdate', () => {
-        if (currentMode === 'AUDIO') {
-            const curTime = audioPlayer.currentTime;
-            currentTimeDisplay.textContent = formatTime(curTime);
-            audioScrubber.value = curTime;
-            updateActiveTimelineHighlight(curTime);
-            drawLiveCanvas();
-        }
-    });
-    audioPlayer.addEventListener('ended', () => {
-        playIcon.setAttribute('data-lucide', 'play');
-        lucide.createIcons();
-        drawLiveCanvas();
-    });
-
-    audioScrubber.addEventListener('input', (e) => {
-        const t = parseFloat(e.target.value);
-        if (currentMode === 'VIDEO' && previewVideo && previewVideo.src) {
             previewVideo.currentTime = t;
-            if (hasReplacementAudio() && audioPlayer && audioPlayer.src) {
-                audioPlayer.currentTime = t;
-            }
         }
-        if (currentMode === 'AUDIO' && audioPlayer && audioPlayer.src) {
+        if (currentMode === 'AUDIO' || hasReplacementAudio()) {
             audioPlayer.currentTime = t;
         }
-        currentTimeDisplay.textContent = formatTime(t);
+    }
+
+    function togglePlay() {
+        const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+        if (isPlaying) {
+            if (currentMode === 'VIDEO') previewVideo.pause();
+            audioPlayer.pause();
+            playIcon.setAttribute('data-lucide', 'play');
+        } else {
+            if (currentMode === 'VIDEO') previewVideo.play();
+            if (currentMode === 'AUDIO' || hasReplacementAudio()) audioPlayer.play();
+            playIcon.setAttribute('data-lucide', 'pause');
+            loopRenderCanvas();
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    playPauseBtn.addEventListener('click', togglePlay);
+
+    audioScrubber.addEventListener('input', () => {
+        const val = parseFloat(audioScrubber.value);
+        setActiveTime(val);
+        currentTimeDisplay.textContent = formatTime(val);
         drawLiveCanvas();
     });
 
-    // Speed buttons
-    document.querySelectorAll('.speed-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const speed = parseFloat(btn.dataset.speed);
-            if (audioPlayer) audioPlayer.playbackRate = speed;
-            if (previewVideo) previewVideo.playbackRate = speed;
-            document.querySelectorAll('.speed-btn').forEach(b => {
-                b.className = "speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold";
-            });
-            btn.className = "speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold";
-        });
-    });
-
-    // Progress Bar Controller
-    const aiProgressBarContainer = document.getElementById('aiProgressBarContainer');
-    const aiProgressStatus = document.getElementById('aiProgressStatus');
-    const aiProgressPercent = document.getElementById('aiProgressPercent');
-    const aiProgressBarFill = document.getElementById('aiProgressBarFill');
-    let progressTimer = null;
-
-    function startProgress(statusMessage, estimatedSeconds = 8) {
-        if (progressTimer) clearInterval(progressTimer);
-        if (!aiProgressBarContainer) return;
-
-        aiProgressBarContainer.classList.remove('hidden');
-        aiProgressBarFill.className = "h-full bg-emerald-500 transition-all duration-300";
-        aiProgressBarFill.style.width = "6%";
-        aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
-        aiProgressPercent.textContent = "6%";
-        aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ${statusMessage}`;
-
-        let currentPct = 6;
-        const intervalMs = 250;
-        const step = (82 / (estimatedSeconds * 1000 / intervalMs));
-
-        progressTimer = setInterval(() => {
-            if (currentPct < 88) {
-                currentPct = Math.min(88, currentPct + step + (Math.random() * 0.4));
-                aiProgressBarFill.style.width = `${Math.round(currentPct)}%`;
-                aiProgressPercent.textContent = `${Math.round(currentPct)}%`;
-            }
-        }, intervalMs);
+    function updateTimeDisplays() {
+        const t = getActiveTime();
+        currentTimeDisplay.textContent = formatTime(t);
+        audioScrubber.value = t;
+        drawLiveCanvas();
     }
 
-    function completeProgress(successMessage = 'Complete!') {
-        if (progressTimer) clearInterval(progressTimer);
-        if (!aiProgressBarContainer) return;
+    audioPlayer.addEventListener('timeupdate', updateTimeDisplays);
+    previewVideo.addEventListener('timeupdate', updateTimeDisplays);
 
-        aiProgressBarFill.className = "h-full bg-emerald-500 transition-all duration-300";
-        aiProgressBarFill.style.width = "100%";
-        aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
-        aiProgressPercent.textContent = "100%";
-        aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> ${successMessage}`;
-
-        setTimeout(() => {
-            aiProgressBarContainer.classList.add('hidden');
-            aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
-        }, 3500);
+    function loopRenderCanvas() {
+        drawLiveCanvas();
+        const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+        if (isPlaying) {
+            videoAnimationId = requestAnimationFrame(loopRenderCanvas);
+        }
     }
 
-    function failProgress(errorMessage = 'Process failed') {
-        if (progressTimer) clearInterval(progressTimer);
-        if (!aiProgressBarContainer) return;
-
-        aiProgressBarFill.className = "h-full bg-rose-500 transition-all duration-300";
-        aiProgressPercent.className = "text-rose-400 font-mono font-bold";
-        aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> ${errorMessage}`;
-
-        setTimeout(() => {
-            aiProgressBarContainer.classList.add('hidden');
-            aiProgressPercent.className = "text-emerald-400 font-mono font-bold";
-        }, 4000);
-    }
-
-    const aiTranscribeBtn = document.getElementById('aiTranscribeBtn');
-    const vocalSyncBtn = document.getElementById('vocalSyncBtn');
-    const searchOnlineBtn = document.getElementById('searchOnlineBtn');
-
-    // AI Lyrics Transcription & Sync (Whisper AI)
+    // -------------------------------------------------------------
+    // FEATURE: AI WHISPER TRANSCRIPTION & SYNC HANDLER
+    // -------------------------------------------------------------
     if (aiTranscribeBtn) {
         aiTranscribeBtn.addEventListener('click', async () => {
-            let selectedFile = null;
-            if (currentMode === 'AUDIO') {
-                if (!audioInput.files || !audioInput.files[0]) {
-                    alert('Please upload your audio track (.mp3 or .wav) in Step 1 first.');
-                    audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    audioInput.click();
-                    return;
-                }
-                selectedFile = audioInput.files[0];
-            } else {
-                if (hasReplacementAudio()) {
-                    selectedFile = videoReplaceAudioInput.files[0];
-                } else if (videoInput.files && videoInput.files[0]) {
-                    selectedFile = videoInput.files[0];
-                } else {
-                    alert('Please upload your video file (.mp4 or .mov) in Step 1 first.');
-                    videoDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    videoInput.click();
-                    return;
-                }
+            const mediaFile = getMediaFile();
+            if (!mediaFile) {
+                AppToast.warning('Please select or upload an audio track or video file in Step 1 first before running AI Transcription!');
+                audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
             }
 
-            const originalHtml = aiTranscribeBtn.innerHTML;
+            aiProgressBarContainer.classList.remove('hidden');
+            aiProgressBarFill.style.width = '15%';
+            aiProgressPercent.textContent = '15%';
+            aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Transcribing song audio with Whisper AI...`;
             aiTranscribeBtn.disabled = true;
-            aiTranscribeBtn.innerHTML = `<span>AI Listening & Transcribing...</span>`;
 
-            const usingReplacement = (currentMode === 'VIDEO' && hasReplacementAudio());
-            const progressLabel = usingReplacement
-                ? 'Transcribing replacement audio track with Whisper AI...'
-                : 'Transcribing song audio with Whisper AI & formatting lyric bars...';
-            startProgress(progressLabel, 7);
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+            const formData = new FormData();
+            formData.append('audio_file', mediaFile);
+            formData.append('model_size', 'base');
+
+            let pct = 20;
+            const progressTimer = setInterval(() => {
+                if (pct < 90) {
+                    pct += 5;
+                    aiProgressBarFill.style.width = pct + '%';
+                    aiProgressPercent.textContent = pct + '%';
+                }
+            }, 1000);
 
             try {
-                const formData = new FormData();
-                if (usingReplacement) {
-                    // Send under replacement_audio key so backend prioritises it
-                    formData.append('replacement_audio', selectedFile);
-                } else {
-                    formData.append('audio_file', selectedFile);
-                }
-                formData.append('model_size', 'base');
-                
-                const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
-                if (csrfTokenEl) {
-                    formData.append('csrfmiddlewaretoken', csrfTokenEl.value);
-                }
-
-                const resp = await fetch(`{% url 'lyrics_ai_transcribe_api' %}`, {
+                const resp = await fetch('/studio/lyrics/api/ai-transcribe/', {
                     method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: formData
                 });
 
+                clearInterval(progressTimer);
                 const data = await resp.json();
 
-                if (data.success && data.lyrics_data && data.lyrics_data.length > 0) {
-                    rawLyricsTextarea.value = data.plain_lyrics || '';
-                    lineCountBadge.textContent = `${data.lyrics_data.length} lines`;
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'AI Transcription failed.');
+                }
 
+                aiProgressBarFill.style.width = '100%';
+                aiProgressPercent.textContent = '100%';
+                aiProgressStatus.textContent = data.message || 'AI Transcription complete!';
+                AppToast.success(data.message || 'AI Transcription complete! Lyrics synced.');
+
+                if (data.lyrics_data && data.lyrics_data.length > 0) {
                     lyricsArray = data.lyrics_data;
-                    currentSyncIndex = lyricsArray.length;
+                    rawLyricsTextarea.value = data.plain_lyrics || data.lyrics_data.map(l => l.line).join('\n');
+                    lineCountBadge.textContent = `${lyricsArray.length} lines`;
                     renderTimelineList();
                     updateHiddenJson();
+                    saveDraft();
                     drawLiveCanvas();
-
-                    completeProgress(`Transcribed ${lyricsArray.length} lyric lines with word-accurate sync!`);
-                } else {
-                    failProgress(data.error || 'AI could not detect lyrics in this media file.');
-                    alert(data.error || 'AI transcription could not detect distinct lyrics in this media file.');
                 }
+
+                setTimeout(() => {
+                    aiProgressBarContainer.classList.add('hidden');
+                }, 3000);
+
             } catch (err) {
-                failProgress('AI Transcription error: ' + err.message);
-                alert('AI Transcription error: ' + err.message);
+                clearInterval(progressTimer);
+                aiProgressBarContainer.classList.add('hidden');
+                AppToast.error('AI Transcription Error: ' + err.message);
             } finally {
                 aiTranscribeBtn.disabled = false;
-                aiTranscribeBtn.innerHTML = originalHtml;
-                lucide.createIcons();
             }
         });
     }
 
-    // Raw Lyrics Line Counter & Auto-sync on text entry
-    rawLyricsTextarea.addEventListener('input', () => {
-        const text = rawLyricsTextarea.value.trim();
-        const lines = text.split('\n').filter(l => l.trim().length > 0);
-        lineCountBadge.textContent = `${lines.length} lines`;
+    // -------------------------------------------------------------
+    // FEATURE: VOCAL FREQUENCY AUTO-SYNC HANDLER
+    // -------------------------------------------------------------
+    if (vocalSyncBtn) {
+        vocalSyncBtn.addEventListener('click', async () => {
+            const text = rawLyricsTextarea.value.trim();
+            if (!text) {
+                AppToast.warning('Please paste or enter song lyrics text first.');
+                return;
+            }
 
-        if (text.includes('[') && text.includes(']')) {
-            parseLrcString(text);
-        }
-    });
+            const mediaFile = getMediaFile();
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+            const formData = new FormData();
+            formData.append('raw_text', text);
+            formData.append('duration', audioDuration || 180.0);
+            if (mediaFile) {
+                formData.append('audio_file', mediaFile);
+            }
 
-    // 1-Click Online Synced Lyrics Search (LRCLIB)
-    searchOnlineBtn.addEventListener('click', async () => {
-        let title = songTitleInput.value.trim();
-        let artist = artistNameInput.value.trim();
+            vocalSyncBtn.disabled = true;
+            vocalSyncBtn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Analyzing Vocal Frequencies...`;
 
-        if (!title) {
-            title = prompt('Enter Song Title to search online synced lyrics:');
-            if (!title) return;
-            songTitleInput.value = title;
-        }
-
-        const originalHtml = searchOnlineBtn.innerHTML;
-        searchOnlineBtn.disabled = true;
-        searchOnlineBtn.innerHTML = `<span>Searching LRCLIB...</span>`;
-        startProgress(`Searching online lyrics database for "${title}"...`, 3);
-
-        try {
-            const url = `{% url 'lyrics_online_search_api' %}?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
-            const resp = await fetch(url);
-            const data = await resp.json();
-
-            if (data.success) {
-                if (data.track_name && !songTitleInput.value) songTitleInput.value = data.track_name;
-                if (data.artist_name && !artistNameInput.value) artistNameInput.value = data.artist_name;
-
-                if (data.plain_lyrics) {
-                    rawLyricsTextarea.value = data.plain_lyrics;
-                    const lines = data.plain_lyrics.split('\n').filter(l => l.trim().length > 0);
-                    lineCountBadge.textContent = `${lines.length} lines`;
-                }
-
-                if (data.is_synced && data.lyrics_data && data.lyrics_data.length > 0) {
+            try {
+                const resp = await fetch('/studio/lyrics/api/vocal-sync/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                const data = await resp.json();
+                if (data.success && data.lyrics_data) {
                     lyricsArray = data.lyrics_data;
-                    currentSyncIndex = lyricsArray.length;
                     renderTimelineList();
                     updateHiddenJson();
+                    saveDraft();
                     drawLiveCanvas();
-                    completeProgress(`Found ${lyricsArray.length} synced lines for "${data.track_name || title}"!`);
+                    AppToast.success(data.message || 'Vocal frequency auto-sync complete!');
                 } else {
-                    completeProgress(`Loaded plain lyrics for "${data.track_name || title}".`);
+                    AppToast.error('Vocal sync error: ' + (data.error || 'Unknown error'));
                 }
-            } else {
-                failProgress(data.message || `No synced lyrics found online for "${title}".`);
+            } catch (e) {
+                AppToast.error('Vocal sync failed: ' + e.message);
+            } finally {
+                vocalSyncBtn.disabled = false;
+                vocalSyncBtn.innerHTML = `<i data-lucide="activity" class="w-3.5 h-3.5 text-zinc-400"></i><span>Vocal Frequency Auto-Sync</span>`;
+                if (window.lucide) lucide.createIcons();
             }
-        } catch (err) {
-            failProgress('Database error: ' + err.message);
-        } finally {
-            searchOnlineBtn.disabled = false;
-            searchOnlineBtn.innerHTML = originalHtml;
-            lucide.createIcons();
-        }
+        });
+    }
+
+    // -------------------------------------------------------------
+    // FEATURE: ONLINE LRCLIB LYRICS SEARCH HANDLER
+    // -------------------------------------------------------------
+    if (searchOnlineBtn) {
+        searchOnlineBtn.addEventListener('click', async () => {
+            let title = songTitleInput.value.trim();
+            if (!title) {
+                title = await AppDialog.prompt({
+                    title: 'Online Lyrics Search',
+                    message: 'Enter song title to search online lyrics database:',
+                    placeholder: 'e.g. Blinding Lights'
+                });
+                if (!title) return;
+                songTitleInput.value = title;
+            }
+            const artist = artistNameInput.value.trim();
+
+            searchOnlineBtn.disabled = true;
+            searchOnlineBtn.textContent = 'Searching LRCLIB...';
+
+            try {
+                const resp = await fetch(`/studio/lyrics/api/search-online/?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`);
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    if (data.synced_lyrics) {
+                        rawLyricsTextarea.value = data.synced_lyrics;
+                    } else if (data.plain_lyrics) {
+                        rawLyricsTextarea.value = data.plain_lyrics;
+                    }
+                    parseRawLyrics();
+                    saveDraft();
+                    AppToast.success(`Found online lyrics for "${data.title || title}"!`);
+                } else {
+                    AppToast.warning(data.error || `No lyrics found online for "${title}".`);
+                }
+            } catch (e) {
+                AppToast.error('Online search error: ' + e.message);
+            } finally {
+                searchOnlineBtn.disabled = false;
+                searchOnlineBtn.textContent = 'Search Online (LRCLIB)';
+            }
+        });
+    }
+
+    // -------------------------------------------------------------
+    // FEATURE: IMPORT & EXPORT .LRC FILE HANDLERS
+    // -------------------------------------------------------------
+    if (lrcFileInput) {
+        lrcFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                rawLyricsTextarea.value = evt.target.result;
+                parseRawLyrics();
+                saveDraft();
+                AppToast.success('Imported .LRC lyrics successfully!');
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    if (exportLrcBtn) {
+        exportLrcBtn.addEventListener('click', () => {
+            if (lyricsArray.length === 0) {
+                AppToast.warning('No synced lyrics to export.');
+                return;
+            }
+            let lrcContent = `[ti:${songTitleInput.value || 'Song'}]\n[ar:${artistNameInput.value || 'Artist'}]\n\n`;
+            lyricsArray.forEach(item => {
+                const m = Math.floor(item.start / 60);
+                const s = Math.floor(item.start % 60);
+                const cs = Math.floor((item.start - Math.floor(item.start)) * 100);
+                const ts = `[${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}]`;
+                lrcContent += `${ts}${item.line}\n`;
+            });
+
+            const blob = new Blob([lrcContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${(songTitleInput.value || 'lyrics').replace(/\s+/g, '_')}.lrc`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // 2. Lyrics Parsing & Timeline Data Management
+    rawLyricsTextarea.addEventListener('input', () => {
+        parseRawLyrics();
+        saveDraft();
     });
 
-    // Vocal Frequency Auto-Sync
-    vocalSyncBtn.addEventListener('click', async () => {
-        const rawText = rawLyricsTextarea.value.trim();
-        if (!rawText) {
-            alert('Please paste or load song lyrics text first.');
-            rawLyricsTextarea.focus();
+    function parseRawLyrics() {
+        const text = rawLyricsTextarea.value.trim();
+        if (!text) {
+            lyricsArray = [];
+            lineCountBadge.textContent = '0 lines';
+            renderTimelineList();
             return;
         }
 
-        let selectedFile = null;
-        if (currentMode === 'AUDIO') {
-            if (audioInput.files && audioInput.files[0]) {
-                selectedFile = audioInput.files[0];
-            }
-        } else {
-            if (hasReplacementAudio()) {
-                selectedFile = videoReplaceAudioInput.files[0];
-            } else if (videoInput.files && videoInput.files[0]) {
-                selectedFile = videoInput.files[0];
-            }
-        }
+        const rawLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        lineCountBadge.textContent = `${rawLines.length} lines`;
 
-        const originalHtml = vocalSyncBtn.innerHTML;
-        vocalSyncBtn.disabled = true;
-        vocalSyncBtn.innerHTML = `<span>Analyzing Vocals...</span>`;
-
-        const usingReplacementVocal = hasReplacementAudio();
-        const vocalProgressLabel = usingReplacementVocal
-            ? 'Analyzing replacement audio vocal frequencies...'
-            : 'Analyzing vocal frequencies & syllable boundaries...';
-        startProgress(vocalProgressLabel, 4);
-
-        try {
-            const formData = new FormData();
-            formData.append('raw_text', rawText);
-            formData.append('duration', audioDuration || (getActiveTime() || 180.0));
-            
-            const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfTokenEl) {
-                formData.append('csrfmiddlewaretoken', csrfTokenEl.value);
-            }
-
-            if (selectedFile) {
-                // Send under replacement_audio key when it's the custom audio track
-                const fileKey = usingReplacementVocal ? 'replacement_audio' : 'audio_file';
-                formData.append(fileKey, selectedFile);
-            }
-
-            const resp = await fetch(`{% url 'lyrics_vocal_sync_api' %}`, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await resp.json();
-
-            if (data.success && data.lyrics_data && data.lyrics_data.length > 0) {
-                lyricsArray = data.lyrics_data;
-                currentSyncIndex = lyricsArray.length;
-                renderTimelineList();
-                updateHiddenJson();
-                drawLiveCanvas();
-                completeProgress('Vocal Auto-Sync complete! Timestamps aligned.');
-            } else {
-                failProgress(data.error || 'Vocal frequency detection failed.');
-                alert(data.error || 'Vocal frequency detection failed.');
-            }
-        } catch (err) {
-            failProgress('Error during vocal sync: ' + err.message);
-            alert('Error during vocal sync: ' + err.message);
-        } finally {
-            vocalSyncBtn.disabled = false;
-            vocalSyncBtn.innerHTML = originalHtml;
-            lucide.createIcons();
-        }
-    });
-
-    // Import .LRC File
-    lrcFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            parseLrcString(ev.target.result);
-        };
-        reader.readAsText(file);
-    });
-
-    function parseLrcString(lrcContent) {
-        const lines = lrcContent.split('\n');
-        const pattern = /\[(\d{1,2}):(\d{2})(?:[\.:](\d{1,3}))?\]/;
+        // Check if LRC format ([mm:ss.xx] Lyric)
+        const lrcRegex = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
         const parsed = [];
 
-        lines.forEach(raw => {
-            const trimmed = raw.trim();
-            if (!trimmed || trimmed.startsWith('[ti:') || trimmed.startsWith('[ar:')) return;
-            const match = pattern.exec(trimmed);
+        rawLines.forEach((l, idx) => {
+            const match = l.match(lrcRegex);
             if (match) {
-                const mins = parseInt(match[1]);
-                const secs = parseInt(match[2]);
-                const ms = match[3] ? (match[3].length === 2 ? parseInt(match[3]) / 100 : parseInt(match[3]) / 1000) : 0;
-                const time = +(mins * 60 + secs + ms).toFixed(2);
-                const lyric = trimmed.replace(pattern, '').trim();
-                if (lyric) {
-                    parsed.push({ line: lyric, start: time, end: 0.0 });
-                }
+                const mins = parseFloat(match[1]);
+                const secs = parseFloat(match[2]);
+                const lineText = match[3].trim();
+                const start = mins * 60 + secs;
+                parsed.push({ line: lineText, start: start, end: start + 3.0 });
+            } else {
+                parsed.push({ line: l, start: 0.0, end: 0.0 });
             }
         });
 
-        parsed.sort((a, b) => a.start - b.start);
+        // Recalculate end times
         for (let i = 0; i < parsed.length; i++) {
-            if (i + 1 < parsed.length) {
-                parsed[i].end = Math.min(parsed[i+1].start, +(parsed[i].start + 8.0).toFixed(2));
-            } else {
-                parsed[i].end = +(parsed[i].start + 5.0).toFixed(2);
+            if (i < parsed.length - 1 && parsed[i + 1].start > parsed[i].start) {
+                parsed[i].end = parsed[i + 1].start;
+            } else if (parsed[i].end <= parsed[i].start) {
+                parsed[i].end = parsed[i].start + 3.5;
             }
         }
 
         lyricsArray = parsed;
-        currentSyncIndex = lyricsArray.length;
+        if (lyricsArray.length > 0 && lyricsArray[0].start === 0.0 && audioDuration > 0) {
+            autoDistributeTimings();
+        } else {
+            renderTimelineList();
+            updateHiddenJson();
+        }
+    }
+
+    function autoDistributeTimings() {
+        if (lyricsArray.length === 0) return;
+        const totalDur = audioDuration > 0 ? audioDuration : 60.0;
+        const interval = totalDur / lyricsArray.length;
+
+        lyricsArray.forEach((item, idx) => {
+            item.start = Math.round(idx * interval * 100) / 100;
+            item.end = Math.round((idx + 1) * interval * 100) / 100;
+        });
+
         renderTimelineList();
         updateHiddenJson();
+        saveDraft();
         drawLiveCanvas();
     }
 
-    // Auto-Distribute Timestamps
-    autoDistributeBtn.addEventListener('click', () => {
-        if (!lyricsArray.length) {
-            const text = rawLyricsTextarea.value.trim();
-            if (text) {
-                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                lyricsArray = lines.map(line => ({ line: line, start: 0.0, end: 0.0 }));
-            }
-        }
-        if (!lyricsArray.length) return;
+    autoDistributeBtn.addEventListener('click', autoDistributeTimings);
 
-        const dur = audioDuration > 0 ? audioDuration : 180.0;
-        const count = lyricsArray.length;
-        const leadIn = 2.0;
-        const activeDur = Math.max(2.0, dur - leadIn - 2.0);
-        const slot = activeDur / count;
+    function updateHiddenJson() {
+        lyricsDataInput.value = JSON.stringify(lyricsArray);
+        syncedCount.textContent = lyricsArray.length;
+    }
 
-        lyricsArray.forEach((item, idx) => {
-            item.start = +(leadIn + (idx * slot)).toFixed(2);
-            item.end = +(Math.min(dur, item.start + slot * 0.92)).toFixed(2);
-        });
-
-        currentSyncIndex = lyricsArray.length;
-        renderTimelineList();
-        updateHiddenJson();
-        drawLiveCanvas();
-    });
-
-    // Export .LRC
-    exportLrcBtn.addEventListener('click', () => {
-        if (!lyricsArray.length) {
-            alert('No lyrics loaded to export.');
-            return;
-        }
-        let content = `[ti:${songTitleInput.value || 'Untitled'}]\n[ar:${artistNameInput.value || ''}]\n[by:YT Quid Creator Studio]\n`;
-        lyricsArray.forEach(item => {
-            const start = item.start || 0;
-            const m = Math.floor(start / 60);
-            const s = Math.floor(start % 60);
-            const cs = Math.floor((start - Math.floor(start)) * 100);
-            const timeStr = `[${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}]`;
-            content += `${timeStr}${item.line}\n`;
-        });
-
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${(songTitleInput.value || 'lyrics').replace(/\s+/g, '_')}.lrc`;
-        a.click();
-    });
-
-    // 5. Render Timeline Items List
     function renderTimelineList() {
-        syncedCount.textContent = lyricsArray.filter(l => l.start > 0).length;
-        lyricsTimelineList.innerHTML = '';
-
-        if (!lyricsArray.length) {
-            lyricsTimelineList.innerHTML = `
-                <div class="text-center py-8 text-zinc-500 text-xs">
-                    <i data-lucide="list-music" class="w-6 h-6 mx-auto mb-2 opacity-40"></i>
-                    Click "AI Transcribe" or paste lyrics on the left to start.
-                </div>
-            `;
-            lucide.createIcons();
+        if (lyricsArray.length === 0) {
+            lyricsTimelineList.innerHTML = `<div class="text-center py-6 text-zinc-500 text-xs">Click "AI Transcribe & Sync Audio" or paste lyrics to start.</div>`;
             return;
         }
 
-        lyricsArray.forEach((item, index) => {
+        lyricsTimelineList.innerHTML = '';
+        lyricsArray.forEach((item, idx) => {
             const row = document.createElement('div');
-            row.id = `lyric-line-${index}`;
-            const isRecorded = item.start > 0;
-
-            row.className = `p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 text-xs ${
-                isRecorded 
-                    ? 'bg-zinc-950 border-zinc-800 text-zinc-200 hover:border-zinc-700' 
-                    : 'bg-zinc-950/40 border-zinc-850 text-zinc-500'
-            }`;
-
+            row.className = "group flex items-center justify-between p-2 bg-zinc-900/90 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all gap-2 text-xs";
             row.innerHTML = `
                 <div class="flex items-center gap-2 overflow-hidden flex-1">
-                    <span class="w-5 h-5 rounded-lg ${isRecorded ? 'bg-zinc-800 text-zinc-200 font-bold' : 'bg-zinc-900 text-zinc-600'} font-mono text-[10px] flex items-center justify-center shrink-0">
-                        ${index + 1}
-                    </span>
-                    <span class="font-medium truncate text-zinc-200">${item.line}</span>
+                    <span class="w-5 h-5 rounded bg-zinc-800 text-zinc-400 text-[10px] font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
+                    <input type="text" 
+                           value="${item.line ? item.line.replace(/"/g, '&quot;') : ''}" 
+                           spellcheck="true" 
+                           autocomplete="off" 
+                           autocapitalize="sentences"
+                           oninput="updateLineText(${idx}, this.value)" 
+                           placeholder="Type lyric line..." 
+                           class="bg-transparent border-0 text-white text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/50 rounded px-1.5 py-0.5 w-full">
                 </div>
-
-                <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" class="seek-play-btn p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" data-time="${item.start}" title="Seek here">
+                <div class="flex items-center gap-1 shrink-0 font-mono text-[11px]">
+                    <button type="button" onclick="nudgeLineTime(${idx}, 'start', -0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]" title="Nudge start -0.2s">-</button>
+                    <input type="number" step="0.05" value="${item.start}" onchange="updateLineTime(${idx}, 'start', this.value)" class="w-14 bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-center text-emerald-400 font-semibold focus:outline-none">
+                    <button type="button" onclick="nudgeLineTime(${idx}, 'start', 0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]" title="Nudge start +0.2s">+</button>
+                    <span class="text-zinc-600">-</span>
+                    <input type="number" step="0.05" value="${item.end}" onchange="updateLineTime(${idx}, 'end', this.value)" class="w-14 bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-center text-zinc-400 focus:outline-none">
+                    
+                    <button type="button" onclick="seekToLine(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors ml-0.5" title="Jump playhead to line">
                         <i data-lucide="play" class="w-3 h-3"></i>
                     </button>
-                    <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="-0.2" title="Shift earlier 0.2s">-0.2s</button>
-                    <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 ${isRecorded ? 'text-zinc-200 font-semibold' : 'text-zinc-600'}">
-                        ${formatTime(item.start)}
-                    </span>
-                    <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="0.2" title="Shift later 0.2s">+0.2s</button>
+                    <button type="button" onclick="splitLine(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors" title="Split this line in half">
+                        <i data-lucide="scissors" class="w-3 h-3 text-zinc-400"></i>
+                    </button>
+                    <button type="button" onclick="mergeLineWithNext(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors ${idx === lyricsArray.length - 1 ? 'hidden' : ''}" title="Merge with line below">
+                        <i data-lucide="link-2" class="w-3 h-3 text-zinc-400"></i>
+                    </button>
+                    <button type="button" onclick="insertLineBelow(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors" title="Insert new line below">
+                        <i data-lucide="plus" class="w-3 h-3 text-emerald-400"></i>
+                    </button>
+                    <button type="button" onclick="deleteLine(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-rose-900/60 text-zinc-400 hover:text-rose-300 transition-colors" title="Delete line">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                    </button>
                 </div>
             `;
             lyricsTimelineList.appendChild(row);
         });
-
-        // Seek button
-        document.querySelectorAll('.seek-play-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const t = parseFloat(btn.dataset.time);
-                if (t >= 0) {
-                    if (currentMode === 'VIDEO' && previewVideo.src) {
-                        previewVideo.currentTime = t;
-                        if (previewVideo.paused) {
-                            previewVideo.play().then(() => {
-                                playIcon.setAttribute('data-lucide', 'pause');
-                                lucide.createIcons();
-                                videoAnimationId = requestAnimationFrame(renderVideoLoop);
-                            }).catch(() => {});
-                        }
-                    } else if (audioPlayer.src) {
-                        audioPlayer.currentTime = t;
-                        if (audioPlayer.paused) {
-                            audioPlayer.play();
-                            playIcon.setAttribute('data-lucide', 'pause');
-                            lucide.createIcons();
-                        }
-                    }
-                }
-            });
-        });
-
-        // Nudge +/- 0.2s buttons
-        document.querySelectorAll('.nudge-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(btn.dataset.idx);
-                const delta = parseFloat(btn.dataset.delta);
-                if (lyricsArray[idx]) {
-                    lyricsArray[idx].start = Math.max(0, +(lyricsArray[idx].start + delta).toFixed(2));
-                    lyricsArray[idx].end = Math.max(lyricsArray[idx].start + 1.0, +(lyricsArray[idx].end + delta).toFixed(2));
-                    renderTimelineList();
-                    updateHiddenJson();
-                    drawLiveCanvas();
-                }
-            });
-        });
-
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     }
 
-    function updateActiveTimelineHighlight(curTime) {
-        lyricsArray.forEach((item, index) => {
-            const el = document.getElementById(`lyric-line-${index}`);
-            if (!el) return;
+    window.updateLineText = function(idx, val) {
+        if (lyricsArray[idx]) {
+            lyricsArray[idx].line = val;
+            // Update words array if present
+            const words = val.trim().split(/\s+/).filter(w => w.length > 0);
+            if (lyricsArray[idx].words && lyricsArray[idx].words.length === words.length) {
+                for (let i = 0; i < words.length; i++) {
+                    lyricsArray[idx].words[i].word = words[i];
+                }
+            } else if (words.length > 0) {
+                const s = lyricsArray[idx].start || 0;
+                const e = lyricsArray[idx].end || (s + 3);
+                const slot = Math.max(0.1, (e - s) / words.length);
+                lyricsArray[idx].words = words.map((w, i) => ({
+                    word: w,
+                    start: Math.round((s + i * slot) * 100) / 100,
+                    end: Math.round((s + (i + 1) * slot) * 100) / 100
+                }));
+            }
+            updateHiddenJson();
+            saveDraft();
+            drawLiveCanvas();
+        }
+    };
 
-            if (curTime >= item.start && curTime <= item.end) {
-                el.classList.add('border-zinc-600', 'bg-zinc-800/50');
+    window.nudgeLineTime = function(idx, field, delta) {
+        if (lyricsArray[idx]) {
+            lyricsArray[idx][field] = Math.max(0, Math.round((parseFloat(lyricsArray[idx][field] || 0) + delta) * 100) / 100);
+            renderTimelineList();
+            updateHiddenJson();
+            saveDraft();
+            drawLiveCanvas();
+        }
+    };
+
+    window.splitLine = function(idx) {
+        if (!lyricsArray[idx]) return;
+        const cur = lyricsArray[idx];
+        const words = cur.line.trim().split(/\s+/);
+        if (words.length < 2) {
+            AppToast.warning('Line has only 1 word; type additional words first before splitting.');
+            return;
+        }
+        const mid = Math.ceil(words.length / 2);
+        const part1 = words.slice(0, mid).join(' ');
+        const part2 = words.slice(mid).join(' ');
+        const midTime = Math.round(((cur.start + cur.end) / 2) * 100) / 100;
+
+        cur.line = part1;
+        cur.end = midTime;
+
+        const newLine = {
+            line: part2,
+            start: midTime,
+            end: cur.end + (midTime - cur.start)
+        };
+        lyricsArray.splice(idx + 1, 0, newLine);
+
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+        AppToast.success(`Line ${idx + 1} split into 2 lines!`);
+    };
+
+    window.mergeLineWithNext = function(idx) {
+        if (idx >= lyricsArray.length - 1) return;
+        const cur = lyricsArray[idx];
+        const next = lyricsArray[idx + 1];
+
+        cur.line = (cur.line.trim() + ' ' + next.line.trim()).trim();
+        cur.end = next.end;
+
+        lyricsArray.splice(idx + 1, 1);
+
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+        AppToast.success(`Merged line ${idx + 1} and line ${idx + 2}!`);
+    };
+
+    window.insertLineBelow = function(idx) {
+        let startTime = 0.0;
+        let endTime = 3.0;
+        if (idx >= 0 && lyricsArray[idx]) {
+            startTime = lyricsArray[idx].end;
+            endTime = Math.round((startTime + 3.0) * 100) / 100;
+        } else if (lyricsArray.length > 0) {
+            startTime = 0.0;
+            endTime = Math.min(3.0, lyricsArray[0].start);
+        }
+
+        const newLine = {
+            line: 'New lyric line',
+            start: startTime,
+            end: endTime
+        };
+
+        if (idx < 0) {
+            lyricsArray.unshift(newLine);
+        } else {
+            lyricsArray.splice(idx + 1, 0, newLine);
+        }
+
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+        AppToast.success('New line added to timeline!');
+    };
+
+    window.deleteLine = async function(idx) {
+        if (!lyricsArray[idx]) return;
+        const lineText = lyricsArray[idx].line || `Line ${idx + 1}`;
+        const confirmed = await AppDialog.confirm({
+            title: 'Delete Lyric Line?',
+            message: `Remove line ${idx + 1}: "${lineText.length > 40 ? lineText.slice(0, 37) + '...' : lineText}" from synchronized lyrics?`,
+            confirmText: 'Delete Line',
+            cancelText: 'Keep',
+            type: 'danger'
+        });
+        if (confirmed) {
+            lyricsArray.splice(idx, 1);
+            renderTimelineList();
+            updateHiddenJson();
+            saveDraft();
+            drawLiveCanvas();
+            AppToast.info('Line deleted.');
+        }
+    };
+
+    window.formatLyricsCase = function(mode) {
+        if (lyricsArray.length === 0) {
+            AppToast.warning('No lyrics to format. Transcribe or paste lyrics first.');
+            return;
+        }
+        lyricsArray.forEach(item => {
+            let str = item.line || '';
+            if (mode === 'sentence') {
+                str = str.trim();
+                if (str.length > 0) {
+                    str = str.charAt(0).toUpperCase() + str.slice(1);
+                }
+            } else if (mode === 'title') {
+                str = str.replace(/\b\w+/g, txt => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+            } else if (mode === 'upper') {
+                str = str.toUpperCase();
+            } else if (mode === 'lower') {
+                str = str.toLowerCase();
+            } else if (mode === 'clean_quotes') {
+                str = str.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-');
+            }
+            item.line = str;
+        });
+
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+
+        const menu = document.getElementById('caseDropdownMenu');
+        if (menu) menu.classList.add('hidden');
+
+        AppToast.success(`Formatted all lines to ${mode}!`);
+    };
+
+    // Find & Replace Handlers
+    const toggleFindReplaceBtn = document.getElementById('toggleFindReplaceBtn');
+    const findReplaceBar = document.getElementById('findReplaceBar');
+    const findInput = document.getElementById('findInput');
+    const replaceInput = document.getElementById('replaceInput');
+    const replaceAllBtn = document.getElementById('replaceAllBtn');
+
+    window.toggleFindReplace = function(force) {
+        if (!findReplaceBar) return;
+        if (force !== undefined) {
+            if (force) findReplaceBar.classList.remove('hidden');
+            else findReplaceBar.classList.add('hidden');
+        } else {
+            findReplaceBar.classList.toggle('hidden');
+        }
+        if (!findReplaceBar.classList.contains('hidden')) {
+            findInput?.focus();
+        }
+    };
+
+    if (toggleFindReplaceBtn) {
+        toggleFindReplaceBtn.addEventListener('click', () => toggleFindReplace());
+    }
+
+    if (replaceAllBtn) {
+        replaceAllBtn.addEventListener('click', () => {
+            const findVal = findInput.value.trim();
+            const replaceVal = replaceInput.value;
+            if (!findVal) {
+                AppToast.warning('Please enter a word to find.');
+                return;
+            }
+            let count = 0;
+            const regex = new RegExp(findVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            lyricsArray.forEach(item => {
+                if (item.line && regex.test(item.line)) {
+                    item.line = item.line.replace(regex, replaceVal);
+                    count++;
+                }
+            });
+
+            if (rawLyricsTextarea && rawLyricsTextarea.value) {
+                rawLyricsTextarea.value = rawLyricsTextarea.value.replace(regex, replaceVal);
+            }
+
+            renderTimelineList();
+            updateHiddenJson();
+            saveDraft();
+            drawLiveCanvas();
+
+            if (count > 0) {
+                AppToast.success(`Replaced in ${count} line(s)!`);
             } else {
-                el.classList.remove('border-zinc-600', 'bg-zinc-800/50');
+                AppToast.info(`No matches found for "${findVal}".`);
             }
         });
     }
 
-    function updateHiddenJson() {
-        lyricsDataInput.value = JSON.stringify(lyricsArray);
+    // Full Lyrics & Spellcheck Editor Modal Handlers
+    const openFullSpellEditorBtn = document.getElementById('openFullSpellEditorBtn');
+    const fullSpellEditorModal = document.getElementById('fullSpellEditorModal');
+    const closeFullSpellEditorBtn = document.getElementById('closeFullSpellEditorBtn');
+    const cancelFullSpellEditorBtn = document.getElementById('cancelFullSpellEditorBtn');
+    const saveFullSpellEditorBtn = document.getElementById('saveFullSpellEditorBtn');
+    const modalLyricsTextarea = document.getElementById('modalLyricsTextarea');
+    const modalLineCount = document.getElementById('modalLineCount');
+
+    function updateModalLineCount() {
+        if (!modalLyricsTextarea || !modalLineCount) return;
+        const lines = modalLyricsTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        modalLineCount.textContent = `${lines.length} lines`;
     }
 
-    // 6. Styling & Animation Style Selection
-    document.querySelectorAll('.style-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.style-card').forEach(c => {
-                c.className = "style-card relative p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer transition-all hover:border-zinc-700 flex flex-col justify-between";
-            });
-            card.className = "style-card relative p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer transition-all flex flex-col justify-between";
-            activeAnimationStyle = card.dataset.style;
-            drawLiveCanvas();
+    if (modalLyricsTextarea) {
+        modalLyricsTextarea.addEventListener('input', updateModalLineCount);
+    }
+
+    if (openFullSpellEditorBtn && fullSpellEditorModal) {
+        openFullSpellEditorBtn.addEventListener('click', () => {
+            if (lyricsArray.length > 0) {
+                modalLyricsTextarea.value = lyricsArray.map(item => item.line || '').join('\n');
+            } else if (rawLyricsTextarea && rawLyricsTextarea.value) {
+                modalLyricsTextarea.value = rawLyricsTextarea.value;
+            } else {
+                modalLyricsTextarea.value = '';
+            }
+            updateModalLineCount();
+            fullSpellEditorModal.classList.remove('hidden');
+            fullSpellEditorModal.classList.add('flex');
+            modalLyricsTextarea.focus();
+            if (window.lucide) lucide.createIcons();
         });
-    });
-
-    // Colors & Font adjustments
-    highlightColorPicker.addEventListener('input', (e) => {
-        highlightColorHex.value = e.target.value.toUpperCase();
-        drawLiveCanvas();
-    });
-    highlightColorHex.addEventListener('input', (e) => {
-        highlightColorPicker.value = e.target.value;
-        drawLiveCanvas();
-    });
-    textColorPicker.addEventListener('input', (e) => {
-        textColorHex.value = e.target.value.toUpperCase();
-        drawLiveCanvas();
-    });
-    textColorHex.addEventListener('input', (e) => {
-        textColorPicker.value = e.target.value;
-        drawLiveCanvas();
-    });
-
-    fontSizeSlider.addEventListener('input', (e) => {
-        fontSizeDisplay.textContent = `${e.target.value}px`;
-        drawLiveCanvas();
-    });
-
-    fontFamilySelect.addEventListener('change', drawLiveCanvas);
-    positionModeSelect.addEventListener('change', drawLiveCanvas);
-
-    // Aspect Ratio toggle helper
-    function updateAspectRatioUI(ratio) {
-        if (ratio === '9:16') {
-            previewFrame.className = "w-48 aspect-[9/16] bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-xl transition-all";
-            livePreviewCanvas.width = 540;
-            livePreviewCanvas.height = 960;
-            previewAspectBadge.textContent = "9:16 Shorts";
-        } else {
-            previewFrame.className = "w-full aspect-video bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-xl transition-all";
-            livePreviewCanvas.width = 960;
-            livePreviewCanvas.height = 540;
-            previewAspectBadge.textContent = "16:9 HD";
-        }
-        drawLiveCanvas();
     }
 
-    aspectRatioSelect.addEventListener('change', (e) => {
-        updateAspectRatioUI(e.target.value);
-    });
+    function hideFullSpellModal() {
+        if (fullSpellEditorModal) {
+            fullSpellEditorModal.classList.add('hidden');
+            fullSpellEditorModal.classList.remove('flex');
+        }
+    }
 
-    // 7. Live Interactive HTML5 Canvas Simulation Renderer
+    if (closeFullSpellEditorBtn) closeFullSpellEditorBtn.addEventListener('click', hideFullSpellModal);
+    if (cancelFullSpellEditorBtn) cancelFullSpellEditorBtn.addEventListener('click', hideFullSpellModal);
+
+    window.formatModalCase = function(mode) {
+        if (!modalLyricsTextarea) return;
+        const lines = modalLyricsTextarea.value.split('\n');
+        const formatted = lines.map(line => {
+            let str = line;
+            if (mode === 'sentence') {
+                str = str.trim();
+                if (str.length > 0) str = str.charAt(0).toUpperCase() + str.slice(1);
+            } else if (mode === 'title') {
+                str = str.replace(/\b\w+/g, txt => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+            } else if (mode === 'upper') {
+                str = str.toUpperCase();
+            } else if (mode === 'lower') {
+                str = str.toLowerCase();
+            } else if (mode === 'clean_quotes') {
+                str = str.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-');
+            }
+            return str;
+        });
+        modalLyricsTextarea.value = formatted.join('\n');
+        updateModalLineCount();
+        AppToast.success(`Formatted modal lyrics to ${mode}!`);
+    };
+
+    if (saveFullSpellEditorBtn) {
+        saveFullSpellEditorBtn.addEventListener('click', () => {
+            const rawText = modalLyricsTextarea.value;
+            const newLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            rawLyricsTextarea.value = rawText;
+
+            if (lyricsArray.length === newLines.length && lyricsArray.length > 0) {
+                // Perfect 1:1 line count match - update text while preserving exact timestamps & tokens
+                newLines.forEach((text, i) => {
+                    updateLineText(i, text);
+                });
+            } else {
+                // Line count changed - re-parse
+                parseRawLyrics();
+            }
+
+            saveDraft();
+            renderTimelineList();
+            updateHiddenJson();
+            drawLiveCanvas();
+            hideFullSpellModal();
+            AppToast.success('Applied corrected lyrics and updated live preview!');
+        });
+    }
+
+    window.updateLineTime = function(idx, field, val) {
+        if (lyricsArray[idx]) {
+            lyricsArray[idx][field] = parseFloat(val) || 0;
+            updateHiddenJson();
+            saveDraft();
+            drawLiveCanvas();
+        }
+    };
+
+    window.seekToLine = function(idx) {
+        if (lyricsArray[idx]) {
+            setActiveTime(lyricsArray[idx].start);
+            drawLiveCanvas();
+        }
+    };
+
+    // 3. Draw Live Preview Canvas Function
     function drawLiveCanvas() {
         const w = livePreviewCanvas.width;
         const h = livePreviewCanvas.height;
-        const isVertical = (aspectRatioSelect.value === '9:16');
-        const posMode = positionModeSelect.value;
+        const isVertical = h > w;
+        const posMode = positionModeSelect.value || 'CENTER';
 
         canvasCtx.clearRect(0, 0, w, h);
 
         // 1. Background & Artwork / Video
-        if (currentMode === 'VIDEO' && previewVideo && previewVideo.src && previewVideo.readyState >= 2) {
-            // Draw video frame to canvas
-            canvasCtx.drawImage(previewVideo, 0, 0, w, h);
+        const isVideoReady = currentMode === 'VIDEO' && previewVideo && previewVideo.src && (previewVideo.readyState >= 1 || previewVideo.videoWidth > 0);
+
+        if (isVideoReady) {
+            const vW = previewVideo.videoWidth || 1920;
+            const vH = previewVideo.videoHeight || 1080;
+            const canvasAspect = w / h;
+            const videoAspect = vW / vH;
+
+            let sx = 0, sy = 0, sw = vW, sh = vH;
+            if (videoAspect > canvasAspect) {
+                sw = vH * canvasAspect;
+                sx = (vW - sw) / 2;
+            } else {
+                sh = vW / canvasAspect;
+                sy = (vH - sh) / 2;
+            }
+
+            try {
+                canvasCtx.drawImage(previewVideo, sx, sy, sw, sh, 0, 0, w, h);
+            } catch(e) {
+                // Fallback direct draw
+                canvasCtx.drawImage(previewVideo, 0, 0, w, h);
+            }
 
             // Translucent dark overlay for optimal typography legibility over video
             canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
@@ -1497,9 +2007,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const fontFam = fontFamilySelect.value || 'Arial';
-        const fontSizeVal = parseInt(fontSizeSlider.value) * (isVertical ? 0.9 : 0.7);
+        const rawFontSize = parseInt(fontSizeSlider.value || 48);
+        const fontSizeVal = rawFontSize * (isVertical ? 0.9 : 0.7);
         const highlightColor = highlightColorPicker.value || '#00E5FF';
         const baseColor = textColorPicker.value || '#FFFFFF';
+
+        const weight = fontWeightSelect?.value === 'black' ? '900' : (fontWeightSelect?.value === 'normal' ? '400' : 'bold');
+        const italic = fontItalicCheck?.checked ? 'italic' : 'normal';
+        const scaleX = (parseInt(fontScaleXSlider?.value || 100)) / 100;
+        const scaleY = (parseInt(fontScaleYSlider?.value || 100)) / 100;
+        const strokeW = parseFloat(textStrokeSlider?.value || 2.5);
+        const shadowD = parseFloat(textShadowSlider?.value || 2.0);
+        const bgOp = parseInt(bgOpacitySlider?.value || 0) / 100;
+        const lineHMultiplier = parseFloat(lineHeightSlider?.value || 1.4);
+        const letterSpacingVal = `${parseFloat(letterSpacingSlider?.value || 0)}px`;
+
+        function applyTransform(str) {
+            if (!str) return '';
+            const t = textTransformSelect?.value || 'none';
+            if (t === 'uppercase') return str.toUpperCase();
+            if (t === 'lowercase') return str.toLowerCase();
+            if (t === 'capitalize') return str.replace(/\b\w/g, c => c.toUpperCase());
+            return str;
+        }
 
         let centerY;
         if (posMode === 'TOP') {
@@ -1514,76 +2044,212 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeLine = lyricsArray[activeIdx];
             const lineDur = Math.max(0.1, activeLine.end - activeLine.start);
             const progress = Math.min(1.0, Math.max(0.0, (curTime - activeLine.start) / lineDur));
+            const text = applyTransform(activeLine.line);
+
+            if ('letterSpacing' in canvasCtx) {
+                canvasCtx.letterSpacing = letterSpacingVal;
+            }
+
+            canvasCtx.font = `${italic} ${weight} ${fontSizeVal}px ${fontFam}`;
+            canvasCtx.textAlign = 'center';
+            canvasCtx.textBaseline = 'middle';
+            const totalTextWidth = canvasCtx.measureText(text).width;
+
+            // Draw Background Box if configured
+            if (bgOp > 0) {
+                canvasCtx.save();
+                canvasCtx.fillStyle = `rgba(0, 0, 0, ${bgOp})`;
+                const padX = 24 * scaleX;
+                const padY = 12 * scaleY;
+                const boxW = totalTextWidth * scaleX + padX * 2;
+                const boxH = fontSizeVal * scaleY + padY * 2;
+                canvasCtx.beginPath();
+                if (canvasCtx.roundRect) {
+                    canvasCtx.roundRect((w - boxW) / 2, centerY - boxH / 2, boxW, boxH, 8);
+                } else {
+                    canvasCtx.rect((w - boxW) / 2, centerY - boxH / 2, boxW, boxH);
+                }
+                canvasCtx.fill();
+                canvasCtx.restore();
+            }
 
             if (activeAnimationStyle === 'ROLLING_3LINE') {
-                // Draw Prev Line
+                // Prev Line
                 if (activeIdx > 0) {
-                    canvasCtx.font = `400 ${fontSizeVal * 0.7}px ${fontFam}`;
+                    const prevText = applyTransform(lyricsArray[activeIdx - 1].line);
+                    canvasCtx.save();
+                    canvasCtx.font = `${italic} 400 ${fontSizeVal * 0.75}px ${fontFam}`;
                     canvasCtx.fillStyle = 'rgba(255,255,255,0.4)';
-                    canvasCtx.textAlign = 'center';
-                    canvasCtx.fillText(lyricsArray[activeIdx - 1].line, w / 2, centerY - fontSizeVal * 1.3);
+                    canvasCtx.translate(w / 2, centerY - fontSizeVal * lineHMultiplier);
+                    canvasCtx.scale(scaleX, scaleY);
+                    canvasCtx.fillText(prevText, 0, 0);
+                    canvasCtx.restore();
                 }
 
-                // Draw Current Line
-                canvasCtx.font = `bold ${fontSizeVal}px ${fontFam}`;
+                // Current Active Line
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                if (shadowD > 0) {
+                    canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
+                    canvasCtx.shadowBlur = shadowD * 4;
+                    canvasCtx.shadowOffsetX = shadowD;
+                    canvasCtx.shadowOffsetY = shadowD;
+                }
                 canvasCtx.fillStyle = highlightColor;
-                canvasCtx.textAlign = 'center';
-                canvasCtx.fillText(activeLine.line, w / 2, centerY);
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
 
-                // Draw Next Line
+                // Next Line
                 if (activeIdx + 1 < lyricsArray.length) {
-                    canvasCtx.font = `400 ${fontSizeVal * 0.7}px ${fontFam}`;
+                    const nextText = applyTransform(lyricsArray[activeIdx + 1].line);
+                    canvasCtx.save();
+                    canvasCtx.font = `${italic} 400 ${fontSizeVal * 0.75}px ${fontFam}`;
                     canvasCtx.fillStyle = 'rgba(255,255,255,0.4)';
-                    canvasCtx.textAlign = 'center';
-                    canvasCtx.fillText(lyricsArray[activeIdx + 1].line, w / 2, centerY + fontSizeVal * 1.3);
+                    canvasCtx.translate(w / 2, centerY + fontSizeVal * lineHMultiplier);
+                    canvasCtx.scale(scaleX, scaleY);
+                    canvasCtx.fillText(nextText, 0, 0);
+                    canvasCtx.restore();
                 }
+
             } else if (activeAnimationStyle === 'CYBER_NEON') {
-                canvasCtx.font = `900 ${fontSizeVal}px ${fontFam}`;
-                canvasCtx.textAlign = 'center';
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
                 canvasCtx.shadowColor = highlightColor;
                 canvasCtx.shadowBlur = 18;
                 canvasCtx.strokeStyle = highlightColor;
-                canvasCtx.lineWidth = 4;
-                canvasCtx.strokeText(activeLine.line, w / 2, centerY);
+                canvasCtx.lineWidth = Math.max(3.5, strokeW);
+                canvasCtx.strokeText(text, 0, 0);
                 canvasCtx.fillStyle = '#FFFFFF';
-                canvasCtx.fillText(activeLine.line, w / 2, centerY);
-                canvasCtx.shadowBlur = 0;
-            } else {
-                // Karaoke Wipe or Cinematic
-                canvasCtx.font = `bold ${fontSizeVal}px ${fontFam}`;
-                canvasCtx.textAlign = 'center';
-                canvasCtx.textBaseline = 'middle';
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
 
-                const text = activeLine.line;
-                const totalTextWidth = canvasCtx.measureText(text).width;
-                const startX = (w - totalTextWidth) / 2;
+            } else if (activeAnimationStyle === 'BOUNCE_IN') {
+                const popProgress = Math.min(1.0, progress * 4);
+                const popScale = 0.5 + 0.5 * Math.sin(popProgress * Math.PI / 2);
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(popScale * scaleX, popScale * scaleY);
+                if (shadowD > 0) {
+                    canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
+                    canvasCtx.shadowBlur = shadowD * 4;
+                }
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
 
-                // 1. Draw base text
-                canvasCtx.fillStyle = baseColor;
+            } else if (activeAnimationStyle === 'TYPEWRITER') {
+                const charCount = Math.floor(text.length * Math.min(1.0, progress * 1.2));
+                const visibleText = text.substring(0, charCount);
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(visibleText, 0, 0);
+                }
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(visibleText, 0, 0);
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'WAVE_PULSE') {
+                const pulse = 1.0 + 0.06 * Math.sin(progress * Math.PI * 4);
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(pulse * scaleX, pulse * scaleY);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'SLIDE_UP') {
+                const slideOffset = (1.0 - Math.min(1.0, progress * 3)) * 40;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY + slideOffset);
+                canvasCtx.scale(scaleX, scaleY);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'CINEMATIC') {
+                canvasCtx.save();
+                canvasCtx.font = `${italic} 400 ${fontSizeVal}px Georgia, serif`;
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
                 canvasCtx.shadowColor = 'rgba(0,0,0,0.8)';
-                canvasCtx.shadowBlur = 8;
-                canvasCtx.fillText(text, w / 2, centerY);
+                canvasCtx.shadowBlur = 10;
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
 
-                // 2. Draw Karaoke highlight clip
+            } else {
+                // KARAOKE_WIPE default
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+
+                const startX = -totalTextWidth / 2;
+
+                // 1. Base Inactive text
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.fillStyle = baseColor;
+                if (shadowD > 0) {
+                    canvasCtx.shadowColor = 'rgba(0,0,0,0.8)';
+                    canvasCtx.shadowBlur = shadowD * 3;
+                }
+                canvasCtx.fillText(text, 0, 0);
+
+                // 2. Active highlight clip
                 canvasCtx.save();
                 canvasCtx.beginPath();
-                canvasCtx.rect(startX, centerY - fontSizeVal, totalTextWidth * progress, fontSizeVal * 2);
+                canvasCtx.rect(startX, -fontSizeVal, totalTextWidth * progress, fontSizeVal * 2);
                 canvasCtx.clip();
 
                 canvasCtx.fillStyle = highlightColor;
                 canvasCtx.shadowColor = highlightColor;
-                canvasCtx.shadowBlur = 15;
-                canvasCtx.fillText(text, w / 2, centerY);
+                canvasCtx.shadowBlur = 12;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
+
                 canvasCtx.restore();
             }
         } else {
             // Default placeholder when no line active
-            canvasCtx.font = `600 ${fontSizeVal * 0.8}px ${fontFam}`;
+            canvasCtx.save();
+            canvasCtx.font = `${italic} ${weight} ${fontSizeVal * 0.8}px ${fontFam}`;
             canvasCtx.fillStyle = 'rgba(255,255,255,0.5)';
             canvasCtx.textAlign = 'center';
             canvasCtx.textBaseline = 'middle';
+            canvasCtx.translate(w / 2, centerY);
+            canvasCtx.scale(scaleX, scaleY);
             const sampleText = songTitleInput.value ? `♪ ${songTitleInput.value} ♪` : '♪ Synced Lyrics Preview ♪';
-            canvasCtx.fillText(sampleText, w / 2, centerY);
+            canvasCtx.fillText(sampleText, 0, 0);
+            canvasCtx.restore();
         }
     }
 
@@ -1596,35 +2262,176 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
     }
 
-    // 8. Form Submission with Render Progress Bar
+    // 8. Live Progress Modal & Asynchronous Form Submission
     const lyricsForm = document.getElementById('lyricsForm');
     const renderSubmitBtn = document.getElementById('renderSubmitBtn');
+    const progressModal = document.getElementById('progressModal');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressStep = document.getElementById('progressStep');
+    const elapsedTimer = document.getElementById('elapsedTimer');
+    const cancelRenderBtn = document.getElementById('cancelRenderBtn');
+
+    let activeRenderProjectId = null;
+    let renderPollInterval = null;
+    let renderTimerInterval = null;
+
+    async function cancelActiveLyricsRendering() {
+        if (!activeRenderProjectId) {
+            progressModal.classList.add('hidden');
+            progressModal.classList.remove('flex');
+            renderSubmitBtn.disabled = false;
+            return;
+        }
+        const confirmed = await AppDialog.confirm({
+            title: 'Cancel Rendering?',
+            message: 'Are you sure you want to cancel the video rendering process?',
+            confirmText: 'Yes, Cancel Render',
+            cancelText: 'Continue Rendering',
+            type: 'danger'
+        });
+        if (confirmed) {
+            progressStep.textContent = "Cancelling rendering and stopping FFmpeg...";
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+            fetch(`/studio/cancel/lyrics/${activeRenderProjectId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).finally(() => {
+                if (renderPollInterval) clearInterval(renderPollInterval);
+                if (renderTimerInterval) clearInterval(renderTimerInterval);
+                progressModal.classList.add('hidden');
+                progressModal.classList.remove('flex');
+                renderSubmitBtn.disabled = false;
+                renderSubmitBtn.innerHTML = `<span>Render Synced Lyric Video</span>`;
+                AppToast.info("Rendering was cancelled. Your draft is still saved in the editor.");
+            });
+        }
+    }
+
+    if (cancelRenderBtn) {
+        cancelRenderBtn.addEventListener('click', cancelActiveLyricsRendering);
+    }
+
     if (lyricsForm) {
-        lyricsForm.addEventListener('submit', (e) => {
+        lyricsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
             if (currentMode === 'AUDIO') {
                 if (!audioInput.files || !audioInput.files[0]) {
-                    e.preventDefault();
-                    alert('Please upload an audio track (.mp3 or .wav) in Step 1.');
+                    AppToast.warning('Please upload an audio track (.mp3 or .wav) in Step 1.');
                     audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
             } else {
                 if (!videoInput.files || !videoInput.files[0]) {
-                    e.preventDefault();
-                    alert('Please upload a source video file (.mp4 or .mov) in Step 1.');
+                    AppToast.warning('Please upload a source video file (.mp4 or .mov) in Step 1.');
                     videoDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
             }
+
             updateHiddenJson();
+            saveDraft();
+
+            // Open Progress Modal
+            progressModal.classList.remove('hidden');
+            progressModal.classList.add('flex');
+            progressBar.style.width = '10%';
+            progressPercent.textContent = '10%';
+            progressStep.textContent = 'Uploading assets and initializing pipeline...';
             renderSubmitBtn.disabled = true;
-            renderSubmitBtn.innerHTML = `<span>Rendering 1080p Video (FFmpeg)...</span>`;
-            startProgress('Compiling subtitles & rendering 1080p lyric video with FFmpeg...', 25);
+
+            const startTime = Date.now();
+            elapsedTimer.textContent = '00:00';
+            if (renderTimerInterval) clearInterval(renderTimerInterval);
+            renderTimerInterval = setInterval(() => {
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+                const secs = String(elapsedSec % 60).padStart(2, '0');
+                elapsedTimer.textContent = `${mins}:${secs}`;
+            }, 1000);
+
+            try {
+                const formData = new FormData(lyricsForm);
+                const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+
+                const resp = await fetch(lyricsForm.action || window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to start rendering.');
+                }
+
+                activeRenderProjectId = data.project_id;
+
+                // Start polling backend progress API
+                if (renderPollInterval) clearInterval(renderPollInterval);
+                renderPollInterval = setInterval(async () => {
+                    try {
+                        const progResp = await fetch(`/studio/api/progress/lyrics/${activeRenderProjectId}/`);
+                        const progData = await progResp.json();
+                        if (progData.success) {
+                            const pct = progData.progress || 10;
+                            progressBar.style.width = `${pct}%`;
+                            progressPercent.textContent = `${pct}%`;
+                            progressStep.textContent = progData.step || 'Processing video...';
+
+                            if (progData.status === 'COMPLETED') {
+                                clearInterval(renderPollInterval);
+                                clearInterval(renderTimerInterval);
+                                progressBar.style.width = '100%';
+                                progressPercent.textContent = '100%';
+                                progressStep.textContent = 'Complete! Redirecting to video player...';
+                                localStorage.removeItem(DRAFT_KEY);
+                                setTimeout(() => {
+                                    window.location.href = progData.redirect_url;
+                                }, 600);
+                            } else if (progData.status === 'CANCELLED') {
+                                clearInterval(renderPollInterval);
+                                clearInterval(renderTimerInterval);
+                                progressModal.classList.add('hidden');
+                                progressModal.classList.remove('flex');
+                                renderSubmitBtn.disabled = false;
+                                renderSubmitBtn.innerHTML = `<span>Render Synced Lyric Video</span>`;
+                                AppToast.info('Rendering was cancelled.');
+                            } else if (progData.status === 'FAILED') {
+                                clearInterval(renderPollInterval);
+                                clearInterval(renderTimerInterval);
+                                progressModal.classList.add('hidden');
+                                progressModal.classList.remove('flex');
+                                renderSubmitBtn.disabled = false;
+                                renderSubmitBtn.innerHTML = `<span>Render Synced Lyric Video</span>`;
+                                AppToast.error('Rendering error: ' + (progData.error_message || 'Unknown render failure'));
+                            }
+                        }
+                    } catch (pollErr) {
+                        console.warn('Progress poll issue:', pollErr);
+                    }
+                }, 700);
+
+            } catch (err) {
+                if (renderTimerInterval) clearInterval(renderTimerInterval);
+                progressModal.classList.add('hidden');
+                progressModal.classList.remove('flex');
+                renderSubmitBtn.disabled = false;
+                renderSubmitBtn.innerHTML = `<span>Render Synced Lyric Video</span>`;
+                AppToast.error('Submission Error: ' + err.message);
+            }
         });
     }
 
-    // Initial canvas render
-    drawLiveCanvas();
+    // Load saved draft on startup
+    loadDraft();
 });
 </script>
 {% endblock %}

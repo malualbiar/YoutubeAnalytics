@@ -60,22 +60,25 @@ class ShortVideoProjectTestCase(TestCase):
         self.assertEqual(chops[2]['end_seconds'], 45.0)
 
     def test_prepare_overlay_banner(self):
-        img = ShortsEngineService.prepare_overlay_banner(
-            hook_text="Wait for the drop! 🔥",
-            part_label="Part 1",
-            theme="VIRAL_HOOK",
-            width=1080,
-            height=1920
-        )
-        self.assertIsNotNone(img)
-        self.assertEqual(img.size, (1080, 1920))
-        self.assertEqual(img.mode, 'RGBA')
+        for pos in ['TOP', 'CENTER', 'BOTTOM']:
+            img = ShortsEngineService.prepare_overlay_banner(
+                hook_text="Wait for the drop! 🔥",
+                part_label="Part 1",
+                theme="VIRAL_HOOK",
+                hook_position=pos,
+                width=1080,
+                height=1920
+            )
+            self.assertIsNotNone(img)
+            self.assertEqual(img.size, (1080, 1920))
+            self.assertEqual(img.mode, 'RGBA')
 
     def test_shorts_maker_view(self):
         response = self.client.get(reverse('shorts_maker'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Shorts Maker")
         self.assertContains(response, "Interactive Timeline")
+        self.assertContains(response, "Hook Banner Vertical Position")
 
     @patch.object(ShortsEngineService, 'render_video_chop')
     @patch.object(ShortsEngineService, 'inspect_media_duration', return_value=45.0)
@@ -84,8 +87,8 @@ class ShortVideoProjectTestCase(TestCase):
         dummy_video = SimpleUploadedFile("sample.mp4", b"fake mp4 video bytes", content_type="video/mp4")
 
         chops_payload = [
-            {"id": 1, "title": "Part 1", "hook_text": "Intro Hook", "start_seconds": 0.0, "end_seconds": 15.0, "duration": 15.0},
-            {"id": 2, "title": "Part 2", "hook_text": "Climax", "start_seconds": 15.0, "end_seconds": 30.0, "duration": 15.0},
+            {"id": 1, "title": "Part 1", "hook_text": "Intro Hook", "hook_position": "TOP", "start_seconds": 0.0, "end_seconds": 15.0, "duration": 15.0},
+            {"id": 2, "title": "Part 2", "hook_text": "Climax", "hook_position": "CENTER", "start_seconds": 15.0, "end_seconds": 30.0, "duration": 15.0},
         ]
 
         response = self.client.post(reverse('shorts_render'), {
@@ -94,6 +97,7 @@ class ShortVideoProjectTestCase(TestCase):
             'source_video': dummy_video,
             'aspect_mode': 'BLURRED_FIT',
             'theme_style': 'VIRAL_HOOK',
+            'hook_position': 'BOTTOM',
             'chops_json': json.dumps(chops_payload),
         }, follow=True)
 
@@ -102,6 +106,7 @@ class ShortVideoProjectTestCase(TestCase):
         self.assertIsNotNone(project)
         self.assertEqual(project.render_status, ShortVideoProject.Status.COMPLETED)
         self.assertEqual(project.chop_count, 2)
+        self.assertEqual(project.hook_position, ShortVideoProject.HookPosition.BOTTOM)
         self.assertEqual(mock_render_chop.call_count, 2)
 
     def test_shorts_detail_and_delete_view(self):

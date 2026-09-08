@@ -160,3 +160,62 @@ class MixEngineTests(TestCase):
         response = self.client.get(reverse('mix_detail', args=[project.id]))
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('dashboard'))
+
+    from unittest.mock import patch
+
+    @patch('apps.studio.views._execute_mix_render')
+    def test_async_mix_render_and_progress_polling(self, mock_execute):
+        ffmpeg = MixEngineService.get_ffmpeg_binary()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            f1 = os.path.join(tmpdir, "track1.wav")
+            subprocess.run([ffmpeg, '-y', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1', '-c:a', 'pcm_s16le', f1], check=True, capture_output=True)
+
+            with open(f1, 'rb') as fp1:
+                payload = {
+                    'title': 'Async Mix Test',
+                    'crossfade_seconds': '1',
+                    'transition_curve': 'qsin',
+                    'render_video': 'false',
+                    'normalize_volume': 'false',
+                    'track_count': '1',
+                    'track_type_0': 'file',
+                    'track_title_0': 'Solo Track',
+                    'track_file_0': fp1,
+                }
+                response = self.client.post(
+                    reverse('mix_render'),
+                    payload,
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+                )
+                self.assertEqual(response.status_code, 200)
+                data = response.json()
+                self.assertTrue(data.get('success'))
+                self.assertIn('project_id', data)
+                project_id = data['project_id']
+                mock_execute.assert_called_once()
+
+                # Poll progress API
+                prog_resp = self.client.get(reverse('studio_render_progress', kwargs={'project_type': 'mix', 'pk': project_id}))
+                self.assertEqual(prog_resp.status_code, 200)
+                prog_data = prog_resp.json()
+                self.assertTrue(prog_data.get('success'))
+                self.assertEqual(prog_data.get('project_type'), 'mix')
+
+    def test_cancel_mix_render(self):
+        project = LongMixProject.objects.create(
+            title='Mix To Cancel',
+            duration_seconds=180,
+            track_count=2,
+            render_status=LongMixProject.Status.RENDERING
+        )
+        cancel_resp = self.client.post(
+            reverse('studio_cancel_render', kwargs={'project_type': 'mix', 'pk': project.id}),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(cancel_resp.status_code, 200)
+        cancel_data = cancel_resp.json()
+        self.assertTrue(cancel_data.get('success'))
+
+        project.refresh_from_db()
+        self.assertEqual(project.render_status, LongMixProject.Status.CANCELLED)
+

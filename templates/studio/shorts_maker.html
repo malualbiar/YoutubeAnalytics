@@ -4,7 +4,7 @@
 {% block title %}Shorts Maker - YT Quid Studio{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-6xl mx-auto pb-16">
+<div class="space-y-6 max-w-7xl mx-auto pb-16">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -13,6 +13,13 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <!-- Draft Status Banner -->
+            <div id="draftStatusBanner" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-emerald-400 font-mono">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="draftStatusText">Draft Auto-Saved</span>
+                <button type="button" id="clearDraftBtn" class="ml-2 text-zinc-500 hover:text-rose-400 transition-colors font-sans text-[11px]" title="Clear saved draft">Clear</button>
+            </div>
+
             <a href="{% url 'studio_home' %}" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 Studio Dashboard
             </a>
@@ -23,308 +30,429 @@
     </div>
 
     <!-- Main Chopper Studio Form -->
-    <form method="POST" action="{% url 'shorts_render' %}" enctype="multipart/form-data" id="shortsForm" class="space-y-6">
+    <form method="POST" action="{% url 'shorts_render' %}" enctype="multipart/form-data" id="shortsForm">
         {% csrf_token %}
         <input type="hidden" name="chops_json" id="chopsJsonInput" value="[]">
 
-        <!-- Step 1: Upload Source Video or Audio -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
-                    <h3 class="text-sm font-bold text-white">Source Media</h3>
-                </div>
+        <!-- 2-Column Split Layout Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: Scrollable Config & Chops Controls (lg:col-span-7) -->
+            <div class="lg:col-span-7 space-y-6">
 
-                <!-- Source Mode Radio Switcher -->
-                <div class="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
-                    <label class="px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors bg-zinc-800 text-white source-tab" data-source="VIDEO">
-                        <input type="radio" name="source_type" value="VIDEO" class="hidden" checked>
-                        Long Video (.mp4 / .mov)
-                    </label>
-                    <label class="px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors text-zinc-400 hover:text-zinc-200 source-tab" data-source="AUDIO_COVER">
-                        <input type="radio" name="source_type" value="AUDIO_COVER" class="hidden">
-                        Audio + Cover Art
-                    </label>
-                </div>
-            </div>
-
-            <!-- Video Upload Mode Container -->
-            <div id="videoSourceContainer" class="space-y-4">
-                <div id="videoDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-zinc-950">
-                    <input type="file" name="source_video" id="videoInput" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" class="hidden">
-                    
-                    <div id="videoEmpty" class="py-4">
-                        <div class="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 flex items-center justify-center mx-auto mb-2 border border-zinc-800">
-                            <i data-lucide="video" class="w-4 h-4"></i>
+                <!-- Step 1: Upload Source Video or Audio -->
+                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
+                            <h3 class="text-sm font-bold text-white">Source Media</h3>
                         </div>
-                        <p class="text-sm font-bold text-white">Select Long Video File</p>
-                        <p class="text-xs text-zinc-500 mt-1">Supports MP4, MOV, MKV (1080p / 4K / Landscape or Square)</p>
-                    </div>
 
-                    <div id="videoSelected" class="hidden">
-                        <div class="flex items-center justify-between p-3 bg-zinc-900 rounded-xl border border-zinc-800">
-                            <div class="text-left truncate">
-                                <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
-                                <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
-                            </div>
-                            <button type="button" id="changeVideoBtn" class="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold text-zinc-200 border border-zinc-700 transition-colors">
-                                Replace Video
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audio + Cover Art Mode Container -->
-            <div id="audioSourceContainer" class="hidden space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Audio File -->
-                    <div class="space-y-2">
-                        <label class="text-xs font-bold text-zinc-300">Audio Track (.wav, .mp3)</label>
-                        <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[100px] flex flex-col items-center justify-center">
-                            <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
-                            <div id="audioEmpty">
-                                <p class="text-xs font-semibold text-zinc-300">Select Audio File</p>
-                            </div>
-                            <div id="audioSelected" class="hidden text-left w-full">
-                                <p id="audioFileName" class="text-xs font-bold text-white truncate"></p>
-                                <p id="audioFileSize" class="text-[10px] text-zinc-400 font-mono"></p>
-                            </div>
+                        <!-- Source Mode Radio Switcher -->
+                        <div class="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
+                            <label class="px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors bg-zinc-800 text-white source-tab" data-source="VIDEO">
+                                <input type="radio" name="source_type" value="VIDEO" class="hidden" checked>
+                                Long Video (.mp4 / .mov)
+                            </label>
+                            <label class="px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors text-zinc-400 hover:text-zinc-200 source-tab" data-source="AUDIO_COVER">
+                                <input type="radio" name="source_type" value="AUDIO_COVER" class="hidden">
+                                Audio + Cover Art
+                            </label>
                         </div>
                     </div>
 
-                    <!-- Cover Image -->
-                    <div class="space-y-2">
-                        <label class="text-xs font-bold text-zinc-300">Cover Image</label>
-                        <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[100px] flex flex-col items-center justify-center">
-                            <input type="file" name="cover_image" id="coverInput" accept="image/*" class="hidden">
-                            <div id="coverEmpty">
-                                <p class="text-xs font-semibold text-zinc-300">Select Cover Artwork</p>
+                    <!-- Video Upload Mode Container -->
+                    <div id="videoSourceContainer" class="space-y-4">
+                        <div id="videoDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-zinc-950">
+                            <input type="file" name="source_video" id="videoInput" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" class="hidden">
+                            
+                            <div id="videoEmpty" class="py-4">
+                                <div class="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 flex items-center justify-center mx-auto mb-2 border border-zinc-800">
+                                    <i data-lucide="video" class="w-4 h-4"></i>
+                                </div>
+                                <p class="text-sm font-bold text-white">Select Long Video File</p>
+                                <p class="text-xs text-zinc-500 mt-1">Supports MP4, MOV, MKV (1080p / 4K / Landscape or Square)</p>
                             </div>
-                            <div id="coverSelected" class="hidden flex items-center gap-3 w-full">
-                                <img id="coverPreview" src="" class="w-10 h-10 rounded-lg object-cover border border-zinc-800 shrink-0">
-                                <div class="truncate text-left">
-                                    <p id="coverFileName" class="text-xs font-bold text-white truncate"></p>
-                                    <p class="text-[10px] text-zinc-400">Loaded for 9:16 background</p>
+
+                            <div id="videoSelected" class="hidden">
+                                <div class="flex items-center justify-between p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+                                    <div class="text-left truncate">
+                                        <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
+                                        <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
+                                    </div>
+                                    <button type="button" id="changeVideoBtn" class="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold text-zinc-200 border border-zinc-700 transition-colors">
+                                        Replace Video
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Project Title Input -->
-            <div>
-                <label class="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    Project / Song Title
-                </label>
-                <input type="text" name="title" id="projectTitle" placeholder="e.g. Summer Breeze Session" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 text-xs">
-            </div>
-        </div>
+                    <!-- Audio + Cover Art Mode Container -->
+                    <div id="audioSourceContainer" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Audio File -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-zinc-300">Audio Track (.wav, .mp3)</label>
+                                <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[100px] flex flex-col items-center justify-center">
+                                    <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
+                                    <div id="audioEmpty">
+                                        <p class="text-xs font-semibold text-zinc-300">Select Audio File</p>
+                                    </div>
+                                    <div id="audioSelected" class="hidden text-left w-full">
+                                        <p id="audioFileName" class="text-xs font-bold text-white truncate"></p>
+                                        <p id="audioFileSize" class="text-[10px] text-zinc-400 font-mono"></p>
+                                    </div>
+                                </div>
+                            </div>
 
-        <!-- Step 2: Interactive Video Player & Timeline Chopper -->
-        <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
+                            <!-- Cover Image -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-zinc-300">Cover Image</label>
+                                <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[100px] flex flex-col items-center justify-center">
+                                    <input type="file" name="cover_image" id="coverInput" accept="image/*" class="hidden">
+                                    <div id="coverEmpty">
+                                        <p class="text-xs font-semibold text-zinc-300">Select Cover Artwork</p>
+                                    </div>
+                                    <div id="coverSelected" class="hidden flex items-center gap-3 w-full">
+                                        <img id="coverPreview" src="" class="w-10 h-10 rounded-lg object-cover border border-zinc-800 shrink-0">
+                                        <div class="truncate text-left">
+                                            <p id="coverFileName" class="text-xs font-bold text-white truncate"></p>
+                                            <p class="text-[10px] text-zinc-400">Loaded for 9:16 background</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Title Input -->
                     <div>
-                        <h3 class="text-sm font-bold text-white">Interactive Timeline & Chops</h3>
-                        <p class="text-xs text-zinc-400">Set chop ranges, preview individual clips, and customize hook text.</p>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1.5">
+                            Project / Song Title
+                        </label>
+                        <input type="text" name="title" id="projectTitle" placeholder="e.g. Summer Breeze Session" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 text-xs">
                     </div>
                 </div>
 
-                <!-- Auto-Split Tools -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs text-zinc-400">Auto-Split:</span>
-                    <button type="button" onclick="autoSplitChops(15)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
-                        15s
-                    </button>
-                    <button type="button" onclick="autoSplitChops(30)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
-                        30s
-                    </button>
-                    <button type="button" onclick="autoSplitChops(60)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
-                        60s
-                    </button>
-                    <button type="button" onclick="addNewChop()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
-                        + Add Chop
+                <!-- Step 2: Interactive Video Player & Timeline Chopper -->
+                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">2</span>
+                            <div>
+                                <h3 class="text-sm font-bold text-white">Interactive Timeline & Chops</h3>
+                                <p class="text-xs text-zinc-400">Set chop ranges, preview individual clips, and customize hook text.</p>
+                            </div>
+                        </div>
+
+                        <!-- Auto-Split Tools -->
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs text-zinc-400">Auto-Split:</span>
+                            <button type="button" onclick="autoSplitChops(15)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
+                                15s
+                            </button>
+                            <button type="button" onclick="autoSplitChops(30)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
+                                30s
+                            </button>
+                            <button type="button" onclick="autoSplitChops(60)" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 text-xs font-semibold transition-colors">
+                                60s
+                            </button>
+                            <button type="button" onclick="addNewChop()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
+                                + Add Chop
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Video / Audio Player -->
+                    <div class="space-y-3">
+                        <div class="rounded-xl overflow-hidden bg-black border border-zinc-800 aspect-video relative flex items-center justify-center shadow-lg">
+                            <video id="sourceVideoPlayer" controls class="w-full h-full object-contain hidden"></video>
+                            <audio id="sourceAudioPlayer" controls class="w-4/5 hidden z-10"></audio>
+
+                            <div id="playerPlaceholder" class="text-center p-6 space-y-2">
+                                <p class="text-xs font-semibold text-zinc-500">Upload video or audio above to load player</p>
+                            </div>
+
+                            <!-- Active Chop Overlay Tag -->
+                            <div id="activeChopBadge" class="absolute top-3 left-3 bg-zinc-950/90 px-2.5 py-1 rounded-lg border border-zinc-700 text-[10px] font-semibold text-zinc-200 hidden items-center gap-1.5 z-20">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                <span id="activeChopBadgeText">Previewing Part 1 (0.0s - 15.0s)</span>
+                            </div>
+                        </div>
+
+                        <!-- Visual Timeline Bar -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-[11px] font-mono text-zinc-400">
+                                <span id="timelineStartLabel">00:00</span>
+                                <span id="timelineCurrentLabel" class="text-zinc-200 font-semibold">Playhead: 00:00</span>
+                                <span id="timelineEndLabel">00:00</span>
+                            </div>
+                            
+                            <!-- Timeline Track with interactive segments -->
+                            <div id="timelineTrack" class="w-full h-8 bg-zinc-950 rounded-xl border border-zinc-800 relative overflow-hidden flex items-center cursor-pointer select-none">
+                                <div id="timelineSegmentsContainer" class="w-full h-full flex absolute inset-0"></div>
+                                <!-- Current Playhead Scrubber Line -->
+                                <div id="playheadScrubber" class="absolute top-0 bottom-0 w-1 bg-white z-30 transition-none pointer-events-none" style="left: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chops List -->
+                    <div class="space-y-3 pt-2">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-zinc-300">
+                                Configured Chops (<span id="chopCountLabel">0</span>)
+                            </h4>
+                            <span class="text-[11px] text-zinc-500">Click preview on any card to test audio/video</span>
+                        </div>
+
+                        <div id="chopsListContainer" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                            <!-- Dynamic Chop Cards Inserted Here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Vertical 9:16 Aspect, Subject Framing & Theme Styling -->
+                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-6">
+                    <div class="flex items-center gap-2.5 border-b border-zinc-800 pb-3">
+                        <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">3</span>
+                        <h3 class="text-sm font-bold text-white">Aspect Ratio, Subject Framing & Styling</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Aspect Ratio Mode -->
+                        <div class="space-y-3">
+                            <label class="block text-xs font-bold text-zinc-300">
+                                Vertical 9:16 Aspect Mode
+                            </label>
+
+                            <div class="space-y-2">
+                                <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer aspect-choice-card">
+                                    <div class="flex items-center gap-3">
+                                        <input type="radio" name="aspect_mode" value="BLURRED_FIT" checked class="accent-emerald-500">
+                                        <div>
+                                            <p class="text-xs font-bold text-white">Blurred Background (Recommended)</p>
+                                            <p class="text-[10px] text-zinc-400">Retains full 16:9 frame with blurred ambient background.</p>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card">
+                                    <div class="flex items-center gap-3">
+                                        <input type="radio" name="aspect_mode" value="CENTER_CROP" class="accent-emerald-500">
+                                        <div>
+                                            <p class="text-xs font-bold text-white">Center Crop 9:16 (Fill Screen)</p>
+                                            <p class="text-[10px] text-zinc-400">Fills vertical display by cropping left and right edges.</p>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card">
+                                    <div class="flex items-center gap-3">
+                                        <input type="radio" name="aspect_mode" value="LETTERBOX" class="accent-emerald-500">
+                                        <div>
+                                            <p class="text-xs font-bold text-white">Letterbox (Solid Black Bars)</p>
+                                            <p class="text-[10px] text-zinc-400">Centers original video with clean black letterbox bars.</p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Hook Overlay Theme & Vertical Position -->
+                        <div class="space-y-4">
+                            <!-- Theme Selection -->
+                            <div class="space-y-3">
+                                <label class="block text-xs font-bold text-zinc-300">
+                                    Hook Typography & Overlay Theme
+                                </label>
+
+                                <div class="space-y-2">
+                                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer theme-choice-card">
+                                        <div class="flex items-center gap-3">
+                                            <input type="radio" name="theme_style" value="VIRAL_HOOK" checked class="accent-emerald-500">
+                                            <div>
+                                                <p class="text-xs font-bold text-white">Viral Hook Banner</p>
+                                                <p class="text-[10px] text-zinc-400">High-contrast banner pill with smart badge.</p>
+                                            </div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
+                                        <div class="flex items-center gap-3">
+                                            <input type="radio" name="theme_style" value="GLOW_NEON" class="accent-emerald-500">
+                                            <div>
+                                                <p class="text-xs font-bold text-white">Cyber Neon Glow</p>
+                                                <p class="text-[10px] text-zinc-400">Cyan & neon borders with cyber typography.</p>
+                                            </div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
+                                        <div class="flex items-center gap-3">
+                                            <input type="radio" name="theme_style" value="CHILL_LOFI" class="accent-emerald-500">
+                                            <div>
+                                                <p class="text-xs font-bold text-white">Chill Lo-Fi / Aesthetic</p>
+                                                <p class="text-[10px] text-zinc-400">Soft pastel tones with smooth borders.</p>
+                                            </div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
+                                        <div class="flex items-center gap-3">
+                                            <input type="radio" name="theme_style" value="CLEAN" class="accent-emerald-500">
+                                            <div>
+                                                <p class="text-xs font-bold text-white">Minimal (No Overlays)</p>
+                                                <p class="text-[10px] text-zinc-400">Clean video cut without text overlays.</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Hook Banner Vertical Position -->
+                            <div class="space-y-3 pt-3 border-t border-zinc-800/80">
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-zinc-300">
+                                        Hook Banner Vertical Position
+                                    </label>
+                                    <span id="hookPositionDisplayBadge" class="text-[10px] font-mono font-bold text-emerald-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">TOP (Header)</span>
+                                </div>
+                                <p class="text-[11px] text-zinc-400">
+                                    Move the viral hook banner position up, center (eye-level retention), or down (lower third).
+                                </p>
+
+                                <div class="grid grid-cols-3 gap-2.5">
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer hook-position-card transition-all text-center group" data-pos="TOP">
+                                        <input type="radio" name="hook_position" value="TOP" checked class="hidden">
+                                        <i data-lucide="arrow-up-to-line" class="w-4 h-4 text-emerald-400 mb-1.5 transition-colors"></i>
+                                        <span class="text-xs font-bold text-white">Top</span>
+                                        <span class="text-[9px] text-zinc-400 mt-0.5">Header Overlay</span>
+                                    </label>
+
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer hook-position-card transition-all text-center group hover:border-zinc-700" data-pos="CENTER">
+                                        <input type="radio" name="hook_position" value="CENTER" class="hidden">
+                                        <i data-lucide="align-center" class="w-4 h-4 text-zinc-400 mb-1.5 transition-colors"></i>
+                                        <span class="text-xs font-bold text-white">Center</span>
+                                        <span class="text-[9px] text-zinc-400 mt-0.5">Focal Drop</span>
+                                    </label>
+
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer hook-position-card transition-all text-center group hover:border-zinc-700" data-pos="BOTTOM">
+                                        <input type="radio" name="hook_position" value="BOTTOM" class="hidden">
+                                        <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-zinc-400 mb-1.5 transition-colors"></i>
+                                        <span class="text-xs font-bold text-white">Bottom</span>
+                                        <span class="text-[9px] text-zinc-400 mt-0.5">Lower Third</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FEATURE: Interactive Horizontal Subject Framing & Focal Point Control -->
+                    <div class="space-y-3 pt-4 border-t border-zinc-800/80">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="block text-xs font-bold text-white">
+                                    Subject Framing & Horizontal Focal Point
+                                </label>
+                                <p class="text-[11px] text-zinc-400">
+                                    Move horizontal crop focal position to focus on subjects or faces off-center in the video.
+                                </p>
+                            </div>
+                            <span id="focalPercentDisplay" class="text-xs font-mono font-bold text-emerald-400 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800">50% (Center)</span>
+                        </div>
+
+                        <!-- Quick Presets -->
+                        <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                            <span class="text-[11px] text-zinc-400 mr-1">Presets:</span>
+                            <button type="button" onclick="setFocalPercent(0)" class="px-2.5 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-zinc-800 transition-colors">
+                                Left (0%)
+                            </button>
+                            <button type="button" onclick="setFocalPercent(25)" class="px-2.5 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-zinc-800 transition-colors">
+                                Left-Mid (25%)
+                            </button>
+                            <button type="button" onclick="setFocalPercent(50)" class="px-2.5 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-zinc-800 transition-colors">
+                                Center (50%)
+                            </button>
+                            <button type="button" onclick="setFocalPercent(75)" class="px-2.5 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-zinc-800 transition-colors">
+                                Right-Mid (75%)
+                            </button>
+                            <button type="button" onclick="setFocalPercent(100)" class="px-2.5 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-zinc-800 transition-colors">
+                                Right (100%)
+                            </button>
+                        </div>
+
+                        <!-- Interactive Range Slider -->
+                        <div class="flex items-center gap-3 pt-1">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase">Left</span>
+                            <input type="range" name="crop_focal_percent" id="cropFocalPercentInput" min="0" max="100" value="50" oninput="updateMockupPreview(0)" class="w-full h-2 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase">Right</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Render Action Button -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-zinc-900 rounded-2xl border border-zinc-800 gap-4">
+                    <div>
+                        <h4 class="text-sm font-bold text-white">Ready to Render Vertical Shorts</h4>
+                        <p class="text-xs text-zinc-400">Chops your media into individual 1080x1920 MP4 clips locally.</p>
+                    </div>
+
+                    <button type="submit" id="renderShortsBtn" class="px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors">
+                        <span id="btnSubmitText">Render Vertical Shorts</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Video Player Preview Area -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <!-- Main Video / Audio Player -->
-                <div class="lg:col-span-7 space-y-3">
-                    <div class="rounded-xl overflow-hidden bg-black border border-zinc-800 aspect-video relative flex items-center justify-center shadow-lg">
-                        <video id="sourceVideoPlayer" controls class="w-full h-full object-contain hidden"></video>
-                        <audio id="sourceAudioPlayer" controls class="w-4/5 hidden z-10"></audio>
-
-                        <div id="playerPlaceholder" class="text-center p-6 space-y-2">
-                            <p class="text-xs font-semibold text-zinc-500">Upload video or audio above to load player</p>
+            <!-- RIGHT COLUMN: Sticky 9:16 Video Preview Side Panel (lg:col-span-5 sticky top-6) -->
+            <div class="lg:col-span-5 sticky top-6 space-y-4">
+                <div class="flex flex-col items-center justify-center p-5 bg-zinc-900 rounded-2xl border border-zinc-800 shadow-xl">
+                    <div class="text-center mb-3 flex items-center justify-between w-full px-1 border-b border-zinc-800/80 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-xs font-bold text-white">Live 9:16 Phone Preview</span>
                         </div>
-
-                        <!-- Active Chop Overlay Tag -->
-                        <div id="activeChopBadge" class="absolute top-3 left-3 bg-zinc-950/90 px-2.5 py-1 rounded-lg border border-zinc-700 text-[10px] font-semibold text-zinc-200 hidden items-center gap-1.5 z-20">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                            <span id="activeChopBadgeText">Previewing Part 1 (0.0s - 15.0s)</span>
-                        </div>
-                    </div>
-
-                    <!-- Visual Timeline Bar -->
-                    <div class="space-y-1.5">
-                        <div class="flex justify-between text-[11px] font-mono text-zinc-400">
-                            <span id="timelineStartLabel">00:00</span>
-                            <span id="timelineCurrentLabel" class="text-zinc-200 font-semibold">Playhead: 00:00</span>
-                            <span id="timelineEndLabel">00:00</span>
-                        </div>
-                        
-                        <!-- Timeline Track with interactive segments -->
-                        <div id="timelineTrack" class="w-full h-8 bg-zinc-950 rounded-xl border border-zinc-800 relative overflow-hidden flex items-center cursor-pointer select-none">
-                            <div id="timelineSegmentsContainer" class="w-full h-full flex absolute inset-0"></div>
-                            <!-- Current Playhead Scrubber Line -->
-                            <div id="playheadScrubber" class="absolute top-0 bottom-0 w-1 bg-white z-30 transition-none pointer-events-none" style="left: 0%;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Live 9:16 Vertical Phone Mockup Preview -->
-                <div class="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-zinc-950 rounded-xl border border-zinc-800">
-                    <div class="text-center mb-2">
-                        <span class="text-xs font-bold text-zinc-300">Live 9:16 Preview</span>
+                        <span id="previewAspectBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-950 text-emerald-400 border border-zinc-800 font-semibold">Blurred Fit</span>
                     </div>
 
                     <!-- 9:16 Phone Frame Mockup -->
-                    <div class="w-[180px] h-[320px] bg-black rounded-3xl border-4 border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col items-center justify-between p-2">
-                        <!-- Top Notch -->
-                        <div class="w-16 h-3 bg-zinc-900 rounded-full mx-auto z-20"></div>
+                    <div class="w-[220px] h-[390px] bg-black rounded-[36px] border-[6px] border-zinc-800 shadow-2xl relative overflow-hidden p-2.5 my-2">
+                        <!-- Top Speaker Notch -->
+                        <div class="w-16 h-3 bg-zinc-900 rounded-full mx-auto z-20 shrink-0 border border-zinc-800/60 relative"></div>
 
-                        <!-- Background Container -->
-                        <div id="mockupBg" class="absolute inset-0 bg-zinc-900 flex items-center justify-center overflow-hidden">
-                            <div id="mockupCenterContent" class="text-center p-2 text-zinc-500 text-[10px]">
-                                9:16 Preview
+                        <!-- Dynamic Background Container -->
+                        <div id="mockupBg" class="absolute inset-0 bg-zinc-900 flex items-center justify-center overflow-hidden transition-all">
+                            <!-- Blurred Ambient Layer for BLURRED_FIT -->
+                            <div id="mockupBlurLayer" class="absolute inset-0 bg-cover bg-center filter blur-lg brightness-50 scale-125 opacity-0 transition-opacity"></div>
+                            
+                            <!-- Video / Image Preview Content -->
+                            <video id="mockupVideoPreview" class="w-full h-full object-contain relative z-0 hidden" muted playsinline></video>
+                            <img id="mockupImagePreview" src="" class="w-full h-full object-contain relative z-0 hidden">
+                            
+                            <div id="mockupCenterContent" class="text-center p-3 text-zinc-500 text-xs font-medium">
+                                Upload video or audio to see real-time 9:16 preview
                             </div>
                         </div>
 
-                        <!-- Hook Pill at Top -->
-                        <div id="mockupHookPill" class="z-10 w-full max-w-[155px] bg-zinc-950/90 border border-zinc-700 rounded-lg p-1.5 text-center shadow-lg mt-3">
-                            <span id="mockupHookTag" class="text-[7px] font-bold bg-zinc-800 text-zinc-200 px-1 py-0.2 rounded uppercase block mx-auto w-fit mb-0.5">PART 1</span>
-                            <p id="mockupHookText" class="text-[8px] font-bold text-white leading-tight truncate">Wait for the drop... 🔥</p>
+                        <!-- Hook Pill (Dynamic Positioning: Top, Center, Bottom) -->
+                        <div id="mockupHookPill" class="z-10 w-full max-w-[170px] bg-zinc-950/90 border border-zinc-700 rounded-lg p-1.5 text-center shadow-lg transition-all duration-300 absolute top-7 left-1/2 -translate-x-1/2">
+                            <span id="mockupHookTag" class="text-[7px] font-bold bg-zinc-800 text-zinc-200 px-1.5 py-0.5 rounded uppercase block mx-auto w-fit mb-0.5">PART 1</span>
+                            <p id="mockupHookText" class="text-[8.5px] font-bold text-white leading-tight truncate">Wait for the drop... 🔥</p>
                         </div>
 
-                        <!-- Bottom Pill -->
-                        <div class="z-10 bg-zinc-950/80 border border-zinc-800 rounded-md px-2 py-0.5 text-center mb-2">
-                            <p class="text-[7px] text-zinc-300 font-medium">Full Video on YouTube</p>
+                        <!-- Bottom Watermark Pill -->
+                        <div id="mockupCtaPill" class="z-10 bg-zinc-950/80 border border-zinc-800 rounded-md px-2.5 py-1 text-center backdrop-blur-sm absolute bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            <p class="text-[8px] text-zinc-300 font-medium">▶ Full Video on YouTube</p>
                         </div>
                     </div>
+
+                    <p class="text-[10px] text-zinc-400 text-center mt-2 px-2">
+                        Real-time 9:16 crop, subject framing, aspect ratio, & typography style.
+                    </p>
                 </div>
             </div>
 
-            <!-- Chops List -->
-            <div class="space-y-3 pt-2">
-                <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-zinc-300">
-                        Configured Chops (<span id="chopCountLabel">0</span>)
-                    </h4>
-                    <span class="text-[11px] text-zinc-500">Click preview on any card to test audio/video</span>
-                </div>
-
-                <div id="chopsListContainer" class="space-y-3 max-h-96 overflow-y-auto pr-1">
-                    <!-- Dynamic Chop Cards Inserted Here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 3: Vertical 9:16 Aspect & Theme Styling -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Aspect Ratio Mode -->
-            <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-3">
-                <label class="block text-xs font-bold text-zinc-300">
-                    Vertical 9:16 Aspect Mode
-                </label>
-
-                <div class="space-y-2">
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer aspect-choice-card">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" name="aspect_mode" value="BLURRED_FIT" checked class="accent-emerald-500">
-                            <div>
-                                <p class="text-xs font-bold text-white">Blurred Background (Recommended)</p>
-                                <p class="text-[10px] text-zinc-400">Retains full 16:9 frame with blurred ambient background.</p>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" name="aspect_mode" value="CENTER_CROP" class="accent-emerald-500">
-                            <div>
-                                <p class="text-xs font-bold text-white">Center Crop 9:16 (Fill Screen)</p>
-                                <p class="text-[10px] text-zinc-400">Fills vertical display by cropping left and right edges.</p>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" name="aspect_mode" value="LETTERBOX" class="accent-emerald-500">
-                            <div>
-                                <p class="text-xs font-bold text-white">Letterbox (Solid Black Bars)</p>
-                                <p class="text-[10px] text-zinc-400">Centers original video with clean black letterbox bars.</p>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Hook Overlay Theme -->
-            <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-3">
-                <label class="block text-xs font-bold text-zinc-300">
-                    Hook Typography & Overlay Theme
-                </label>
-
-                <div class="space-y-2">
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer theme-choice-card">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" name="theme_style" value="VIRAL_HOOK" checked class="accent-emerald-500">
-                            <div>
-                                <p class="text-xs font-bold text-white">Viral Hook Banner</p>
-                                <p class="text-[10px] text-zinc-400">Top banner pill & bottom channel watermark.</p>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" name="theme_style" value="GLOW_NEON" class="accent-emerald-500">
-                            <div>
-                                <p class="text-xs font-bold text-white">Cyber Neon Glow</p>
-                                <p class="text-[10px] text-zinc-400">Cyan & neon borders with cyber typography.</p>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" name="theme_style" value="CLEAN" class="accent-emerald-500">
-                            <div>
-                                <p class="text-xs font-bold text-white">Minimal (No Overlays)</p>
-                                <p class="text-[10px] text-zinc-400">Clean video cut without text overlays.</p>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 4: Render Action Button -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-zinc-900 rounded-2xl border border-zinc-800 gap-4">
-            <div>
-                <h4 class="text-sm font-bold text-white">Ready to Render Vertical Shorts</h4>
-                <p class="text-xs text-zinc-400">Chops your media into individual 1080x1920 MP4 clips locally.</p>
-            </div>
-
-            <button type="submit" id="renderShortsBtn" class="px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors">
-                <span id="btnSubmitText">Render Vertical Shorts</span>
-            </button>
         </div>
     </form>
 </div>
@@ -352,6 +480,13 @@
             <span id="elapsedTimer" class="font-mono">00:00</span>
             <span class="text-emerald-400 font-medium">FFmpeg Local Processing</span>
         </div>
+
+        <div class="pt-2">
+            <button type="button" id="cancelRenderBtn" onclick="cancelActiveRendering()" class="w-full py-2.5 bg-zinc-800 hover:bg-rose-950 hover:border-rose-800 text-zinc-300 hover:text-rose-200 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+                Cancel Rendering
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -363,6 +498,8 @@
     let chopsData = [];
     let activePreviewInterval = null;
     let currentActiveChopId = null;
+
+    const DRAFT_KEY = 'yt_quid_shorts_draft';
 
     const sourceVideoPlayer = document.getElementById('sourceVideoPlayer');
     const sourceAudioPlayer = document.getElementById('sourceAudioPlayer');
@@ -377,10 +514,20 @@
     const chopCountLabel = document.getElementById('chopCountLabel');
     const chopsJsonInput = document.getElementById('chopsJsonInput');
     const projectTitle = document.getElementById('projectTitle');
+    const cropFocalPercentInput = document.getElementById('cropFocalPercentInput');
 
     // Mockup elements
     const mockupHookText = document.getElementById('mockupHookText');
     const mockupHookTag = document.getElementById('mockupHookTag');
+    const mockupBg = document.getElementById('mockupBg');
+    const mockupBlurLayer = document.getElementById('mockupBlurLayer');
+    const mockupVideoPreview = document.getElementById('mockupVideoPreview');
+    const mockupImagePreview = document.getElementById('mockupImagePreview');
+    const mockupHookPill = document.getElementById('mockupHookPill');
+    const previewAspectBadge = document.getElementById('previewAspectBadge');
+    const draftStatusBanner = document.getElementById('draftStatusBanner');
+    const draftStatusText = document.getElementById('draftStatusText');
+    const clearDraftBtn = document.getElementById('clearDraftBtn');
 
     function formatTime(seconds) {
         const s = Math.max(0, Math.floor(seconds || 0));
@@ -388,6 +535,147 @@
         const secs = s % 60;
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
+
+    function setFocalPercent(val) {
+        if (cropFocalPercentInput) {
+            cropFocalPercentInput.value = val;
+            updateMockupPreview(0);
+            saveDraft();
+        }
+    }
+
+    // -------------------------------------------------------------
+    // LOCAL DRAFT MANAGER & AUTO-SAVE ENGINE
+    // -------------------------------------------------------------
+    function saveDraft() {
+        try {
+            const aspectRadio = document.querySelector('input[name="aspect_mode"]:checked');
+            const themeRadio = document.querySelector('input[name="theme_style"]:checked');
+            const hookPosRadio = document.querySelector('input[name="hook_position"]:checked');
+            const sourceTab = document.querySelector('.source-tab.bg-zinc-800');
+
+            const draftData = {
+                timestamp: Date.now(),
+                title: projectTitle.value,
+                source_type: sourceTab ? sourceTab.getAttribute('data-source') : 'VIDEO',
+                chopsData: chopsData,
+                aspect_mode: aspectRadio ? aspectRadio.value : 'BLURRED_FIT',
+                theme_style: themeRadio ? themeRadio.value : 'VIRAL_HOOK',
+                hook_position: hookPosRadio ? hookPosRadio.value : 'TOP',
+                crop_focal_percent: cropFocalPercentInput ? cropFocalPercentInput.value : 50
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+
+            if (draftStatusBanner) {
+                draftStatusBanner.classList.remove('hidden');
+                draftStatusBanner.classList.add('flex');
+                draftStatusText.textContent = 'Draft Auto-Saved';
+            }
+        } catch (e) {
+            console.warn('Draft save error:', e);
+        }
+    }
+
+    function loadDraft() {
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (!draft) return;
+
+            if (draft.title) projectTitle.value = draft.title;
+            if (draft.chopsData && Array.isArray(draft.chopsData) && draft.chopsData.length > 0) {
+                chopsData = draft.chopsData;
+            }
+            if (draft.crop_focal_percent !== undefined && cropFocalPercentInput) {
+                cropFocalPercentInput.value = draft.crop_focal_percent;
+            }
+            if (draft.aspect_mode) {
+                const aspectRad = document.querySelector(`input[name="aspect_mode"][value="${draft.aspect_mode}"]`);
+                if (aspectRad) {
+                    aspectRad.checked = true;
+                    document.querySelectorAll('.aspect-choice-card').forEach(c => {
+                        const r = c.querySelector('input[type="radio"]');
+                        if (r && r.value === draft.aspect_mode) {
+                            c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer aspect-choice-card";
+                        } else {
+                            c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer aspect-choice-card";
+                        }
+                    });
+                }
+            }
+            if (draft.theme_style) {
+                const themeRad = document.querySelector(`input[name="theme_style"][value="${draft.theme_style}"]`);
+                if (themeRad) {
+                    themeRad.checked = true;
+                    document.querySelectorAll('.theme-choice-card').forEach(c => {
+                        const r = c.querySelector('input[type="radio"]');
+                        if (r && r.value === draft.theme_style) {
+                            c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer theme-choice-card";
+                        } else {
+                            c.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer theme-choice-card";
+                        }
+                    });
+                }
+            }
+            if (draft.hook_position) {
+                const hookRad = document.querySelector(`input[name="hook_position"][value="${draft.hook_position}"]`);
+                if (hookRad) {
+                    hookRad.checked = true;
+                    document.querySelectorAll('.hook-position-card').forEach(c => {
+                        const r = c.querySelector('input[type="radio"]');
+                        const icon = c.querySelector('i, svg');
+                        if (r && r.value === draft.hook_position) {
+                            c.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer hook-position-card transition-all text-center group";
+                            if (icon) {
+                                icon.classList.remove('text-zinc-400');
+                                icon.classList.add('text-emerald-400');
+                            }
+                        } else {
+                            c.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer hook-position-card transition-all text-center group hover:border-zinc-700";
+                            if (icon) {
+                                icon.classList.remove('text-emerald-400');
+                                icon.classList.add('text-zinc-400');
+                            }
+                        }
+                    });
+                    const posBadge = document.getElementById('hookPositionDisplayBadge');
+                    if (posBadge) {
+                        const labelMap = { 'TOP': 'TOP (Header)', 'CENTER': 'CENTER (Focal Drop)', 'BOTTOM': 'BOTTOM (Lower Third)' };
+                        posBadge.textContent = labelMap[draft.hook_position] || `${draft.hook_position}`;
+                    }
+                }
+            }
+
+            renderAll();
+            if (draftStatusBanner) {
+                draftStatusBanner.classList.remove('hidden');
+                draftStatusBanner.classList.add('flex');
+                const timeAgo = Math.round((Date.now() - (draft.timestamp || Date.now())) / 1000 / 60);
+                draftStatusText.textContent = timeAgo > 0 ? `Restored draft (${timeAgo}m ago)` : `Draft Restored`;
+            }
+        } catch (e) {
+            console.warn('Draft load error:', e);
+        }
+    }
+
+    if (clearDraftBtn) {
+        clearDraftBtn.addEventListener('click', async () => {
+            const confirmed = await AppDialog.confirm({
+                title: 'Clear Saved Draft?',
+                message: 'Clear your saved shorts draft and reset form?',
+                confirmText: 'Reset Form',
+                cancelText: 'Keep Draft',
+                type: 'danger'
+            });
+            if (confirmed) {
+                localStorage.removeItem(DRAFT_KEY);
+                window.location.reload();
+            }
+        });
+    }
+
+    if (projectTitle) projectTitle.addEventListener('input', saveDraft);
 
     // Source Mode Radio Tabs
     document.querySelectorAll('.source-tab').forEach(tab => {
@@ -405,6 +693,7 @@
                 document.getElementById('videoSourceContainer').classList.add('hidden');
                 document.getElementById('audioSourceContainer').classList.remove('hidden');
             }
+            saveDraft();
         });
     });
 
@@ -446,7 +735,9 @@
                 totalMediaDuration = sourceVideoPlayer.duration || 60.0;
                 videoFileDetails.textContent = `${formatTime(totalMediaDuration)} • ${sizeMb} MB • ${sourceVideoPlayer.videoWidth}x${sourceVideoPlayer.videoHeight}`;
                 timelineEndLabel.textContent = formatTime(totalMediaDuration);
-                autoSplitChops(15);
+                if (chopsData.length === 0) autoSplitChops(15);
+                else renderAll();
+                saveDraft();
             };
         }
     });
@@ -477,7 +768,9 @@
             sourceAudioPlayer.onloadedmetadata = () => {
                 totalMediaDuration = sourceAudioPlayer.duration || 60.0;
                 timelineEndLabel.textContent = formatTime(totalMediaDuration);
-                autoSplitChops(15);
+                if (chopsData.length === 0) autoSplitChops(15);
+                else renderAll();
+                saveDraft();
             };
         }
     });
@@ -499,6 +792,8 @@
                 coverPreview.src = e.target.result;
                 coverEmpty.classList.add('hidden');
                 coverSelected.classList.remove('hidden');
+                updateMockupPreview(0);
+                saveDraft();
             };
             reader.readAsDataURL(file);
         }
@@ -555,6 +850,9 @@
         let start = 0.0;
         let id = 1;
 
+        const globalHookPosRadio = document.querySelector('input[name="hook_position"]:checked');
+        const defaultPos = globalHookPosRadio ? globalHookPosRadio.value : 'TOP';
+
         while (start < dur) {
             let end = Math.min(dur, start + interval);
             let segmentDur = Math.round((end - start) * 10) / 10;
@@ -563,6 +861,7 @@
                     id: id,
                     title: `Part ${id}`,
                     hook_text: id === 1 ? "Wait for the drop... 🔥" : `Part ${id} 🔥`,
+                    hook_position: defaultPos,
                     start_seconds: Math.round(start * 10) / 10,
                     end_seconds: Math.round(end * 10) / 10,
                     duration: segmentDur
@@ -577,6 +876,7 @@
                 id: 1,
                 title: 'Part 1',
                 hook_text: 'Wait for the beat drop... 🔥',
+                hook_position: defaultPos,
                 start_seconds: 0.0,
                 end_seconds: Math.min(dur, 15.0),
                 duration: Math.min(dur, 15.0)
@@ -597,11 +897,15 @@
             end = totalMediaDuration;
         }
 
+        const globalHookPosRadio = document.querySelector('input[name="hook_position"]:checked');
+        const defaultPos = globalHookPosRadio ? globalHookPosRadio.value : 'TOP';
+
         const newId = chopsData.length + 1;
         chopsData.push({
             id: newId,
             title: `Part ${newId}`,
             hook_text: `Part ${newId} 🔥`,
+            hook_position: defaultPos,
             start_seconds: Math.round(start * 10) / 10,
             end_seconds: Math.round(end * 10) / 10,
             duration: Math.round((end - start) * 10) / 10
@@ -623,14 +927,25 @@
     }
 
     // Delete Chop
-    function deleteChop(idx) {
+    async function deleteChop(idx) {
         if (chopsData.length <= 1) {
-            alert("You need at least 1 chop in your project.");
+            AppToast.warning("You need at least 1 chop in your project.");
             return;
         }
-        chopsData.splice(idx, 1);
-        chopsData.forEach((c, i) => c.id = i + 1);
-        renderAll();
+        const chop = chopsData[idx];
+        const confirmed = await AppDialog.confirm({
+            title: 'Delete Chop?',
+            message: `Remove Chop ${chop?.id || idx + 1} ("${chop?.title || 'Segment'}") from your project?`,
+            confirmText: 'Delete Chop',
+            cancelText: 'Keep',
+            type: 'danger'
+        });
+        if (confirmed) {
+            chopsData.splice(idx, 1);
+            chopsData.forEach((c, i) => c.id = i + 1);
+            renderAll();
+            AppToast.info('Chop removed.');
+        }
     }
 
     // Update Chop Field
@@ -649,8 +964,12 @@
         }
 
         renderTimelineSegments();
+        if (field === 'hook_position') {
+            renderChopsList();
+        }
         updateMockupPreview(idx);
         syncJson();
+        saveDraft();
     }
 
     // Nudge Time
@@ -668,7 +987,7 @@
 
         const player = getActivePlayer();
         if (!player) {
-            alert("Please upload a video or audio file first to preview chops!");
+            AppToast.warning("Please upload a video or audio file first to preview chops!");
             return;
         }
 
@@ -685,12 +1004,104 @@
     }
 
     function updateMockupPreview(idx) {
-        const chop = chopsData[idx] || chopsData[0];
+        const chop = chopsData[idx || 0] || chopsData[0];
         if (chop) {
-            mockupHookTag.textContent = chop.title.toUpperCase();
+            mockupHookTag.textContent = chop.title ? chop.title.toUpperCase() : 'PART 1';
             mockupHookText.textContent = chop.hook_text || `${chop.title} 🔥`;
         }
+
+        const aspectRadio = document.querySelector('input[name="aspect_mode"]:checked');
+        const aspectMode = aspectRadio ? aspectRadio.value : 'BLURRED_FIT';
+        const themeRadio = document.querySelector('input[name="theme_style"]:checked');
+        const themeStyle = themeRadio ? themeRadio.value : 'VIRAL_HOOK';
+        const globalHookPosRadio = document.querySelector('input[name="hook_position"]:checked');
+        const globalHookPos = globalHookPosRadio ? globalHookPosRadio.value : 'TOP';
+        const chopHookPos = (chop && chop.hook_position) ? chop.hook_position : globalHookPos;
+
+        const focalPct = cropFocalPercentInput ? parseInt(cropFocalPercentInput.value || 50) : 50;
+        const focalPercentDisplay = document.getElementById('focalPercentDisplay');
+        if (focalPercentDisplay) {
+            if (focalPct === 50) focalPercentDisplay.textContent = '50% (Center)';
+            else if (focalPct === 0) focalPercentDisplay.textContent = '0% (Far Left)';
+            else if (focalPct === 100) focalPercentDisplay.textContent = '100% (Far Right)';
+            else focalPercentDisplay.textContent = `${focalPct}%`;
+        }
+
+        // Apply dynamic focal position alignment to live mockup video/image
+        mockupVideoPreview.style.objectPosition = `${focalPct}% center`;
+        mockupImagePreview.style.objectPosition = `${focalPct}% center`;
+
+        if (aspectMode === 'BLURRED_FIT') {
+            previewAspectBadge.textContent = 'Blurred Fit';
+            mockupBlurLayer.classList.remove('opacity-0');
+            mockupBlurLayer.classList.add('opacity-100');
+            mockupVideoPreview.style.objectFit = 'contain';
+            mockupImagePreview.style.objectFit = 'contain';
+        } else if (aspectMode === 'CENTER_CROP') {
+            previewAspectBadge.textContent = `Center Crop (${focalPct}%)`;
+            mockupBlurLayer.classList.add('opacity-0');
+            mockupBlurLayer.classList.remove('opacity-100');
+            mockupVideoPreview.style.objectFit = 'cover';
+            mockupImagePreview.style.objectFit = 'cover';
+        } else { // LETTERBOX
+            previewAspectBadge.textContent = 'Letterbox';
+            mockupBlurLayer.classList.add('opacity-0');
+            mockupBlurLayer.classList.remove('opacity-100');
+            mockupVideoPreview.style.objectFit = 'contain';
+            mockupImagePreview.style.objectFit = 'contain';
+        }
+
+        // Position mockup Hook Pill
+        let posClasses = "absolute left-1/2 -translate-x-1/2 ";
+        if (chopHookPos === 'CENTER') {
+            posClasses += "top-1/2 -translate-y-1/2";
+        } else if (chopHookPos === 'BOTTOM') {
+            posClasses += "bottom-10";
+        } else { // TOP
+            posClasses += "top-7";
+        }
+
+        if (themeStyle === 'CLEAN') {
+            mockupHookPill.classList.add('hidden');
+        } else {
+            mockupHookPill.classList.remove('hidden');
+            if (themeStyle === 'GLOW_NEON') {
+                mockupHookPill.className = `z-10 w-full max-w-[170px] bg-zinc-950/90 border border-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.5)] rounded-lg p-1.5 text-center transition-all duration-300 ${posClasses}`;
+                mockupHookText.className = "text-[8.5px] font-bold text-cyan-300 leading-tight truncate";
+            } else if (themeStyle === 'CHILL_LOFI') {
+                mockupHookPill.className = `z-10 w-full max-w-[170px] bg-zinc-950/90 border border-pink-400/80 rounded-lg p-1.5 text-center shadow-lg transition-all duration-300 ${posClasses}`;
+                mockupHookText.className = "text-[8.5px] font-bold text-pink-200 leading-tight truncate";
+            } else { // VIRAL_HOOK
+                mockupHookPill.className = `z-10 w-full max-w-[170px] bg-zinc-950/90 border border-rose-600/80 rounded-lg p-1.5 text-center shadow-lg transition-all duration-300 ${posClasses}`;
+                mockupHookText.className = "text-[8.5px] font-bold text-white leading-tight truncate";
+            }
+        }
+
+        if (sourceVideoPlayer.src && !sourceVideoPlayer.classList.contains('hidden')) {
+            if (mockupVideoPreview.src !== sourceVideoPlayer.src) {
+                mockupVideoPreview.src = sourceVideoPlayer.src;
+            }
+            mockupVideoPreview.currentTime = sourceVideoPlayer.currentTime;
+            mockupVideoPreview.classList.remove('hidden');
+            mockupImagePreview.classList.add('hidden');
+            document.getElementById('mockupCenterContent').classList.add('hidden');
+        } else if (coverPreview.src && coverPreview.src !== window.location.href) {
+            mockupImagePreview.src = coverPreview.src;
+            mockupImagePreview.classList.remove('hidden');
+            mockupVideoPreview.classList.add('hidden');
+            mockupBlurLayer.style.backgroundImage = `url('${coverPreview.src}')`;
+            document.getElementById('mockupCenterContent').classList.add('hidden');
+        }
     }
+
+    // Synchronize video player with 9:16 phone mockup
+    sourceVideoPlayer.addEventListener('play', () => mockupVideoPreview.play());
+    sourceVideoPlayer.addEventListener('pause', () => mockupVideoPreview.pause());
+    sourceVideoPlayer.addEventListener('timeupdate', () => {
+        if (Math.abs(mockupVideoPreview.currentTime - sourceVideoPlayer.currentTime) > 0.3) {
+            mockupVideoPreview.currentTime = sourceVideoPlayer.currentTime;
+        }
+    });
 
     // Render Timeline Segments Visual
     function renderTimelineSegments() {
@@ -734,6 +1145,8 @@
             const card = document.createElement('div');
             card.className = `p-4 rounded-xl border ${isPlaying ? 'border-zinc-600 bg-zinc-800/40' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'} transition-all space-y-3`;
 
+            const curPos = chop.hook_position || 'TOP';
+
             card.innerHTML = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
@@ -758,9 +1171,17 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
-                    <!-- Hook Text Banner Input -->
+                    <!-- Hook Text Banner Input & Position -->
                     <div class="md:col-span-6 space-y-1">
-                        <label class="text-[10px] font-bold uppercase text-zinc-500">Viral Hook Banner Text</label>
+                        <div class="flex items-center justify-between">
+                            <label class="text-[10px] font-bold uppercase text-zinc-500">Viral Hook Banner Text</label>
+                            <div class="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 text-[10px]">
+                                <span class="text-zinc-500 text-[9px] font-mono">Pos:</span>
+                                <button type="button" onclick="updateChop(${idx}, 'hook_position', 'TOP')" class="px-1.5 py-0.5 rounded font-semibold transition-colors ${curPos === 'TOP' ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'}">Top</button>
+                                <button type="button" onclick="updateChop(${idx}, 'hook_position', 'CENTER')" class="px-1.5 py-0.5 rounded font-semibold transition-colors ${curPos === 'CENTER' ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'}">Mid</button>
+                                <button type="button" onclick="updateChop(${idx}, 'hook_position', 'BOTTOM')" class="px-1.5 py-0.5 rounded font-semibold transition-colors ${curPos === 'BOTTOM' ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'}">Bot</button>
+                            </div>
+                        </div>
                         <input type="text" value="${chop.hook_text || ''}" placeholder="e.g. Wait for the drop... 🔥" onchange="updateChop(${idx}, 'hook_text', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                     </div>
 
@@ -801,7 +1222,7 @@
         updateMockupPreview(0);
     }
 
-    // Card selection highlight
+    // Card selection highlight & live preview update
     document.querySelectorAll('.aspect-choice-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.aspect-choice-card').forEach(c => {
@@ -810,6 +1231,8 @@
             card.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer aspect-choice-card";
             const radio = card.querySelector('input[type="radio"]');
             if (radio) radio.checked = true;
+            updateMockupPreview(0);
+            saveDraft();
         });
     });
 
@@ -821,11 +1244,87 @@
             card.className = "flex items-center justify-between p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer theme-choice-card";
             const radio = card.querySelector('input[type="radio"]');
             if (radio) radio.checked = true;
+            updateMockupPreview(0);
+            saveDraft();
         });
     });
 
-    // Initial setup with default 60s
+    document.querySelectorAll('.hook-position-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const pos = card.getAttribute('data-pos') || 'TOP';
+            document.querySelectorAll('.hook-position-card').forEach(c => {
+                c.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer hook-position-card transition-all text-center group hover:border-zinc-700";
+                const icon = c.querySelector('i, svg');
+                if (icon) {
+                    icon.classList.remove('text-emerald-400');
+                    icon.classList.add('text-zinc-400');
+                }
+            });
+            card.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer hook-position-card transition-all text-center group";
+            const icon = card.querySelector('i, svg');
+            if (icon) {
+                icon.classList.remove('text-zinc-400');
+                icon.classList.add('text-emerald-400');
+            }
+
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+
+            const posBadge = document.getElementById('hookPositionDisplayBadge');
+            if (posBadge) {
+                const labelMap = { 'TOP': 'TOP (Header)', 'CENTER': 'CENTER (Focal Drop)', 'BOTTOM': 'BOTTOM (Lower Third)' };
+                posBadge.textContent = labelMap[pos] || `${pos}`;
+            }
+
+            // Sync all chops to this position
+            chopsData.forEach(c => {
+                c.hook_position = pos;
+            });
+            renderChopsList();
+            updateMockupPreview(0);
+            saveDraft();
+        });
+    });
+
+    let activeRenderProjectId = null;
+    let renderPollInterval = null;
+    let renderTimerInterval = null;
+
+    // Cancel rendering handler
+    window.cancelActiveRendering = async function() {
+        if (!activeRenderProjectId) {
+            progressModal.classList.add('hidden');
+            return;
+        }
+        const confirmed = await AppDialog.confirm({
+            title: 'Cancel Rendering?',
+            message: 'Are you sure you want to cancel the video rendering process?',
+            confirmText: 'Yes, Cancel Render',
+            cancelText: 'Continue Rendering',
+            type: 'danger'
+        });
+        if (confirmed) {
+            progressStep.textContent = "Cancelling rendering and terminating FFmpeg processes...";
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+            fetch(`/studio/cancel/shorts/${activeRenderProjectId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).finally(() => {
+                if (renderPollInterval) clearInterval(renderPollInterval);
+                if (renderTimerInterval) clearInterval(renderTimerInterval);
+                progressModal.classList.add('hidden');
+                AppToast.info("Rendering was cancelled. Your draft is still saved in the editor.");
+            });
+        }
+    };
+
+    // Setup default chops if no draft exists
     autoSplitChops(15);
+    // Load draft if saved
+    loadDraft();
 
     // Progress Modal & Dynamic Form Submission Logic
     const shortsForm = document.getElementById('shortsForm');
@@ -835,51 +1334,97 @@
     const progressStep = document.getElementById('progressStep');
     const elapsedTimer = document.getElementById('elapsedTimer');
 
-    shortsForm.addEventListener('submit', (e) => {
+    shortsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
         syncJson();
 
         // Validate that user provided video or audio
-        const isVideo = document.querySelector('input[name="source_type"]:checked').value === 'VIDEO';
+        const isVideo = document.querySelector('input[name="source_type"]:checked')?.value === 'VIDEO';
         if (isVideo && (!videoInput.files || !videoInput.files[0])) {
-            alert("Please select or upload a video file.");
-            e.preventDefault();
+            AppToast.warning("Please select or upload a video file.");
             return;
         }
 
+        saveDraft();
         progressModal.classList.remove('hidden');
+        progressBar.style.width = '10%';
+        progressPercent.textContent = '10%';
+        progressStep.textContent = 'Uploading source assets and configuring vertical chops...';
 
-        let startTime = Date.now();
-        let currentPct = 12;
-
-        setInterval(() => {
+        const startTime = Date.now();
+        elapsedTimer.textContent = '00:00';
+        if (renderTimerInterval) clearInterval(renderTimerInterval);
+        renderTimerInterval = setInterval(() => {
             const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
             const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
             const secs = String(elapsedSec % 60).padStart(2, '0');
             elapsedTimer.textContent = `${mins}:${secs}`;
         }, 1000);
 
-        const stages = [
-            { pct: 20, text: "Reading long media stream..." },
-            { pct: 40, text: "Formatting 9:16 vertical canvas..." },
-            { pct: 65, text: "Generating viral hook banners & typography..." },
-            { pct: 85, text: "Encoding H.264 vertical video chops with FFmpeg..." },
-            { pct: 95, text: "Finalizing MP4 files & metadata..." }
-        ];
+        try {
+            const formData = new FormData(shortsForm);
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
 
-        let stageIdx = 0;
-        setInterval(() => {
-            if (stageIdx < stages.length) {
-                currentPct = stages[stageIdx].pct;
-                progressBar.style.width = currentPct + '%';
-                progressPercent.textContent = currentPct + '%';
-                progressStep.textContent = stages[stageIdx].text;
-                stageIdx++;
-            } else if (currentPct < 98) {
-                currentPct += 1;
-                progressBar.style.width = currentPct + '%';
-                progressPercent.textContent = currentPct + '%';
+            const resp = await fetch(shortsForm.action || window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                }
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.error || 'Failed to start shorts rendering.');
             }
-        }, 1500);
+
+            activeRenderProjectId = data.project_id;
+
+            // Poll live progress from backend
+            if (renderPollInterval) clearInterval(renderPollInterval);
+            renderPollInterval = setInterval(async () => {
+                try {
+                    const progResp = await fetch(`/studio/api/progress/shorts/${activeRenderProjectId}/`);
+                    const progData = await progResp.json();
+                    if (progData.success) {
+                        const pct = progData.progress || 10;
+                        progressBar.style.width = `${pct}%`;
+                        progressPercent.textContent = `${pct}%`;
+                        progressStep.textContent = progData.step || 'Processing video chops...';
+
+                        if (progData.status === 'COMPLETED') {
+                            clearInterval(renderPollInterval);
+                            clearInterval(renderTimerInterval);
+                            progressBar.style.width = '100%';
+                            progressPercent.textContent = '100%';
+                            progressStep.textContent = 'Complete! Loading your rendered chops...';
+                            localStorage.removeItem(DRAFT_KEY);
+                            setTimeout(() => {
+                                window.location.href = progData.redirect_url;
+                            }, 600);
+                        } else if (progData.status === 'CANCELLED') {
+                            clearInterval(renderPollInterval);
+                            clearInterval(renderTimerInterval);
+                            progressModal.classList.add('hidden');
+                            AppToast.info('Rendering was cancelled.');
+                        } else if (progData.status === 'FAILED') {
+                            clearInterval(renderPollInterval);
+                            clearInterval(renderTimerInterval);
+                            progressModal.classList.add('hidden');
+                            AppToast.error('Shorts rendering error: ' + (progData.error_message || 'Unknown render failure'));
+                        }
+                    }
+                } catch (pollErr) {
+                    console.warn('Progress poll issue:', pollErr);
+                }
+            }, 700);
+
+        } catch (err) {
+            if (renderTimerInterval) clearInterval(renderTimerInterval);
+            progressModal.classList.add('hidden');
+            AppToast.error('Submission Error: ' + err.message);
+        }
     });
 </script>
 {% endblock %}

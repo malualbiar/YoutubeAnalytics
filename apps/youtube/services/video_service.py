@@ -36,40 +36,61 @@ class VideoService:
 
         return formatted, total_seconds
 
-    def fetch_channel_videos(self, uploads_playlist_id, max_videos=100):
+    def fetch_channel_videos(self, uploads_playlist_id=None, channel_id=None, max_videos=100):
         """
         Fetch all recent video IDs from the uploads playlist (up to max_videos)
-        and then batch fetch their full details and statistics in chunks of 50.
+        and batch fetch their full details and statistics in chunks of 50.
+        Includes automatic fallback to YouTube search when uploads playlist is 404/restricted (e.g., Topic channels).
         """
-        if not uploads_playlist_id:
-            return []
-
         video_ids = []
         page_token = None
+        playlist_failed = False
 
-        while len(video_ids) < max_videos:
-            fetch_count = min(50, max_videos - len(video_ids))
-            data = self.client.get_playlist_items(uploads_playlist_id, max_results=fetch_count, page_token=page_token)
-            items = data.get('items', [])
-            if not items:
-                break
+        # Attempt 1: Fetch from Uploads Playlist (Cost: 1 unit per 50)
+        if uploads_playlist_id:
+            try:
+                while len(video_ids) < max_videos:
+                    fetch_count = min(50, max_videos - len(video_ids))
+                    data = self.client.get_playlist_items(uploads_playlist_id, max_results=fetch_count, page_token=page_token)
+                    items = data.get('items', [])
+                    if not items:
+                        break
 
-            for item in items:
-                v_id = item.get('contentDetails', {}).get('videoId')
-                if v_id and v_id not in video_ids:
-                    video_ids.append(v_id)
+                    for item in items:
+                        v_id = item.get('contentDetails', {}).get('videoId')
+                        if v_id and v_id not in video_ids:
+                            video_ids.append(v_id)
 
-            page_token = data.get('nextPageToken')
-            if not page_token:
-                break
+                    page_token = data.get('nextPageToken')
+                    if not page_token:
+                        break
+            except Exception as e:
+                logger.warning(f"Failed to fetch videos from uploads playlist '{uploads_playlist_id}': {e}. Attempting channel search fallback.")
+                playlist_failed = True
+
+        # Attempt 2: Fallback to Channel Search if playlist missing or failed (Cost: 100 units)
+        if (not video_ids or playlist_failed) and channel_id:
+            try:
+                search_data = self.client.search_videos_by_channel(channel_id, max_results=min(50, max_videos))
+                items = search_data.get('items', [])
+                for item in items:
+                    v_id = item.get('id', {}).get('videoId')
+                    if v_id and v_id not in video_ids:
+                        video_ids.append(v_id)
+            except Exception as e:
+                logger.warning(f"Search fallback also failed for channel '{channel_id}': {e}")
 
         # Batch fetch video statistics in chunks of 50
         detailed_videos = []
-        for i in range(0, len(video_ids), 50):
-            chunk = video_ids[i:i + 50]
-            items = self.client.get_videos_batch(chunk)
-            for item in items:
-                detailed_videos.append(self._parse_video_item(item))
+        if video_ids:
+            try:
+                for i in range(0, len(video_ids), 50):
+                    chunk = video_ids[i:i + 50]
+                    items = self.client.get_videos_batch(chunk)
+                    for item in items:
+                        detailed_videos.append(self._parse_video_item(item))
+            except Exception as e:
+                logger.error(f"Error batch fetching video details: {e}")
 
         return detailed_videos
 

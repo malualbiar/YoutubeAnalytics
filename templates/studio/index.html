@@ -142,7 +142,7 @@
                     <a href="{% url 'lyrics_detail' l.id %}" class="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1">
                         Open Player →
                     </a>
-                    <form method="POST" action="{% url 'lyrics_delete' l.id %}" onsubmit="return confirm('Delete lyric video project?');" class="inline">
+                    <form method="POST" action="{% url 'lyrics_delete' l.id %}" data-delete-confirm="Are you sure you want to delete lyric video '{{ l.title|escapejs }}'?" class="inline">
                         {% csrf_token %}
                         <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Project">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -202,7 +202,7 @@
                     <a href="{% url 'shorts_detail' s.id %}" class="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1">
                         Open Shorts Gallery →
                     </a>
-                    <form method="POST" action="{% url 'shorts_delete' s.id %}" onsubmit="return confirm('Delete shorts project?');" class="inline">
+                    <form method="POST" action="{% url 'shorts_delete' s.id %}" data-delete-confirm="Are you sure you want to delete shorts project '{{ s.title|escapejs }}'?" class="inline">
                         {% csrf_token %}
                         <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Project">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -262,7 +262,7 @@
                     <a href="{% url 'mix_detail' m.id %}" class="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1">
                         Open Mix →
                     </a>
-                    <form method="POST" action="{% url 'mix_delete' m.id %}" onsubmit="return confirm('Delete mix?');" class="inline">
+                    <form method="POST" action="{% url 'mix_delete' m.id %}" data-delete-confirm="Are you sure you want to delete mix '{{ m.title|escapejs }}'?" class="inline">
                         {% csrf_token %}
                         <button type="submit" class="p-1 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Mix">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -470,7 +470,7 @@
                         </a>
                         {% endif %}
 
-                        <form method="POST" action="{% url 'studio_delete' p.id %}" onsubmit="return confirm('Delete this video project?')">
+                        <form method="POST" action="{% url 'studio_delete' p.id %}" data-delete-confirm="Are you sure you want to delete video project '{{ p.title|escapejs }}'?">
                             {% csrf_token %}
                             <button type="submit" class="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete Video">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -550,6 +550,12 @@
                 <span id="elapsedTimer">00:00</span>
             </div>
             <span class="text-zinc-400 font-medium">Fast Local Render</span>
+        </div>
+
+        <div class="pt-2">
+            <button type="button" onclick="window.location.reload()" class="w-full py-2 bg-zinc-800 hover:bg-rose-950 text-zinc-300 hover:text-rose-200 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-colors">
+                Cancel Rendering
+            </button>
         </div>
     </div>
 </div>

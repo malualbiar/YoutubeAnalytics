@@ -26,6 +26,7 @@ def radar_feed_view(request):
     duration = request.GET.get('duration', 'all')
     popularity = request.GET.get('popularity', 'all')
     sort_by = request.GET.get('sort', 'velocity')
+    detection_mode = request.GET.get('mode', 'all')
     force_refresh = bool(request.GET.get('refresh'))
 
     tracks = AIRadarService.get_recent_ai_music(
@@ -35,19 +36,25 @@ def radar_feed_view(request):
         duration=duration,
         popularity=popularity,
         sort_by=sort_by,
-        max_results=30,
+        detection_mode=detection_mode,
+        max_results=36,
         force_refresh=force_refresh
     )
 
     genres = [
-        {'id': 'all', 'label': 'All AI Tracks'},
+        {'id': 'all', 'label': 'All AI Music'},
         {'id': 'suno', 'label': 'Suno AI'},
         {'id': 'udio', 'label': 'Udio AI'},
         {'id': 'lofi', 'label': 'Lofi & Chill'},
         {'id': 'synthwave', 'label': 'Synthwave'},
         {'id': 'pop', 'label': 'Pop & EDM'},
         {'id': 'rock', 'label': 'Rock & Metal'},
-        {'id': 'rap', 'label': 'Hip-Hop'},
+        {'id': 'rap', 'label': 'Phonk & Hip-Hop'},
+    ]
+
+    detection_modes = [
+        {'id': 'all', 'label': 'All AI Music Tracks'},
+        {'id': 'yt_flagged', 'label': '🛡️ YouTube-Flagged AI Only'},
     ]
 
     time_windows = [
@@ -91,7 +98,9 @@ def radar_feed_view(request):
         'current_duration': duration,
         'current_popularity': popularity,
         'current_sort': sort_by,
+        'current_mode': detection_mode,
         'genres': genres,
+        'detection_modes': detection_modes,
         'time_windows': time_windows,
         'duration_options': duration_options,
         'popularity_options': popularity_options,

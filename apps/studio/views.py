@@ -1,20 +1,26 @@
 import os
 import shutil
+import time
+import json
+import zipfile
+import threading
+from io import BytesIO
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-import json
-import zipfile
-from io import BytesIO
 from django.core.files import File
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
+from django.urls import reverse
+from django.db import connections
+
 from .models import VideoProject, LongMixProject, ShortVideoProject, LyricVideoProject
 from .services.renderer import VideoStudioRenderer
 from .services.mix_engine import MixEngineService
 from .services.shorts_engine import ShortsEngineService
 from .services.lyrics_engine import LyricsEngineService
+from .services.process_tracker import RenderProcessTracker
 from apps.videos.models import Video
 
 @login_required
@@ -168,14 +174,119 @@ def mix_maker_view(request):
     })
 
 
+def _execute_mix_render(project_id, collected_tracks, crossfade_seconds, transition_curve, render_video, normalize_volume):
+    from django.db import connections
+    connections.close_all()
+    try:
+        project = LongMixProject.objects.get(id=project_id)
+    except LongMixProject.DoesNotExist:
+        return
+
+    project_source_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'mix_source', str(project.id))
+    os.makedirs(project_source_dir, exist_ok=True)
+    mix_output_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'mixes')
+    os.makedirs(mix_output_dir, exist_ok=True)
+    RenderProcessTracker.clear_cancelled('mix', project.id)
+
+    try:
+        RenderProcessTracker.set_progress('mix', project.id, 5, 'Analyzing audio tracks and calculating cue points...')
+        if RenderProcessTracker.is_cancelled('mix', project.id):
+            project.render_status = LongMixProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+            project.save()
+            return
+
+        # 1. Calculate timeline and exact start timestamps
+        timeline, total_duration = MixEngineService.calculate_track_timeline(
+            collected_tracks,
+            crossfade_seconds=crossfade_seconds
+        )
+
+        if RenderProcessTracker.is_cancelled('mix', project.id):
+            project.render_status = LongMixProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+            project.save()
+            return
+
+        # 2. Render continuous master audio
+        RenderProcessTracker.set_progress('mix', project.id, 25, f'Blending {len(timeline)} audio tracks with {crossfade_seconds}s crossfade...')
+        audio_paths = [t['path'] for t in timeline]
+        out_audio_filename = f"mix_{project.id}_master.mp3"
+        out_audio_path = os.path.join(mix_output_dir, out_audio_filename)
+
+        MixEngineService.render_continuous_mix(
+            audio_paths=audio_paths,
+            output_mp3_path=out_audio_path,
+            crossfade_seconds=crossfade_seconds,
+            transition_curve=transition_curve,
+            normalize_volume=normalize_volume,
+            project_id=project.id
+        )
+
+        if RenderProcessTracker.is_cancelled('mix', project.id):
+            project.render_status = LongMixProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+            project.save()
+            return
+
+        with open(out_audio_path, 'rb') as f:
+            project.output_audio.save(out_audio_filename, File(f), save=False)
+
+        # 3. Optionally render 1080p MP4 video
+        if render_video:
+            RenderProcessTracker.set_progress('mix', project.id, 65, 'Encoding 1080p HD YouTube video canvas with artwork...')
+            artwork_path = project.cover_image.path if project.cover_image else None
+            out_video_filename = f"mix_{project.id}_1080p.mp4"
+            out_video_path = os.path.join(mix_output_dir, out_video_filename)
+
+            MixEngineService.render_mix_video(
+                artwork_path=artwork_path,
+                audio_path=out_audio_path,
+                output_mp4_path=out_video_path,
+                title=project.title,
+                project_id=project.id
+            )
+
+            if RenderProcessTracker.is_cancelled('mix', project.id):
+                project.render_status = LongMixProject.Status.CANCELLED
+                project.error_message = "Rendering cancelled by user."
+                project.save()
+                return
+
+            with open(out_video_path, 'rb') as f:
+                project.output_video.save(out_video_filename, File(f), save=False)
+
+        # 4. Save metadata
+        project.track_count = len(timeline)
+        project.duration_seconds = int(total_duration)
+        project.tracklist_data = timeline
+        project.render_status = LongMixProject.Status.COMPLETED
+        project.save()
+        RenderProcessTracker.set_progress('mix', project.id, 100, f"Non-Stop Mix with {len(timeline)} tracks ready!")
+
+    except Exception as e:
+        if RenderProcessTracker.is_cancelled('mix', project.id):
+            project.render_status = LongMixProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+        else:
+            project.render_status = LongMixProject.Status.FAILED
+            project.error_message = str(e)
+        project.save()
+    finally:
+        connections.close_all()
+
+
 @login_required
 @require_POST
 def mix_render_view(request):
     """
     Processes multiple audio tracks in exact user-configured order, calculates timeline,
     blends via FFmpeg acrossfade, and optionally renders 1080p MP4 long mix video.
+    Supports asynchronous execution with live progress polling and cancellation.
     """
     if not request.user.is_super_admin:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
         messages.error(request, "Access denied. Super Admin privileges required.")
         return redirect('dashboard')
 
@@ -202,8 +313,6 @@ def mix_render_view(request):
 
     project_source_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'mix_source', str(project.id))
     os.makedirs(project_source_dir, exist_ok=True)
-    mix_output_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'mixes')
-    os.makedirs(mix_output_dir, exist_ok=True)
 
     try:
         collected_tracks = []
@@ -287,60 +396,47 @@ def mix_render_view(request):
                         pass
 
         if not collected_tracks:
-            raise ValueError("No valid audio tracks could be processed for mixing. Please add at least 1 audio track.")
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'No valid audio tracks could be processed for mixing. Please add at least 1 audio track.'}, status=400)
+            messages.error(request, "No valid audio tracks could be processed for mixing. Please add at least 1 audio track.")
+            return redirect('mix_maker')
 
-        # 1. Calculate timeline and exact start timestamps
-        timeline, total_duration = MixEngineService.calculate_track_timeline(
-            collected_tracks,
-            crossfade_seconds=crossfade_seconds
-        )
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('async') == '1'
 
-        # 2. Render continuous master audio
-        audio_paths = [t['path'] for t in timeline]
-        out_audio_filename = f"mix_{project.id}_master.mp3"
-        out_audio_path = os.path.join(mix_output_dir, out_audio_filename)
-
-        MixEngineService.render_continuous_mix(
-            audio_paths=audio_paths,
-            output_mp3_path=out_audio_path,
-            crossfade_seconds=crossfade_seconds,
-            transition_curve=transition_curve,
-            normalize_volume=normalize_volume
-        )
-
-        with open(out_audio_path, 'rb') as f:
-            project.output_audio.save(out_audio_filename, File(f), save=False)
-
-        # 3. Optionally render 1080p MP4 video
-        if render_video:
-            artwork_path = project.cover_image.path if project.cover_image else None
-            out_video_filename = f"mix_{project.id}_1080p.mp4"
-            out_video_path = os.path.join(mix_output_dir, out_video_filename)
-
-            MixEngineService.render_mix_video(
-                artwork_path=artwork_path,
-                audio_path=out_audio_path,
-                output_mp4_path=out_video_path,
-                title=project.title
+        if is_ajax:
+            # Launch render in daemon worker thread
+            thread = threading.Thread(
+                target=_execute_mix_render,
+                args=(project.id, collected_tracks, crossfade_seconds, transition_curve, render_video, normalize_volume),
+                daemon=True
             )
+            thread.start()
 
-            with open(out_video_path, 'rb') as f:
-                project.output_video.save(out_video_filename, File(f), save=False)
+            return JsonResponse({
+                'success': True,
+                'project_id': project.id,
+                'project_type': 'mix',
+                'title': project.title,
+                'redirect_url': reverse('mix_detail', kwargs={'pk': project.id})
+            })
 
-        # 4. Save metadata
-        project.track_count = len(timeline)
-        project.duration_seconds = int(total_duration)
-        project.tracklist_data = timeline
-        project.render_status = LongMixProject.Status.COMPLETED
-        project.save()
-
-        messages.success(request, f"Successfully created nonstop mix '{project.title}' with {project.track_count} tracks ({project.duration_formatted})!")
+        # Synchronous execution fallback for direct POST
+        _execute_mix_render(project.id, collected_tracks, crossfade_seconds, transition_curve, render_video, normalize_volume)
+        project.refresh_from_db()
+        if project.render_status == LongMixProject.Status.COMPLETED:
+            messages.success(request, f"Successfully created nonstop mix '{project.title}' with {project.track_count} tracks ({project.duration_formatted})!")
+        elif project.render_status == LongMixProject.Status.CANCELLED:
+            messages.warning(request, f"Rendering was cancelled for '{project.title}'.")
+        else:
+            messages.error(request, f"Mix rendering notice: {project.error_message}")
         return redirect('mix_detail', pk=project.id)
 
     except Exception as e:
         project.render_status = LongMixProject.Status.FAILED
         project.error_message = str(e)
         project.save()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': f"Mix rendering notice: {str(e)}"}, status=500)
         messages.error(request, f"Mix rendering notice: {str(e)}")
         return redirect('mix_detail', pk=project.id)
 
@@ -434,55 +530,24 @@ def shorts_maker_view(request):
         'source_choices': ShortVideoProject.SourceType.choices,
         'aspect_choices': ShortVideoProject.AspectMode.choices,
         'theme_choices': ShortVideoProject.ThemeStyle.choices,
+        'hook_position_choices': ShortVideoProject.HookPosition.choices,
     })
 
 
-@login_required
-@require_POST
-def shorts_render_view(request):
-    """
-    Processes the uploaded long video or audio+cover, applies chop cuts, renders 1080x1920 (9:16)
-    vertical clips with blurred backgrounds and hook overlays, and stores output files.
-    """
-    if not request.user.is_super_admin:
-        messages.error(request, "Access denied. Super Admin privileges required.")
-        return redirect('dashboard')
-
-    title = request.POST.get('title', '').strip() or 'My Viral Shorts & Reels'
-    source_type = request.POST.get('source_type', ShortVideoProject.SourceType.VIDEO)
-    aspect_mode = request.POST.get('aspect_mode', ShortVideoProject.AspectMode.BLURRED_FIT)
-    theme_style = request.POST.get('theme_style', ShortVideoProject.ThemeStyle.VIRAL_HOOK)
-
-    source_video = request.FILES.get('source_video')
-    audio_file = request.FILES.get('audio_file')
-    cover_image = request.FILES.get('cover_image')
-    chops_json = request.POST.get('chops_json', '').strip()
-
-    if source_type == ShortVideoProject.SourceType.VIDEO and not source_video:
-        messages.error(request, "Please upload a video file (.mp4, .mov, .mkv).")
-        return redirect('shorts_maker')
-
-    if source_type == ShortVideoProject.SourceType.AUDIO_COVER and (not audio_file or not cover_image):
-        messages.error(request, "Please upload both an audio file and a cover image.")
-        return redirect('shorts_maker')
-
-    # Create project record
-    project = ShortVideoProject.objects.create(
-        title=title,
-        source_type=source_type,
-        source_video=source_video,
-        audio_file=audio_file,
-        cover_image=cover_image,
-        aspect_mode=aspect_mode,
-        theme_style=theme_style,
-        render_status=ShortVideoProject.Status.RENDERING
-    )
+def _execute_shorts_render(project_id, chops, aspect_mode, theme_style, crop_focal_percent, source_type, hook_position='TOP'):
+    from django.db import connections
+    connections.close_all()
+    try:
+        project = ShortVideoProject.objects.get(id=project_id)
+    except ShortVideoProject.DoesNotExist:
+        return
 
     project_output_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'shorts_output', str(project.id))
     os.makedirs(project_output_dir, exist_ok=True)
+    RenderProcessTracker.clear_cancelled('shorts', project.id)
 
     try:
-        # Determine source duration
+        RenderProcessTracker.set_progress('shorts', project.id, 5, 'Inspecting media duration...')
         if source_type == ShortVideoProject.SourceType.VIDEO:
             src_path = project.source_video.path
             total_duration = ShortsEngineService.inspect_media_duration(src_path)
@@ -491,32 +556,34 @@ def shorts_render_view(request):
             total_duration = ShortsEngineService.inspect_media_duration(src_path)
 
         project.duration_seconds = total_duration
-
-        # Parse or generate chops
-        chops = []
-        if chops_json:
-            try:
-                parsed = json.loads(chops_json)
-                if isinstance(parsed, list) and len(parsed) > 0:
-                    chops = parsed
-            except Exception:
-                pass
+        project.save(update_fields=['duration_seconds'])
 
         if not chops:
             chops = ShortsEngineService.generate_chop_splits(total_duration, interval_seconds=15.0)
 
-        rendered_chops = []
-        first_output_path = None
+        import concurrent.futures
 
-        for idx, chop in enumerate(chops):
+        total_chops = max(1, len(chops))
+        RenderProcessTracker.set_progress('shorts', project.id, 10, f"Encoding {total_chops} vertical 9:16 chops with FFmpeg...")
+        rendered_chops_map = {}
+        completed_count = 0
+        progress_lock = threading.Lock()
+
+        def _encode_single_chop(idx_and_chop):
+            idx, chop = idx_and_chop
+            if RenderProcessTracker.is_cancelled('shorts', project.id):
+                return None
+
             chop_id = idx + 1
             chop_title = chop.get('title', f"Part {chop_id}")
             hook_text = chop.get('hook_text', '')
+            chop_hook_pos = chop.get('hook_position') or hook_position or getattr(project, 'hook_position', 'TOP') or 'TOP'
             start_s = float(chop.get('start_seconds', 0.0))
             end_s = float(chop.get('end_seconds', start_s + 15.0))
             dur_s = max(1.0, round(end_s - start_s, 2))
 
-            out_filename = f"short_{project.id}_part{chop_id}.mp4"
+            safe_proj_title = "".join(c for c in project.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_') or f"short_{project.id}"
+            out_filename = f"{safe_proj_title}_part{chop_id}.mp4"
             out_path = os.path.join(project_output_dir, out_filename)
             overlay_png = os.path.join(project_output_dir, f"overlay_part{chop_id}.png")
 
@@ -526,6 +593,7 @@ def shorts_render_view(request):
                     hook_text=hook_text,
                     part_label=f"Part {chop_id}",
                     theme=theme_style,
+                    hook_position=chop_hook_pos,
                     width=1080,
                     height=1920,
                     output_png_path=overlay_png
@@ -541,7 +609,9 @@ def shorts_render_view(request):
                     start_seconds=start_s,
                     duration_seconds=dur_s,
                     aspect_mode=aspect_mode,
-                    overlay_png_path=overlay_png
+                    overlay_png_path=overlay_png,
+                    crop_focal_percent=crop_focal_percent,
+                    project_id=project.id
                 )
             else:
                 ShortsEngineService.render_audio_cover_chop(
@@ -550,7 +620,8 @@ def shorts_render_view(request):
                     output_mp4_path=out_path,
                     start_seconds=start_s,
                     duration_seconds=dur_s,
-                    overlay_png_path=overlay_png
+                    overlay_png_path=overlay_png,
+                    project_id=project.id
                 )
 
             # Cleanup overlay PNG
@@ -560,21 +631,52 @@ def shorts_render_view(request):
                 except Exception:
                     pass
 
+            nonlocal completed_count
+            with progress_lock:
+                completed_count += 1
+                pct = int(10 + (completed_count / total_chops) * 80)
+                RenderProcessTracker.set_progress(
+                    'shorts', project.id, pct,
+                    f"Encoded Chop {completed_count}/{total_chops}: '{chop_title}' ({dur_s}s)..."
+                )
+
             rel_url = f"{settings.MEDIA_URL}studio/shorts_output/{project.id}/{out_filename}"
-            rendered_chops.append({
+            return idx, {
                 'id': chop_id,
                 'title': chop_title,
                 'hook_text': hook_text,
+                'hook_position': chop_hook_pos,
                 'start_seconds': start_s,
                 'end_seconds': end_s,
                 'duration': dur_s,
                 'output_file': out_filename,
                 'output_url': rel_url,
                 'status': 'COMPLETED'
-            })
+            }, out_path
 
-            if idx == 0:
-                first_output_path = out_path
+        max_workers = min(3, max(1, len(chops)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_encode_single_chop, item) for item in enumerate(chops)]
+            for future in concurrent.futures.as_completed(futures):
+                res = future.result()
+                if res:
+                    idx, chop_info, out_file_path = res
+                    rendered_chops_map[idx] = (chop_info, out_file_path)
+
+        if RenderProcessTracker.is_cancelled('shorts', project.id):
+            project.render_status = ShortVideoProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+            project.save()
+            return
+
+        rendered_chops = [rendered_chops_map[i][0] for i in range(len(chops)) if i in rendered_chops_map]
+        first_output_path = rendered_chops_map[0][1] if 0 in rendered_chops_map else None
+
+        if RenderProcessTracker.is_cancelled('shorts', project.id):
+            project.render_status = ShortVideoProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+            project.save()
+            return
 
         # Link first rendered chop to project.output_video
         if first_output_path and os.path.exists(first_output_path):
@@ -585,16 +687,111 @@ def shorts_render_view(request):
         project.chop_count = len(rendered_chops)
         project.render_status = ShortVideoProject.Status.COMPLETED
         project.save()
-
-        messages.success(request, f"Successfully created {project.chop_count} vertical 9:16 shorts for '{project.title}'!")
-        return redirect('shorts_detail', pk=project.id)
+        RenderProcessTracker.set_progress('shorts', project.id, 100, f"All {len(rendered_chops)} vertical shorts ready!")
 
     except Exception as e:
-        project.render_status = ShortVideoProject.Status.FAILED
-        project.error_message = str(e)
+        if RenderProcessTracker.is_cancelled('shorts', project.id):
+            project.render_status = ShortVideoProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+        else:
+            project.render_status = ShortVideoProject.Status.FAILED
+            project.error_message = str(e)
         project.save()
-        messages.error(request, f"Shorts generation error: {str(e)}")
-        return redirect('shorts_detail', pk=project.id)
+    finally:
+        connections.close_all()
+
+
+@login_required
+@require_POST
+def shorts_render_view(request):
+    """
+    Handles form submission to render 9:16 vertical shorts from video or audio.
+    Supports asynchronous execution with live progress polling and cancellation.
+    """
+    if not request.user.is_super_admin:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    title = request.POST.get('title', '').strip() or 'My Viral Shorts'
+    source_type = request.POST.get('source_type', ShortVideoProject.SourceType.VIDEO)
+    aspect_mode = request.POST.get('aspect_mode', ShortVideoProject.AspectMode.BLURRED_FIT)
+    crop_focal_percent = int(request.POST.get('crop_focal_percent', 50))
+    theme_style = request.POST.get('theme_style', ShortVideoProject.ThemeStyle.VIRAL_HOOK)
+    hook_position = request.POST.get('hook_position', ShortVideoProject.HookPosition.TOP)
+
+    source_video = request.FILES.get('source_video')
+    audio_file = request.FILES.get('audio_file')
+    cover_image = request.FILES.get('cover_image')
+    chops_json = request.POST.get('chops_json', '').strip()
+
+    if source_type == ShortVideoProject.SourceType.VIDEO and not source_video:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Please upload a video file (.mp4, .mov, .mkv).'}, status=400)
+        messages.error(request, "Please upload a video file (.mp4, .mov, .mkv).")
+        return redirect('shorts_maker')
+
+    if source_type == ShortVideoProject.SourceType.AUDIO_COVER and (not audio_file or not cover_image):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Please upload both an audio file and a cover image.'}, status=400)
+        messages.error(request, "Please upload both an audio file and a cover image.")
+        return redirect('shorts_maker')
+
+    # Parse chops
+    chops = []
+    if chops_json:
+        try:
+            parsed = json.loads(chops_json)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                chops = parsed
+        except Exception:
+            pass
+
+    # Create project record
+    project = ShortVideoProject.objects.create(
+        title=title,
+        source_type=source_type,
+        source_video=source_video,
+        audio_file=audio_file,
+        cover_image=cover_image,
+        aspect_mode=aspect_mode,
+        crop_focal_percent=crop_focal_percent,
+        theme_style=theme_style,
+        hook_position=hook_position,
+        chops_data=chops,
+        render_status=ShortVideoProject.Status.RENDERING
+    )
+
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('async') == '1'
+
+    if is_ajax:
+        # Launch render in daemon worker thread
+        thread = threading.Thread(
+            target=_execute_shorts_render,
+            args=(project.id, chops, aspect_mode, theme_style, crop_focal_percent, source_type, hook_position),
+            daemon=True
+        )
+        thread.start()
+
+        return JsonResponse({
+            'success': True,
+            'project_id': project.id,
+            'project_type': 'shorts',
+            'title': project.title,
+            'redirect_url': reverse('shorts_detail', kwargs={'pk': project.id})
+        })
+
+    # Synchronous execution fallback for direct POST
+    _execute_shorts_render(project.id, chops, aspect_mode, theme_style, crop_focal_percent, source_type, hook_position)
+    project.refresh_from_db()
+    if project.render_status == ShortVideoProject.Status.COMPLETED:
+        messages.success(request, f"Successfully created {project.chop_count} vertical 9:16 shorts for '{project.title}'!")
+    elif project.render_status == ShortVideoProject.Status.CANCELLED:
+        messages.warning(request, f"Rendering was cancelled for '{project.title}'.")
+    else:
+        messages.error(request, f"Shorts generation error: {project.error_message}")
+    return redirect('shorts_detail', pk=project.id)
 
 
 @login_required
@@ -734,6 +931,19 @@ def lyrics_render_view(request):
     highlight_color = request.POST.get('highlight_color', '#00E5FF').strip()
     text_color = request.POST.get('text_color', '#FFFFFF').strip()
     position_mode = request.POST.get('position_mode', 'CENTER').strip()
+    
+    # Advanced Typography Parameters
+    font_weight = request.POST.get('font_weight', 'bold').strip()
+    font_italic = request.POST.get('font_italic') == 'true'
+    letter_spacing = float(request.POST.get('letter_spacing') or 0.0)
+    line_height = float(request.POST.get('line_height') or 1.4)
+    text_transform = request.POST.get('text_transform', 'none').strip()
+    text_stroke_width = float(request.POST.get('text_stroke_width') or 2.5)
+    text_shadow_depth = float(request.POST.get('text_shadow_depth') or 2.0)
+    font_scale_x = int(request.POST.get('font_scale_x') or 100)
+    font_scale_y = int(request.POST.get('font_scale_y') or 100)
+    bg_opacity = int(request.POST.get('bg_opacity') or 0)
+
     lyrics_raw_text = request.POST.get('lyrics_raw_text', '').strip()
 
     audio_file = request.FILES.get('audio_file')
@@ -770,9 +980,167 @@ def lyrics_render_view(request):
         except Exception:
             pass
 
+def _execute_lyrics_render(project_id, title, artist_name, loop_video):
+    from django.db import connections
+    connections.close_all()
+    try:
+        project = LyricVideoProject.objects.get(id=project_id)
+    except LyricVideoProject.DoesNotExist:
+        return
+
+    lyrics_output_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'lyrics_output')
+    os.makedirs(lyrics_output_dir, exist_ok=True)
+    safe_title = "".join(c for c in (title or project.title) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+    safe_artist = "".join(c for c in (artist_name or project.artist_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+    prefix = f"{safe_artist}_{safe_title}" if (safe_artist and safe_title) else (safe_title or f"lyrics_{project.id}")
+    out_filename = f"{prefix}_lyrics_{project.id}.mp4"
+    out_path = os.path.join(lyrics_output_dir, out_filename)
+    RenderProcessTracker.clear_cancelled('lyrics', project.id)
+
+    try:
+        audio_path = project.audio_file.path if project.audio_file else None
+        bg_vid_path = project.background_video.path if project.background_video else None
+        bg_img_path = project.background_image.path if project.background_image else None
+
+        primary_media = audio_path or bg_vid_path
+        duration = LyricsEngineService.inspect_media_duration(primary_media) if primary_media else 180.0
+
+        lyrics_data = project.lyrics_data
+        if not lyrics_data and project.lyrics_raw_text:
+            lyrics_data = LyricsEngineService.auto_distribute_raw_lyrics(project.lyrics_raw_text, total_duration=duration)
+            project.lyrics_data = lyrics_data
+            project.save(update_fields=['lyrics_data'])
+
+        render_res = LyricsEngineService.render_lyrics_video(
+            audio_path=audio_path,
+            background_image_path=bg_img_path,
+            background_video_path=bg_vid_path,
+            lyrics_data=lyrics_data,
+            output_video_path=out_path,
+            aspect_ratio=project.aspect_ratio,
+            animation_style=project.animation_style,
+            font_family=project.font_family,
+            font_size=project.font_size,
+            highlight_color=project.highlight_color,
+            text_color=project.text_color,
+            position_mode=project.position_mode,
+            font_weight=project.font_weight,
+            font_italic=project.font_italic,
+            letter_spacing=project.letter_spacing,
+            line_height=project.line_height,
+            text_transform=project.text_transform,
+            text_stroke_width=project.text_stroke_width,
+            text_shadow_depth=project.text_shadow_depth,
+            font_scale_x=project.font_scale_x,
+            font_scale_y=project.font_scale_y,
+            bg_opacity=project.bg_opacity,
+            title=title,
+            artist=artist_name,
+            loop_video=loop_video,
+            project_id=project.id
+        )
+
+        if RenderProcessTracker.is_cancelled('lyrics', project.id):
+            project.render_status = LyricVideoProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+            project.save()
+            return
+
+        project.output_video.name = f"studio/lyrics_output/{out_filename}"
+        project.duration_seconds = render_res.get('duration', duration)
+        project.render_status = LyricVideoProject.Status.COMPLETED
+        project.save()
+        RenderProcessTracker.set_progress('lyrics', project.id, 100, "1080p Lyric Video ready!")
+
+    except Exception as e:
+        if RenderProcessTracker.is_cancelled('lyrics', project.id):
+            project.render_status = LyricVideoProject.Status.CANCELLED
+            project.error_message = "Rendering cancelled by user."
+        else:
+            project.render_status = LyricVideoProject.Status.FAILED
+            project.error_message = str(e)
+        project.save()
+    finally:
+        connections.close_all()
+
+
+@login_required
+@require_POST
+def lyrics_render_view(request):
+    """
+    Handles form submission to render a 1080p Synced Lyric Video.
+    Supports asynchronous execution with live progress polling and cancellation.
+    """
+    if not request.user.is_super_admin:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    title = request.POST.get('title', '').strip() or 'My Synced Lyrics Video'
+    artist_name = request.POST.get('artist_name', '').strip()
+    animation_style = request.POST.get('animation_style', LyricVideoProject.AnimationStyle.KARAOKE_WIPE)
+    aspect_ratio = request.POST.get('aspect_ratio', LyricVideoProject.AspectRatio.LANDSCAPE_16_9)
+    font_family = request.POST.get('font_family', 'Arial').strip()
+    font_size = int(request.POST.get('font_size', 48))
+    highlight_color = request.POST.get('highlight_color', '#00E5FF').strip()
+    text_color = request.POST.get('text_color', '#FFFFFF').strip()
+    position_mode = request.POST.get('position_mode', LyricVideoProject.PositionMode.CENTER)
+
+    # Advanced typography settings
+    font_weight = request.POST.get('font_weight', 'bold').strip()
+    font_italic = request.POST.get('font_italic') in ('on', 'true', '1', True)
+    letter_spacing = float(request.POST.get('letter_spacing') or 0.0)
+    line_height = float(request.POST.get('line_height') or 1.4)
+    text_transform = request.POST.get('text_transform', 'none').strip()
+    text_stroke_width = float(request.POST.get('text_stroke_width') or 2.5)
+    text_shadow_depth = float(request.POST.get('text_shadow_depth') or 2.0)
+    font_scale_x = int(request.POST.get('font_scale_x') or 100)
+    font_scale_y = int(request.POST.get('font_scale_y') or 100)
+    bg_opacity = int(request.POST.get('bg_opacity') or 0)
+
+    lyrics_raw_text = request.POST.get('lyrics_raw_text', '').strip()
+
+    audio_file = request.FILES.get('audio_file')
+    replacement_audio = request.FILES.get('replacement_audio') or request.FILES.get('replacement_audio_file')
+    video_file = request.FILES.get('video_file') or request.FILES.get('background_video')
+    background_image = request.FILES.get('background_image')
+    lrc_file = request.FILES.get('lrc_file')
+    lyrics_data_raw = request.POST.get('lyrics_data', '').strip()
+
+    # If video file uploaded or mode is video, adjust source_type
+    if video_file:
+        source_type = LyricVideoProject.SourceType.VIDEO
+        final_audio = replacement_audio
+    else:
+        source_type = LyricVideoProject.SourceType.AUDIO_IMAGE
+        final_audio = audio_file
+
+    if not final_audio and not video_file:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Please upload an audio file (.mp3, .wav) or a video file (.mp4, .mov).'}, status=400)
+        messages.error(request, "Please upload an audio file (.mp3, .wav) or a video file (.mp4, .mov).")
+        return redirect('lyrics_maker')
+
+    # Parse or build lyrics data list
+    lyrics_data = []
+    if lyrics_data_raw:
+        try:
+            lyrics_data = json.loads(lyrics_data_raw)
+        except Exception:
+            lyrics_data = []
+
+    if not lyrics_data and lrc_file:
+        try:
+            lrc_text = lrc_file.read().decode('utf-8', errors='ignore')
+            lyrics_data = LyricsEngineService.parse_lrc_file(lrc_text)
+        except Exception:
+            pass
+
     if not lyrics_data and lyrics_raw_text:
-        # Auto-distribute raw lines across temporary estimation
         lyrics_data = LyricsEngineService.auto_distribute_raw_lyrics(lyrics_raw_text, total_duration=180.0)
+
+    loop_video = request.POST.get('loop_video') in ('on', 'true', '1', True) or ('loop_video' not in request.POST)
 
     # Create project record
     project = LyricVideoProject.objects.create(
@@ -791,61 +1159,48 @@ def lyrics_render_view(request):
         highlight_color=highlight_color,
         text_color=text_color,
         position_mode=position_mode,
+        font_weight=font_weight,
+        font_italic=font_italic,
+        letter_spacing=letter_spacing,
+        line_height=line_height,
+        text_transform=text_transform,
+        text_stroke_width=text_stroke_width,
+        text_shadow_depth=text_shadow_depth,
+        font_scale_x=font_scale_x,
+        font_scale_y=font_scale_y,
+        bg_opacity=bg_opacity,
         render_status=LyricVideoProject.Status.RENDERING
     )
 
-    lyrics_output_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'lyrics_output')
-    os.makedirs(lyrics_output_dir, exist_ok=True)
-    out_filename = f"studio_lyrics_{project.id}.mp4"
-    out_path = os.path.join(lyrics_output_dir, out_filename)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('async') == '1'
 
-    try:
-        audio_path = project.audio_file.path if project.audio_file else None
-        bg_vid_path = project.background_video.path if project.background_video else None
-        bg_img_path = project.background_image.path if project.background_image else None
-
-        primary_media = audio_path or bg_vid_path
-        duration = LyricsEngineService.inspect_media_duration(primary_media) if primary_media else 180.0
-
-        # If lyrics_data was auto-estimated, refine with actual audio/video duration
-        if (not lyrics_data_raw and not lrc_file) and lyrics_raw_text:
-            lyrics_data = LyricsEngineService.auto_distribute_raw_lyrics(lyrics_raw_text, total_duration=duration)
-            project.lyrics_data = lyrics_data
-
-        loop_video = request.POST.get('loop_video') in ('on', 'true', '1', True) or ('loop_video' not in request.POST)
-
-        render_res = LyricsEngineService.render_lyrics_video(
-            audio_path=audio_path,
-            background_image_path=bg_img_path,
-            background_video_path=bg_vid_path,
-            lyrics_data=lyrics_data,
-            output_video_path=out_path,
-            aspect_ratio=aspect_ratio,
-            animation_style=animation_style,
-            font_family=font_family,
-            font_size=font_size,
-            highlight_color=highlight_color,
-            text_color=text_color,
-            position_mode=position_mode,
-            title=title,
-            artist=artist_name,
-            loop_video=loop_video
+    if is_ajax:
+        # Launch render in daemon worker thread
+        thread = threading.Thread(
+            target=_execute_lyrics_render,
+            args=(project.id, title, artist_name, loop_video),
+            daemon=True
         )
+        thread.start()
 
-        project.output_video.name = f"studio/lyrics_output/{out_filename}"
-        project.duration_seconds = render_res.get('duration', duration)
-        project.render_status = LyricVideoProject.Status.COMPLETED
-        project.save()
+        return JsonResponse({
+            'success': True,
+            'project_id': project.id,
+            'project_type': 'lyrics',
+            'title': project.title,
+            'redirect_url': reverse('lyrics_detail', kwargs={'pk': project.id})
+        })
 
+    # Synchronous execution fallback for direct POST
+    _execute_lyrics_render(project.id, title, artist_name, loop_video)
+    project.refresh_from_db()
+    if project.render_status == LyricVideoProject.Status.COMPLETED:
         messages.success(request, f"Successfully rendered 1080p Lyric Video for '{project.title}'!")
-        return redirect('lyrics_detail', pk=project.id)
-
-    except Exception as e:
-        project.render_status = LyricVideoProject.Status.FAILED
-        project.error_message = str(e)
-        project.save()
-        messages.error(request, f"Lyric video generation error: {str(e)}")
-        return redirect('lyrics_detail', pk=project.id)
+    elif project.render_status == LyricVideoProject.Status.CANCELLED:
+        messages.warning(request, f"Rendering was cancelled for '{project.title}'.")
+    else:
+        messages.error(request, f"Lyric video generation error: {project.error_message}")
+    return redirect('lyrics_detail', pk=project.id)
 
 
 @login_required
@@ -909,6 +1264,92 @@ def lyrics_export_lrc_view(request, pk):
     
     response = HttpResponse(lrc_content, content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="{safe_title}.lrc"'
+    return response
+
+
+@login_required
+def lyrics_download_video_view(request, pk):
+    """
+    Downloads the rendered 1080p lyric video with the inputted song title filename.
+    """
+    if not request.user.is_super_admin:
+        return HttpResponse("Access denied", status=403)
+
+    project = get_object_or_404(LyricVideoProject, pk=pk)
+    if not project.output_video or not os.path.exists(project.output_video.path):
+        messages.error(request, "Output video file not found on disk.")
+        return redirect('lyrics_detail', pk=pk)
+
+    filename = project.export_filename
+    response = FileResponse(open(project.output_video.path, 'rb'), content_type='video/mp4')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_POST
+def lyrics_update_data_api(request, pk):
+    """
+    Updates the synchronized lyrics JSON data and spellings for an existing project.
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
+
+    project = get_object_or_404(LyricVideoProject, pk=pk)
+    lyrics_json = request.POST.get('lyrics_data', '').strip()
+    title = request.POST.get('title', '').strip()
+    artist_name = request.POST.get('artist_name', '').strip()
+
+    if title:
+        project.title = title
+    if artist_name is not None:
+        project.artist_name = artist_name
+
+    if lyrics_json:
+        try:
+            parsed = json.loads(lyrics_json)
+            if isinstance(parsed, list):
+                project.lyrics_data = parsed
+        except Exception as e:
+            return JsonResponse({'error': f'Invalid lyrics JSON: {str(e)}'}, status=400)
+
+    project.save()
+    return JsonResponse({
+        'success': True,
+        'message': f"Lyrics updated successfully for '{project.title}'!",
+        'title': project.title,
+        'artist_name': project.artist_name,
+        'export_filename': project.export_filename,
+        'youtube_title': project.youtube_title,
+        'youtube_description': project.youtube_description
+    })
+
+
+@login_required
+def shorts_download_chop_view(request, pk, chop_idx):
+    """
+    Downloads a specific chop clip from a shorts project with the project/song title.
+    """
+    if not request.user.is_super_admin:
+        return HttpResponse("Access denied", status=403)
+
+    project = get_object_or_404(ShortVideoProject, pk=pk)
+    chops = project.chops_data or []
+    if chop_idx < 0 or chop_idx >= len(chops):
+        return HttpResponse("Chop not found", status=404)
+
+    chop = chops[chop_idx]
+    out_file = chop.get('output_file')
+    if not out_file:
+        return HttpResponse("Output video not ready", status=404)
+
+    full_path = os.path.join(settings.MEDIA_ROOT, 'studio', 'shorts_output', str(project.id), out_file)
+    if not os.path.exists(full_path):
+        return HttpResponse("File not found on server", status=404)
+
+    filename = project.export_filename_for_chop(chop_idx)
+    response = FileResponse(open(full_path, 'rb'), content_type='video/mp4')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 
@@ -1071,6 +1512,94 @@ def lyrics_ai_transcribe_api(request):
                 os.remove(temp_media_path)
             except Exception:
                 pass
+
+
+@login_required
+@require_POST
+def studio_cancel_render_view(request, project_type, pk):
+    """
+    Cancels an in-progress video rendering job for any project type
+    (shorts, lyrics, mix, loop).
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
+
+    model_map = {
+        'shorts': ShortVideoProject,
+        'lyrics': LyricVideoProject,
+        'mix': LongMixProject,
+        'loop': VideoProject,
+    }
+
+    model_cls = model_map.get(project_type.lower())
+    if not model_cls:
+        return JsonResponse({'error': 'Invalid project type.'}, status=400)
+
+    try:
+        project = model_cls.objects.get(pk=pk)
+        RenderProcessTracker.cancel(project_type, pk)
+        project.render_status = getattr(model_cls.Status, 'CANCELLED', 'CANCELLED')
+        project.error_message = "Rendering cancelled by user."
+        project.save()
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({'success': True, 'message': f'Rendering for project #{pk} cancelled.'})
+
+        messages.info(request, f"Cancelled rendering for '{project.title}'.")
+        return redirect('studio_home')
+    except model_cls.DoesNotExist:
+        return JsonResponse({'error': 'Project not found.'}, status=404)
+
+
+@login_required
+def studio_render_progress_view(request, project_type, pk):
+    """
+    Live API polling endpoint:
+    Returns the real-time render percentage, current step description, elapsed seconds,
+    and completion redirect URL for any active studio project.
+    """
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Super Admin privileges required.'}, status=403)
+
+    model_map = {
+        'shorts': (ShortVideoProject, 'shorts_detail'),
+        'lyrics': (LyricVideoProject, 'lyrics_detail'),
+        'mix': (LongMixProject, 'mix_detail'),
+        'loop': (VideoProject, 'studio_home'),
+    }
+
+    config = model_map.get(str(project_type).lower())
+    if not config:
+        return JsonResponse({'error': 'Invalid project type.'}, status=400)
+
+    model_cls, detail_url_name = config
+    try:
+        project = model_cls.objects.get(pk=pk)
+    except model_cls.DoesNotExist:
+        return JsonResponse({'error': 'Project not found.'}, status=404)
+
+    progress_info = RenderProcessTracker.get_progress(project_type, pk)
+    elapsed = round(time.time() - progress_info.get('started_at', time.time()), 1)
+
+    status = project.render_status
+    if RenderProcessTracker.is_cancelled(project_type, pk):
+        status = 'CANCELLED'
+
+    redirect_url = reverse(detail_url_name, kwargs={'pk': pk}) if detail_url_name != 'studio_home' else reverse('studio_home')
+
+    return JsonResponse({
+        'success': True,
+        'project_id': project.id,
+        'project_type': project_type,
+        'title': project.title,
+        'status': status,
+        'progress': 100 if status == 'COMPLETED' else progress_info.get('pct', 0),
+        'step': progress_info.get('step', 'Processing video frames...'),
+        'elapsed_seconds': elapsed,
+        'error_message': getattr(project, 'error_message', ''),
+        'redirect_url': redirect_url
+    })
+
 
 
 

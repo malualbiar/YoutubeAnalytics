@@ -47,6 +47,30 @@ class VideoStudioRenderer:
         )
 
     @classmethod
+    def get_subprocess_kwargs(cls):
+        kwargs = {}
+        if sys.platform == 'win32':
+            kwargs['creationflags'] = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
+        return kwargs
+
+    @classmethod
+    def get_optimal_encoder_args(cls, is_still_image=False, crf=20):
+        """
+        Returns high-speed optimal video encoder arguments with multi-threading.
+        Uses libx264 with -preset veryfast and -threads 0 for maximum multi-core CPU throughput.
+        """
+        args = [
+            '-c:v', 'libx264',
+            '-preset', 'veryfast',
+            '-crf', str(crf),
+            '-threads', '0',
+            '-pix_fmt', 'yuv420p',
+        ]
+        if is_still_image:
+            args.extend(['-tune', 'stillimage'])
+        return args
+
+    @classmethod
     def prepare_16_9_background(cls, artwork_path, output_bg_path):
         """
         Creates a crisp 1920x1080 16:9 canvas with blurred background and centered cover art.
@@ -105,15 +129,13 @@ class VideoStudioRenderer:
                 '-stream_loop', '-1',
                 '-i', audio_path,
                 '-t', str(duration_seconds),
-                '-c:v', 'libx264',
-                '-tune', 'stillimage',
+                *cls.get_optimal_encoder_args(is_still_image=True),
                 '-c:a', 'aac',
                 '-b:a', '192k',
-                '-pix_fmt', 'yuv420p',
                 output_mp4_path
             ]
 
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **cls.get_subprocess_kwargs())
             return output_mp4_path
         finally:
             if os.path.exists(temp_bg):
@@ -142,16 +164,14 @@ class VideoStudioRenderer:
                 '-loop', '1',
                 '-i', temp_bg,
                 '-i', audio_path,
-                '-c:v', 'libx264',
-                '-tune', 'stillimage',
+                *cls.get_optimal_encoder_args(is_still_image=True),
                 '-c:a', 'aac',
                 '-b:a', '192k',
-                '-pix_fmt', 'yuv420p',
                 '-shortest',
                 output_mp4_path
             ]
 
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **cls.get_subprocess_kwargs())
             return output_mp4_path
         finally:
             if os.path.exists(temp_bg):
@@ -182,16 +202,14 @@ class VideoStudioRenderer:
                 '-ss', str(start_seconds),
                 '-t', str(duration_seconds),
                 '-i', audio_path,
-                '-c:v', 'libx264',
-                '-tune', 'stillimage',
+                *cls.get_optimal_encoder_args(is_still_image=True),
                 '-c:a', 'aac',
                 '-b:a', '192k',
-                '-pix_fmt', 'yuv420p',
                 '-shortest',
                 output_mp4_path
             ]
 
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **cls.get_subprocess_kwargs())
             return output_mp4_path
         finally:
             if os.path.exists(temp_bg):

@@ -135,18 +135,42 @@ class YouTubeClient:
 
         return self._make_request('playlistItems', params, quota_cost=1)
 
+    def search_videos_by_channel(self, channel_id, max_results=50, page_token=None):
+        """
+        Search for videos published by a specific channel ID (Cost: 100 units).
+        Used as a reliable fallback for Topic channels or channels where uploads playlist is missing/restricted/404.
+        """
+        params = {
+            'part': 'snippet',
+            'channelId': channel_id,
+            'type': 'video',
+            'order': 'date',
+            'maxResults': min(max_results, 50)
+        }
+        if page_token:
+            params['pageToken'] = page_token
+
+        return self._make_request('search', params, quota_cost=100)
+
     def get_videos_batch(self, video_ids):
         """
-        Fetch statistics, snippet, and contentDetails for up to 50 videos in one call (Cost: 1 unit)
+        Fetch statistics, snippet, contentDetails, and topicDetails for video IDs in batches (Cost: 1 unit per 50).
         """
         if not video_ids:
             return []
-        
-        # Take up to 50 video IDs
-        ids_str = ','.join(video_ids[:50])
-        params = {
-            'part': 'snippet,statistics,contentDetails',
-            'id': ids_str
-        }
-        data = self._make_request('videos', params, quota_cost=1)
-        return data.get('items', [])
+
+        all_items = []
+        for i in range(0, len(video_ids), 50):
+            batch = video_ids[i:i + 50]
+            ids_str = ','.join(batch)
+            params = {
+                'part': 'snippet,statistics,contentDetails,topicDetails',
+                'id': ids_str
+            }
+            try:
+                data = self._make_request('videos', params, quota_cost=1)
+                all_items.extend(data.get('items', []))
+            except Exception as e:
+                logger.warning(f"Error fetching video batch: {e}")
+
+        return all_items

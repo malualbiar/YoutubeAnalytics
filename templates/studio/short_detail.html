@@ -24,7 +24,7 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-            <form method="POST" action="{% url 'publishing_batch_shorts' project.id %}" onsubmit="return confirm('Queue all {{ project.chop_count }} chops to YouTube drafts?');">
+            <form method="POST" action="{% url 'publishing_batch_shorts' project.id %}" data-confirm="Queue all {{ project.chop_count }} chops to YouTube drafts?">
                 {% csrf_token %}
                 <input type="hidden" name="privacy_status" value="private">
                 <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors flex items-center gap-2">
@@ -42,7 +42,7 @@
                 Chop Another
             </a>
 
-            <form method="POST" action="{% url 'shorts_delete' project.id %}" onsubmit="return confirm('Are you sure you want to delete this shorts project?');" class="inline">
+            <form method="POST" action="{% url 'shorts_delete' project.id %}" data-delete-confirm="Are you sure you want to delete shorts package '{{ project.title|escapejs }}'?" class="inline">
                 {% csrf_token %}
                 <button type="submit" class="p-2 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl border border-zinc-700/60 transition-colors" title="Delete Project">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -114,7 +114,7 @@
 
                             <div class="flex items-center gap-2">
                                 {% if chop.output_url %}
-                                <a href="{{ chop.output_url }}" download class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-lg border border-zinc-700/60 transition-colors" onclick="event.stopPropagation()">
+                                <a href="{% url 'shorts_download_chop' project.id forloop.counter0 %}" download class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-lg border border-zinc-700/60 transition-colors" onclick="event.stopPropagation()">
                                     Download .MP4
                                 </a>
                                 {% endif %}

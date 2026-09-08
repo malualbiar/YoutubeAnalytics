@@ -20,17 +20,23 @@ urlpatterns = [
     path('studio/shorts/<int:pk>/', views.shorts_detail_view, name='shorts_detail'),
     path('studio/shorts/<int:pk>/delete/', views.shorts_delete_view, name='shorts_delete'),
     path('studio/shorts/<int:pk>/export-zip/', views.shorts_export_zip_view, name='shorts_export_zip'),
+    path('studio/shorts/<int:pk>/download/<int:chop_idx>/', views.shorts_download_chop_view, name='shorts_download_chop'),
 
     # AI & Tap-to-Sync Lyrics Video Generator routes
     path('studio/lyrics/', views.lyrics_maker_view, name='lyrics_maker'),
     path('studio/lyrics/render/', views.lyrics_render_view, name='lyrics_render'),
     path('studio/lyrics/<int:pk>/', views.lyrics_detail_view, name='lyrics_detail'),
     path('studio/lyrics/<int:pk>/delete/', views.lyrics_delete_view, name='lyrics_delete'),
+    path('studio/lyrics/<int:pk>/download/', views.lyrics_download_video_view, name='lyrics_download_video'),
     path('studio/lyrics/<int:pk>/export-lrc/', views.lyrics_export_lrc_view, name='lyrics_export_lrc'),
+    path('studio/lyrics/<int:pk>/update-lyrics/', views.lyrics_update_data_api, name='lyrics_update_data_api'),
     path('studio/lyrics/api/parse/', views.lyrics_parse_api, name='lyrics_parse_api'),
     path('studio/lyrics/api/vocal-sync/', views.lyrics_vocal_sync_api, name='lyrics_vocal_sync_api'),
     path('studio/lyrics/api/search-online/', views.lyrics_online_search_api, name='lyrics_online_search_api'),
     path('studio/lyrics/api/ai-transcribe/', views.lyrics_ai_transcribe_api, name='lyrics_ai_transcribe_api'),
+    # Global Cancel Render and Progress routes
+    path('studio/cancel/<str:project_type>/<int:pk>/', views.studio_cancel_render_view, name='studio_cancel_render'),
+    path('studio/api/progress/<str:project_type>/<int:pk>/', views.studio_render_progress_view, name='studio_render_progress'),
 ]
 
 

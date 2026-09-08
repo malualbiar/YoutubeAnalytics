@@ -9,8 +9,13 @@ from PIL import Image, ImageFilter, ImageEnhance, ImageDraw, ImageFont
 
 from django.conf import settings
 from .renderer import VideoStudioRenderer
+from .process_tracker import RenderProcessTracker
 
 class MixEngineService:
+
+    @classmethod
+    def get_subprocess_kwargs(cls):
+        return VideoStudioRenderer.get_subprocess_kwargs()
 
     @classmethod
     def get_ffmpeg_binary(cls):
@@ -97,7 +102,7 @@ class MixEngineService:
         return timeline, total_mix_duration
 
     @classmethod
-    def render_continuous_mix(cls, audio_paths, output_mp3_path, crossfade_seconds=6, transition_curve='qsin', normalize_volume=True):
+    def render_continuous_mix(cls, audio_paths, output_mp3_path, crossfade_seconds=6, transition_curve='qsin', normalize_volume=True, project_id=None):
         """
         Takes an ordered list of audio file paths and blends them into a single seamless continuous MP3.
         Uses FFmpeg 'acrossfade' audio filter with sample rate & channel unification and dynamic duration safety.
@@ -125,7 +130,30 @@ class MixEngineService:
                 '-b:a', '256k',
                 output_mp3_path
             ]
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore', **cls.get_subprocess_kwargs())
+            if project_id:
+                RenderProcessTracker.register('mix', project_id, proc)
+            try:
+                while True:
+                    try:
+                        stdout, stderr = proc.communicate(timeout=0.5)
+                        break
+                    except subprocess.TimeoutExpired:
+                        if project_id and RenderProcessTracker.is_cancelled('mix', project_id):
+                            proc.kill()
+                            try:
+                                proc.communicate()
+                            except Exception:
+                                pass
+                            raise RuntimeError("Rendering cancelled by user.")
+            finally:
+                if project_id:
+                    RenderProcessTracker.unregister('mix', project_id, proc)
+
+            if proc.returncode != 0:
+                if project_id and RenderProcessTracker.is_cancelled('mix', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
+                raise RuntimeError(f"FFmpeg mix rendering failed: {stderr[-400:]}")
             return output_mp3_path
 
         # Determine transition curve parameters
@@ -182,14 +210,35 @@ class MixEngineService:
             output_mp3_path
         ]
 
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore')
-        if result.returncode != 0:
-            raise RuntimeError(f"FFmpeg mix rendering failed: {result.stderr[-400:]}")
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore', **cls.get_subprocess_kwargs())
+        if project_id:
+            RenderProcessTracker.register('mix', project_id, proc)
+        try:
+            while True:
+                try:
+                    stdout, stderr = proc.communicate(timeout=0.5)
+                    break
+                except subprocess.TimeoutExpired:
+                    if project_id and RenderProcessTracker.is_cancelled('mix', project_id):
+                        proc.kill()
+                        try:
+                            proc.communicate()
+                        except Exception:
+                            pass
+                        raise RuntimeError("Rendering cancelled by user.")
+        finally:
+            if project_id:
+                RenderProcessTracker.unregister('mix', project_id, proc)
+
+        if proc.returncode != 0:
+            if project_id and RenderProcessTracker.is_cancelled('mix', project_id):
+                raise RuntimeError("Rendering cancelled by user.")
+            raise RuntimeError(f"FFmpeg mix rendering failed: {stderr[-400:]}")
 
         return output_mp3_path
 
     @classmethod
-    def render_mix_video(cls, artwork_path, audio_path, output_mp4_path, title="Non-Stop Music Mix"):
+    def render_mix_video(cls, artwork_path, audio_path, output_mp4_path, title="Non-Stop Music Mix", project_id=None):
         """
         Renders a 1080p 16:9 YouTube video canvas for the continuous mix.
         Darkened blurred backdrop with centered crisp artwork and explicit duration bounds.
@@ -221,6 +270,8 @@ class MixEngineService:
                 '-t', str(round(audio_duration, 2)),
                 '-c:v', 'libx264',
                 '-tune', 'stillimage',
+                '-preset', 'veryfast',
+                '-threads', '0',
                 '-pix_fmt', 'yuv420p',
                 '-r', '1',
                 '-c:a', 'aac',
@@ -228,9 +279,30 @@ class MixEngineService:
                 output_mp4_path
             ]
 
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore')
-            if result.returncode != 0:
-                raise RuntimeError(f"FFmpeg video rendering failed: {result.stderr[-400:]}")
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore', **cls.get_subprocess_kwargs())
+            if project_id:
+                RenderProcessTracker.register('mix', project_id, proc)
+            try:
+                while True:
+                    try:
+                        stdout, stderr = proc.communicate(timeout=0.5)
+                        break
+                    except subprocess.TimeoutExpired:
+                        if project_id and RenderProcessTracker.is_cancelled('mix', project_id):
+                            proc.kill()
+                            try:
+                                proc.communicate()
+                            except Exception:
+                                pass
+                            raise RuntimeError("Rendering cancelled by user.")
+            finally:
+                if project_id:
+                    RenderProcessTracker.unregister('mix', project_id, proc)
+
+            if proc.returncode != 0:
+                if project_id and RenderProcessTracker.is_cancelled('mix', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
+                raise RuntimeError(f"FFmpeg video rendering failed: {stderr[-400:]}")
 
             return output_mp4_path
         finally:

@@ -84,9 +84,10 @@ class SyncService:
                 video_change=max(0, channel.video_count - prev_vids) if prev_vids else 0,
             )
 
-            # 2. Sync Videos from uploads playlist
+            # 2. Sync Videos from uploads playlist (with fallback to channel search)
             videos_data = self.video_service.fetch_channel_videos(
-                channel.uploads_playlist_id,
+                uploads_playlist_id=channel.uploads_playlist_id,
+                channel_id=channel.channel_id,
                 max_videos=max_videos
             )
 

@@ -206,7 +206,7 @@
                                 </form>
                                 {% endif %}
 
-                                <form method="POST" action="{% url 'publishing_delete_job' job.id %}" onsubmit="return confirm('Delete record for \'{{ job.title }}\'?');">
+                                <form method="POST" action="{% url 'publishing_delete_job' job.id %}" data-delete-confirm="Delete upload record for '{{ job.title|escapejs }}'?">
                                     {% csrf_token %}
                                     <button type="submit" class="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors" title="Delete record">
                                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>

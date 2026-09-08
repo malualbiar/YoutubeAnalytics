@@ -87,14 +87,17 @@
             <!-- Ingestion Grid: Multi-File Drag & Drop + Catalog Search -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <!-- Drop Zone -->
-                <div id="multiAudioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-zinc-950 flex flex-col items-center justify-center min-h-[160px]">
-                    <input type="file" id="trackFilesInput" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" multiple class="hidden">
-                    <div class="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 flex items-center justify-center mb-3 border border-zinc-800">
+                <input type="file" id="trackFilesInput" accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg,.aac,.aiff,.wma" multiple class="hidden">
+                <label for="trackFilesInput" id="multiAudioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-2xl p-6 text-center cursor-pointer transition-all bg-zinc-950 flex flex-col items-center justify-center min-h-[160px] group select-none">
+                    <div class="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 group-hover:text-emerald-400 flex items-center justify-center mb-2.5 border border-zinc-800 transition-colors pointer-events-none mx-auto">
                         <i data-lucide="upload" class="w-4 h-4"></i>
                     </div>
-                    <p class="text-sm font-bold text-white">Upload Audio Files</p>
-                    <p class="text-xs text-zinc-500 mt-1">Select multiple tracks (.mp3, .wav, .flac, .m4a)</p>
-                </div>
+                    <p class="text-sm font-bold text-white pointer-events-none">Upload Audio Files</p>
+                    <p class="text-xs text-zinc-500 mt-0.5 pointer-events-none">Drag & drop songs or click anywhere in this box</p>
+                    <span class="mt-3 px-3.5 py-1.5 bg-zinc-800 group-hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700 transition-colors pointer-events-none inline-block">
+                        Browse Audio Files
+                    </span>
+                </label>
 
                 <!-- Catalog / YouTube Quick Import Panel -->
                 <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between space-y-3">
@@ -209,24 +212,24 @@
                 <!-- Cover Artwork Upload -->
                 <div>
                     <label class="text-xs font-semibold text-zinc-300 block mb-1.5">Cover Artwork</label>
-                    <div id="mixCoverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-5 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[180px] flex flex-col items-center justify-center">
-                        <input type="file" name="cover_image" id="mixCoverInput" accept="image/*" class="hidden">
-                        <div id="mixCoverEmpty">
+                    <input type="file" name="cover_image" id="mixCoverInput" accept="image/*" class="hidden">
+                    <label for="mixCoverInput" id="mixCoverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-5 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[180px] flex flex-col items-center justify-center select-none group">
+                        <div id="mixCoverEmpty" class="pointer-events-none text-center">
                             <div class="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 flex items-center justify-center mx-auto mb-2 border border-zinc-800">
                                 <i data-lucide="image" class="w-4 h-4"></i>
                             </div>
                             <p class="text-xs font-semibold text-zinc-200">Select Mix Cover Artwork</p>
                             <p class="text-[10px] text-zinc-500 mt-0.5">1920x1080 or square image recommended</p>
                         </div>
-                        <div id="mixCoverSelected" class="hidden text-left w-full flex items-center gap-4">
+                        <div id="mixCoverSelected" class="hidden text-left w-full items-center gap-4 pointer-events-none">
                             <img id="mixCoverPreview" src="" alt="Cover" class="w-20 h-20 rounded-xl object-cover border border-zinc-800 shrink-0">
                             <div class="overflow-hidden">
                                 <p id="mixCoverFileName" class="text-xs font-bold text-white truncate"></p>
                                 <p class="text-[11px] text-emerald-400 mt-0.5">Ready for 1080p canvas</p>
-                                <button type="button" id="changeCoverBtn" class="mt-1 text-[10px] text-zinc-400 hover:text-white underline">Change Artwork</button>
+                                <span class="mt-1 text-[10px] text-zinc-400 group-hover:text-white underline block">Change Artwork</span>
                             </div>
                         </div>
-                    </div>
+                    </label>
                 </div>
             </div>
         </div>
@@ -238,7 +241,7 @@
                 <span>FFmpeg will normalize volume, apply smooth crossfades, and generate YouTube chapters.</span>
             </div>
 
-            <button type="submit" id="submitMixBtn" class="w-full sm:w-auto px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+            <button type="submit" id="submitMixBtn" class="w-full sm:w-auto px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer">
                 <i data-lucide="disc" class="w-4 h-4"></i>
                 <span id="btnText">Blend & Create Non-Stop Mix</span>
             </button>
@@ -246,35 +249,42 @@
     </form>
 </div>
 
-<!-- Progress Overlay Modal during rendering -->
-<div id="renderProgressModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+<!-- Live Rendering Progress Modal Overlay -->
+<div id="progressModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
-        <div class="w-12 h-12 rounded-2xl bg-zinc-800 text-emerald-400 flex items-center justify-center mx-auto border border-zinc-700">
-            <i data-lucide="disc" class="w-6 h-6 animate-spin"></i>
-        </div>
-
         <div>
-            <h4 class="text-base font-bold text-white" id="progressModalTitle">Blending Non-Stop Mix</h4>
-            <p class="text-xs text-zinc-400 mt-1" id="progressModalSubtitle">Processing audio tracks, crossfades, and video canvas...</p>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="disc" class="w-6 h-6 animate-spin"></i>
+            </div>
+            <h3 class="text-base font-bold text-white" id="progressTitle">Blending Non-Stop Music Mix...</h3>
+            <p class="text-xs text-zinc-400 mt-1" id="progressSubtitle">Processing crossfades, volume leveling, and video canvas.</p>
         </div>
 
-        <!-- Steps list -->
-        <div class="space-y-2.5 text-left text-xs bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-            <div class="flex items-center gap-2.5 text-zinc-300" id="step1">
-                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-                <span>1. Analyzing & packaging audio tracks</span>
+        <!-- Progress Bar -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+                <span id="progressStep" class="text-zinc-300 font-semibold truncate max-w-[260px] text-left">Analyzing & packaging audio tracks...</span>
+                <span id="progressPercent" class="text-emerald-400 font-bold">10%</span>
             </div>
-            <div class="flex items-center gap-2.5 text-zinc-200" id="step2">
-                <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-emerald-400"></i>
-                <span>2. Equal-power crossfading & volume leveling</span>
-            </div>
-            <div class="flex items-center gap-2.5 text-zinc-500" id="step3">
-                <i data-lucide="circle" class="w-4 h-4"></i>
-                <span>3. Rendering 1080p MP4 & YouTube chapters</span>
+            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 10%"></div>
             </div>
         </div>
 
-        <p class="text-[11px] text-zinc-500">Please do not close this window. Processing mix in background.</p>
+        <div class="flex items-center justify-between pt-2 border-t border-zinc-800 text-[11px] text-zinc-400">
+            <span id="elapsedTimer" class="font-mono">00:00</span>
+            <span class="text-emerald-400 font-medium flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                FFmpeg Local Processing
+            </span>
+        </div>
+
+        <div class="pt-2">
+            <button type="button" id="cancelRenderBtn" onclick="cancelActiveRendering()" class="w-full py-2.5 bg-zinc-800/80 hover:bg-rose-950 hover:border-rose-700 text-zinc-300 hover:text-rose-200 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+                Cancel Rendering
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -284,6 +294,10 @@
     let trackQueue = [];
     let currentAuditionAudio = null;
     let currentlyPlayingIndex = -1;
+    let activeRenderProjectId = null;
+    let renderPollInterval = null;
+    let renderTimerInterval = null;
+    let selectedCoverFile = null;
 
     const multiDropZone = document.getElementById('multiAudioDropZone');
     const trackFilesInput = document.getElementById('trackFilesInput');
@@ -302,43 +316,125 @@
     const crossfadeSlider = document.getElementById('crossfadeSlider');
     const crossfadeValDisplay = document.getElementById('crossfadeValDisplay');
 
+    const mixCoverDropZone = document.getElementById('mixCoverDropZone');
+    const mixCoverInput = document.getElementById('mixCoverInput');
+    const mixCoverEmpty = document.getElementById('mixCoverEmpty');
+    const mixCoverSelected = document.getElementById('mixCoverSelected');
+    const mixCoverPreview = document.getElementById('mixCoverPreview');
+    const mixCoverFileName = document.getElementById('mixCoverFileName');
+
+    // Prevent default window drop/dragover navigation hijacking (so dropping outside dropzones doesn't navigate)
+    window.addEventListener('dragover', (e) => e.preventDefault(), false);
+    window.addEventListener('drop', (e) => e.preventDefault(), false);
+
     // Crossfade Slider listener
-    crossfadeSlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        crossfadeValDisplay.textContent = `${val} Seconds Overlap`;
-        summaryCrossfade.textContent = `${val}s Overlap`;
-        updateMixDurationEstimate();
-    });
+    if (crossfadeSlider) {
+        crossfadeSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            crossfadeValDisplay.textContent = `${val} Seconds Overlap`;
+            summaryCrossfade.textContent = `${val}s Overlap`;
+            updateMixDurationEstimate();
+        });
+    }
 
-    // Multi-File Drag & Drop
-    multiDropZone.addEventListener('click', () => trackFilesInput.click());
-    multiDropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        multiDropZone.classList.add('border-zinc-500', 'bg-zinc-900');
-    });
-    multiDropZone.addEventListener('dragleave', () => {
-        multiDropZone.classList.remove('border-zinc-500', 'bg-zinc-900');
-    });
-    multiDropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        multiDropZone.classList.remove('border-zinc-500', 'bg-zinc-900');
-        if (e.dataTransfer.files.length > 0) {
-            handleUploadedFiles(e.dataTransfer.files);
-        }
-    });
-    trackFilesInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleUploadedFiles(e.target.files);
-            trackFilesInput.value = ''; // Reset so same file can be selected again if needed
-        }
-    });
+    // 1. Audio Upload & Drag Handlers
+    if (trackFilesInput) {
+        trackFilesInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || trackFilesInput.files || []);
+            if (files.length > 0) {
+                handleUploadedFiles(files);
+            }
+            trackFilesInput.value = ''; // reset so same file can be re-added
+        });
+    }
 
-    function handleUploadedFiles(files) {
-        Array.from(files).forEach((file) => {
+    if (multiDropZone) {
+        ['dragenter', 'dragover'].forEach(name => {
+            multiDropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                multiDropZone.classList.add('border-emerald-500', 'bg-zinc-900');
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+            });
+        });
+
+        ['dragleave', 'dragend'].forEach(name => {
+            multiDropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!multiDropZone.contains(e.relatedTarget)) {
+                    multiDropZone.classList.remove('border-emerald-500', 'bg-zinc-900');
+                }
+            });
+        });
+
+        multiDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            multiDropZone.classList.remove('border-emerald-500', 'bg-zinc-900');
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (files.length > 0) {
+                handleUploadedFiles(files);
+            }
+        });
+    }
+
+    // 2. Cover Artwork Upload & Drag Handlers
+    if (mixCoverInput) {
+        mixCoverInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || mixCoverInput.files || []);
+            if (files.length > 0) {
+                handleCoverFile(files[0]);
+            }
+        });
+    }
+
+    if (mixCoverDropZone) {
+        ['dragenter', 'dragover'].forEach(name => {
+            mixCoverDropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                mixCoverDropZone.classList.add('border-emerald-500', 'bg-zinc-900');
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+            });
+        });
+
+        ['dragleave', 'dragend'].forEach(name => {
+            mixCoverDropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!mixCoverDropZone.contains(e.relatedTarget)) {
+                    mixCoverDropZone.classList.remove('border-emerald-500', 'bg-zinc-900');
+                }
+            });
+        });
+
+        mixCoverDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            mixCoverDropZone.classList.remove('border-emerald-500', 'bg-zinc-900');
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (files.length > 0) {
+                handleCoverFile(files[0]);
+            }
+        });
+    }
+
+    function handleUploadedFiles(filesList) {
+        if (!filesList) return;
+        const files = Array.from(filesList);
+        if (files.length === 0) return;
+        let addedCount = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-            const audioObj = new Audio();
-            const objectUrl = URL.createObjectURL(file);
-            audioObj.src = objectUrl;
+            let objectUrl = null;
+            try {
+                objectUrl = URL.createObjectURL(file);
+            } catch (err) {
+                console.warn('Could not create object URL for file:', err);
+            }
 
             const item = {
                 type: 'file',
@@ -351,41 +447,76 @@
                 durationFormatted: '03:00'
             };
 
-            // Read duration when metadata is loaded
-            audioObj.addEventListener('loadedmetadata', () => {
-                if (audioObj.duration && !isNaN(audioObj.duration)) {
-                    item.duration = audioObj.duration;
-                    item.durationFormatted = formatSeconds(audioObj.duration);
-                    renderTracklist();
-                }
-            });
-
+            const trackIndex = trackQueue.length;
             trackQueue.push(item);
-        });
+            addedCount++;
 
-        renderTracklist();
+            if (objectUrl) {
+                const audioObj = new Audio(objectUrl);
+                audioObj.addEventListener('loadedmetadata', () => {
+                    if (audioObj.duration && !isNaN(audioObj.duration) && isFinite(audioObj.duration)) {
+                        item.duration = audioObj.duration;
+                        item.durationFormatted = formatSeconds(audioObj.duration);
+                        const durPill = document.getElementById(`track-duration-${trackIndex}`);
+                        if (durPill) {
+                            durPill.textContent = item.durationFormatted;
+                        }
+                        updateMixDurationEstimate();
+                    }
+                });
+            }
+        }
+
+        if (addedCount > 0) {
+            renderTracklist();
+            if (window.AppToast) {
+                AppToast.success(`Added ${addedCount} song${addedCount > 1 ? 's' : ''} to mix queue.`);
+            }
+        }
+    }
+
+    function handleCoverFile(file) {
+        if (!file) return;
+        selectedCoverFile = file;
+
+        if (mixCoverFileName) mixCoverFileName.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+            if (mixCoverPreview) mixCoverPreview.src = re.target.result;
+            if (mixCoverEmpty) mixCoverEmpty.classList.add('hidden');
+            if (mixCoverSelected) {
+                mixCoverSelected.classList.remove('hidden');
+                mixCoverSelected.classList.add('flex');
+            }
+        };
+        reader.readAsDataURL(file);
+
+        if (window.AppToast) {
+            AppToast.success(`Cover artwork '${file.name}' loaded.`);
+        }
     }
 
     function renderTracklist() {
+        if (!tracklistContainer) return;
         tracklistContainer.innerHTML = '';
-        formTrackCount.value = trackQueue.length;
-        summaryTrackCount.textContent = `${trackQueue.length} ${trackQueue.length === 1 ? 'song' : 'songs'}`;
+        if (formTrackCount) formTrackCount.value = trackQueue.length;
+        if (summaryTrackCount) summaryTrackCount.textContent = `${trackQueue.length} ${trackQueue.length === 1 ? 'song' : 'songs'}`;
 
         if (trackQueue.length === 0) {
-            emptyNotice.classList.remove('hidden');
+            if (emptyNotice) emptyNotice.classList.remove('hidden');
             tracklistContainer.classList.add('hidden');
-            btnShuffle.classList.add('hidden');
-            btnReverse.classList.add('hidden');
-            btnClearAll.classList.add('hidden');
+            if (btnShuffle) btnShuffle.classList.add('hidden');
+            if (btnReverse) btnReverse.classList.add('hidden');
+            if (btnClearAll) btnClearAll.classList.add('hidden');
             updateMixDurationEstimate();
             return;
         }
 
-        emptyNotice.classList.add('hidden');
+        if (emptyNotice) emptyNotice.classList.add('hidden');
         tracklistContainer.classList.remove('hidden');
-        btnShuffle.classList.remove('hidden');
-        btnReverse.classList.remove('hidden');
-        btnClearAll.classList.remove('hidden');
+        if (btnShuffle) btnShuffle.classList.remove('hidden');
+        if (btnReverse) btnReverse.classList.remove('hidden');
+        if (btnClearAll) btnClearAll.classList.remove('hidden');
 
         trackQueue.forEach((track, index) => {
             const isPlaying = (currentlyPlayingIndex === index);
@@ -396,17 +527,14 @@
 
             row.innerHTML = `
                 <div class="flex items-center gap-3 min-w-0 flex-1">
-                    <!-- Drag Handle & Index -->
                     <div class="flex items-center gap-1.5 shrink-0 text-zinc-500 group-hover:text-zinc-300 cursor-grab">
                         <i data-lucide="grip-vertical" class="w-4 h-4"></i>
                         <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center">
                             ${index + 1}
                         </span>
                     </div>
-
-                    <!-- Audition Play Button (if file) -->
                     ${track.objectUrl ? `
-                    <button type="button" onclick="toggleAudition(${index})" class="w-8 h-8 rounded-lg ${isPlaying ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'} flex items-center justify-center transition-colors shrink-0" title="Audition audio">
+                    <button type="button" onclick="toggleAudition(${index})" class="w-8 h-8 rounded-lg ${isPlaying ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'} flex items-center justify-center transition-colors shrink-0 cursor-pointer" title="Audition audio">
                         <i data-lucide="${isPlaying ? 'pause' : 'play'}" class="w-3.5 h-3.5"></i>
                     </button>
                     ` : `
@@ -414,33 +542,28 @@
                         <i data-lucide="youtube" class="w-3.5 h-3.5"></i>
                     </div>
                     `}
-
-                    <!-- Title & Artist Inputs -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 min-w-0">
-                        <input type="text" onchange="updateTrackMeta(${index}, 'title', this.value)" value="${escapeHtml(track.title)}" placeholder="Track Title" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-zinc-600 focus:outline-none w-full">
-                        <input type="text" onchange="updateTrackMeta(${index}, 'artist', this.value)" value="${escapeHtml(track.artist)}" placeholder="Artist (Optional)" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder-zinc-500 focus:border-zinc-600 focus:outline-none w-full">
+                        <input type="text" oninput="updateTrackMeta(${index}, 'title', this.value)" value="${escapeHtml(track.title)}" placeholder="Track Title" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-zinc-600 focus:outline-none w-full">
+                        <input type="text" oninput="updateTrackMeta(${index}, 'artist', this.value)" value="${escapeHtml(track.artist)}" placeholder="Artist (Optional)" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder-zinc-500 focus:border-zinc-600 focus:outline-none w-full">
                     </div>
                 </div>
-
-                <!-- Duration Pill & Reordering/Delete Actions -->
                 <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[11px] font-mono text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800">
+                    <span id="track-duration-${index}" class="text-[11px] font-mono text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800">
                         ${track.durationFormatted || '03:00'}
                     </span>
-
-                    <button type="button" onclick="moveTrack(${index}, -1)" ${index === 0 ? 'disabled class="opacity-20 p-1 text-zinc-600 cursor-not-allowed"' : 'class="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800"'} title="Move Up">
+                    <button type="button" onclick="moveTrack(${index}, -1)" ${index === 0 ? 'disabled class="opacity-20 p-1 text-zinc-600 cursor-not-allowed"' : 'class="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800 cursor-pointer"'} title="Move Up">
                         <i data-lucide="chevron-up" class="w-4 h-4"></i>
                     </button>
-                    <button type="button" onclick="moveTrack(${index}, 1)" ${index === trackQueue.length - 1 ? 'disabled class="opacity-20 p-1 text-zinc-600 cursor-not-allowed"' : 'class="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800"'} title="Move Down">
+                    <button type="button" onclick="moveTrack(${index}, 1)" ${index === trackQueue.length - 1 ? 'disabled class="opacity-20 p-1 text-zinc-600 cursor-not-allowed"' : 'class="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800 cursor-pointer"'} title="Move Down">
                         <i data-lucide="chevron-down" class="w-4 h-4"></i>
                     </button>
-                    <button type="button" onclick="removeTrack(${index})" class="p-1 text-zinc-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors" title="Remove Track">
+                    <button type="button" onclick="removeTrack(${index})" class="p-1 text-zinc-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors cursor-pointer" title="Remove Track">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
             `;
 
-            // HTML5 Drag and Drop Events
+            // Row reordering drag events
             row.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', index);
                 row.classList.add('opacity-50');
@@ -457,6 +580,7 @@
             });
             row.addEventListener('drop', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 row.classList.remove('border-zinc-600');
                 const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
                 const toIndex = index;
@@ -470,7 +594,9 @@
             tracklistContainer.appendChild(row);
         });
 
-        lucide.createIcons();
+        if (window.lucide) {
+            requestAnimationFrame(() => lucide.createIcons());
+        }
         updateMixDurationEstimate();
     }
 
@@ -523,32 +649,51 @@
         renderTracklist();
     };
 
-    btnShuffle.addEventListener('click', () => {
-        for (let i = trackQueue.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [trackQueue[i], trackQueue[j]] = [trackQueue[j], trackQueue[i]];
-        }
-        renderTracklist();
-    });
+    if (btnShuffle) {
+        btnShuffle.addEventListener('click', () => {
+            for (let i = trackQueue.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [trackQueue[i], trackQueue[j]] = [trackQueue[j], trackQueue[i]];
+            }
+            renderTracklist();
+        });
+    }
 
-    btnReverse.addEventListener('click', () => {
-        trackQueue.reverse();
-        renderTracklist();
-    });
+    if (btnReverse) {
+        btnReverse.addEventListener('click', () => {
+            trackQueue.reverse();
+            renderTracklist();
+        });
+    }
 
-    btnClearAll.addEventListener('click', () => {
-        if (currentAuditionAudio) currentAuditionAudio.pause();
-        trackQueue = [];
-        renderTracklist();
-    });
+    if (btnClearAll) {
+        btnClearAll.addEventListener('click', async () => {
+            if (trackQueue.length === 0) return;
+            const confirmed = window.AppDialog ? await AppDialog.confirm({
+                title: 'Clear All Tracks?',
+                message: 'Are you sure you want to clear all tracks from the mix queue?',
+                confirmText: 'Yes, Clear All',
+                cancelText: 'Keep Tracks',
+                type: 'danger'
+            }) : confirm('Are you sure you want to clear all tracks?');
+
+            if (confirmed) {
+                if (currentAuditionAudio) currentAuditionAudio.pause();
+                trackQueue = [];
+                renderTracklist();
+                if (window.AppToast) AppToast.info('Mix queue cleared.');
+            }
+        });
+    }
 
     function updateMixDurationEstimate() {
+        if (!summaryMixDuration) return;
         if (trackQueue.length === 0) {
             summaryMixDuration.textContent = '00:00';
             return;
         }
 
-        const crossfade = parseFloat(crossfadeSlider.value) || 6.0;
+        const crossfade = parseFloat(crossfadeSlider ? crossfadeSlider.value : 6.0) || 6.0;
         let total = 0;
         trackQueue.forEach((t, i) => {
             const dur = parseFloat(t.duration) || 180.0;
@@ -583,15 +728,27 @@
     const searchResults = document.getElementById('searchResults');
     const searchBtn = document.getElementById('searchBtn');
 
-    searchBtn.addEventListener('click', handleImportSubmit);
-    searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleImportSubmit();
-        }
-    });
+    if (searchBtn) searchBtn.addEventListener('click', handleImportSubmit);
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleImportSubmit();
+            }
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (query.length >= 2 && !query.startsWith('http')) {
+                performSearch(query);
+            } else if (searchResults) {
+                searchResults.classList.add('hidden');
+            }
+        });
+    }
 
     function handleImportSubmit() {
+        if (!searchInput) return;
         const val = searchInput.value.trim();
         if (!val) return;
         if (val.startsWith('http')) {
@@ -606,21 +763,14 @@
             });
             searchInput.value = '';
             renderTracklist();
+            if (window.AppToast) AppToast.success('Appended YouTube URL to mix queue.');
         } else {
             performSearch(val);
         }
     }
 
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        if (query.length >= 2 && !query.startsWith('http')) {
-            performSearch(query);
-        } else {
-            searchResults.classList.add('hidden');
-        }
-    });
-
     function performSearch(q) {
+        if (!searchResults) return;
         fetch(`{% url 'mix_import_api' %}?q=${encodeURIComponent(q)}`)
             .then(r => r.json())
             .then(data => {
@@ -638,6 +788,9 @@
                     `).join('');
                 }
                 searchResults.classList.remove('hidden');
+            })
+            .catch(() => {
+                searchResults.classList.add('hidden');
             });
     }
 
@@ -651,107 +804,175 @@
             duration: 180.0,
             durationFormatted: track.duration || '03:00'
         });
-        searchResults.classList.add('hidden');
-        searchInput.value = '';
+        if (searchResults) searchResults.classList.add('hidden');
+        if (searchInput) searchInput.value = '';
         renderTracklist();
+        if (window.AppToast) AppToast.success(`Added '${track.title}' from catalog.`);
     };
 
-    // Cover Artwork preview
-    const mixCoverDropZone = document.getElementById('mixCoverDropZone');
-    const mixCoverInput = document.getElementById('mixCoverInput');
-    const mixCoverEmpty = document.getElementById('mixCoverEmpty');
-    const mixCoverSelected = document.getElementById('mixCoverSelected');
-    const mixCoverPreview = document.getElementById('mixCoverPreview');
-    const mixCoverFileName = document.getElementById('mixCoverFileName');
-    const changeCoverBtn = document.getElementById('changeCoverBtn');
-
-    mixCoverDropZone.addEventListener('click', () => mixCoverInput.click());
-    if (changeCoverBtn) {
-        changeCoverBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            mixCoverInput.click();
-        });
-    }
-
-    mixCoverInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            mixCoverFileName.textContent = file.name;
-            const reader = new FileReader();
-            reader.onload = (re) => {
-                mixCoverPreview.src = re.target.result;
-                mixCoverEmpty.classList.add('hidden');
-                mixCoverSelected.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // Form Submission with dynamic Indexed FormData
-    document.getElementById('mixForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        if (trackQueue.length === 0) {
-            alert('Please add at least 1 audio track before creating a continuous mix.');
+    // Cancel Active Mix Rendering Handler
+    window.cancelActiveRendering = async function() {
+        if (!activeRenderProjectId) {
+            document.getElementById('progressModal').classList.add('hidden');
             return;
         }
+        const confirmed = window.AppDialog ? await AppDialog.confirm({
+            title: 'Cancel Mix Rendering?',
+            message: 'Are you sure you want to cancel the non-stop mix rendering process?',
+            confirmText: 'Yes, Cancel Render',
+            cancelText: 'Continue Rendering',
+            type: 'danger'
+        }) : confirm('Are you sure you want to cancel the mix rendering?');
 
-        const submitBtn = document.getElementById('submitMixBtn');
-        const modal = document.getElementById('renderProgressModal');
-        submitBtn.disabled = true;
-        modal.classList.remove('hidden');
-
-        // Create explicit FormData
-        const formData = new FormData();
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        formData.append('csrfmiddlewaretoken', csrfToken);
-        formData.append('title', document.getElementById('mixTitleInput').value.trim() || 'Non-Stop Music Mix');
-        formData.append('description', document.querySelector('[name=description]').value.trim());
-        formData.append('crossfade_seconds', crossfadeSlider.value);
-        formData.append('transition_curve', document.querySelector('[name=transition_curve]').value);
-        formData.append('render_video', document.getElementById('renderVideoCheck').checked ? 'true' : 'false');
-        formData.append('normalize_volume', document.querySelector('[name=normalize_volume]').checked ? 'true' : 'false');
-
-        if (mixCoverInput.files.length > 0) {
-            formData.append('cover_image', mixCoverInput.files[0]);
+        if (confirmed) {
+            document.getElementById('progressStep').textContent = "Cancelling mix and stopping FFmpeg processes...";
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+            fetch(`/studio/cancel/mix/${activeRenderProjectId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).finally(() => {
+                if (renderPollInterval) clearInterval(renderPollInterval);
+                if (renderTimerInterval) clearInterval(renderTimerInterval);
+                document.getElementById('progressModal').classList.add('hidden');
+                document.getElementById('submitMixBtn').disabled = false;
+                if (window.AppToast) AppToast.info("Mix rendering was cancelled.");
+            });
         }
+    };
 
-        formData.append('track_count', trackQueue.length);
+    // Form Submission with dynamic Indexed FormData and Real-Time Polling
+    const mixFormEl = document.getElementById('mixForm');
+    if (mixFormEl) {
+        mixFormEl.addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-        // Append tracks in exact sequence
-        trackQueue.forEach((t, i) => {
-            formData.append(`track_type_${i}`, t.type);
-            formData.append(`track_title_${i}`, t.title);
-            formData.append(`track_artist_${i}`, t.artist);
-            if (t.type === 'file' && t.file) {
-                formData.append(`track_file_${i}`, t.file);
-            } else if (t.url) {
-                formData.append(`track_url_${i}`, t.url);
+            if (trackQueue.length === 0) {
+                if (window.AppToast) AppToast.warning('Please add at least 1 audio track before creating a continuous mix.');
+                return;
             }
-        });
 
-        // Submit via fetch to handle redirect or error
-        fetch("{% url 'mix_render' %}", {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                return response.text().then(html => {
-                    document.open();
-                    document.write(html);
-                    document.close();
+            const submitBtn = document.getElementById('submitMixBtn');
+            const modal = document.getElementById('progressModal');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressStep = document.getElementById('progressStep');
+            const elapsedTimer = document.getElementById('elapsedTimer');
+
+            if (submitBtn) submitBtn.disabled = true;
+            if (modal) modal.classList.remove('hidden');
+            if (progressBar) progressBar.style.width = '10%';
+            if (progressPercent) progressPercent.textContent = '10%';
+            if (progressStep) progressStep.textContent = 'Uploading audio files and packaging mix queue...';
+
+            const startTime = Date.now();
+            if (elapsedTimer) elapsedTimer.textContent = '00:00';
+            if (renderTimerInterval) clearInterval(renderTimerInterval);
+            renderTimerInterval = setInterval(() => {
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+                const secs = String(elapsedSec % 60).padStart(2, '0');
+                if (elapsedTimer) elapsedTimer.textContent = `${mins}:${secs}`;
+            }, 1000);
+
+            // Create explicit FormData
+            const formData = new FormData();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            formData.append('title', document.getElementById('mixTitleInput')?.value.trim() || 'Non-Stop Music Mix');
+            formData.append('description', document.querySelector('[name=description]')?.value.trim() || '');
+            formData.append('crossfade_seconds', crossfadeSlider ? crossfadeSlider.value : '6');
+            formData.append('transition_curve', document.querySelector('[name=transition_curve]')?.value || 'qsin');
+            formData.append('render_video', document.getElementById('renderVideoCheck')?.checked ? 'true' : 'false');
+            formData.append('normalize_volume', document.querySelector('[name=normalize_volume]')?.checked ? 'true' : 'false');
+
+            if (selectedCoverFile) {
+                formData.append('cover_image', selectedCoverFile);
+            } else if (mixCoverInput && mixCoverInput.files && mixCoverInput.files.length > 0) {
+                formData.append('cover_image', mixCoverInput.files[0]);
+            }
+
+            formData.append('track_count', trackQueue.length);
+
+            // Append tracks in exact sequence
+            trackQueue.forEach((t, i) => {
+                formData.append(`track_type_${i}`, t.type);
+                formData.append(`track_title_${i}`, t.title);
+                formData.append(`track_artist_${i}`, t.artist);
+                if (t.type === 'file' && t.file) {
+                    formData.append(`track_file_${i}`, t.file);
+                } else if (t.url) {
+                    formData.append(`track_url_${i}`, t.url);
+                }
+            });
+
+            try {
+                const resp = await fetch("{% url 'mix_render' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    }
                 });
+
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to start mix rendering.');
+                }
+
+                activeRenderProjectId = data.project_id;
+
+                // Poll live progress from backend
+                if (renderPollInterval) clearInterval(renderPollInterval);
+                renderPollInterval = setInterval(async () => {
+                    try {
+                        const progResp = await fetch(`/studio/api/progress/mix/${activeRenderProjectId}/`);
+                        const progData = await progResp.json();
+                        if (progData.success) {
+                            const pct = progData.progress || 10;
+                            if (progressBar) progressBar.style.width = `${pct}%`;
+                            if (progressPercent) progressPercent.textContent = `${pct}%`;
+                            if (progressStep) progressStep.textContent = progData.step || 'Blending audio tracks...';
+
+                            if (progData.status === 'COMPLETED') {
+                                clearInterval(renderPollInterval);
+                                clearInterval(renderTimerInterval);
+                                if (progressBar) progressBar.style.width = '100%';
+                                if (progressPercent) progressPercent.textContent = '100%';
+                                if (progressStep) progressStep.textContent = 'Complete! Loading your nonstop mix...';
+                                setTimeout(() => {
+                                    window.location.href = progData.redirect_url;
+                                }, 600);
+                            } else if (progData.status === 'CANCELLED') {
+                                clearInterval(renderPollInterval);
+                                clearInterval(renderTimerInterval);
+                                if (modal) modal.classList.add('hidden');
+                                if (submitBtn) submitBtn.disabled = false;
+                                if (window.AppToast) AppToast.info('Rendering was cancelled.');
+                            } else if (progData.status === 'FAILED') {
+                                clearInterval(renderPollInterval);
+                                clearInterval(renderTimerInterval);
+                                if (modal) modal.classList.add('hidden');
+                                if (submitBtn) submitBtn.disabled = false;
+                                if (window.AppToast) AppToast.error('Mix rendering error: ' + (progData.error_message || 'Unknown render failure'));
+                            }
+                        }
+                    } catch (pollErr) {
+                        console.warn('Progress poll issue:', pollErr);
+                    }
+                }, 700);
+
+            } catch (err) {
+                if (renderTimerInterval) clearInterval(renderTimerInterval);
+                if (modal) modal.classList.add('hidden');
+                if (submitBtn) submitBtn.disabled = false;
+                if (window.AppToast) AppToast.error('Submission Error: ' + err.message);
             }
-        })
-        .catch(err => {
-            modal.classList.add('hidden');
-            submitBtn.disabled = false;
-            alert('An error occurred during mix rendering: ' + err.message);
         });
-    });
+    }
 
     function escapeHtml(text) {
         if (!text) return '';

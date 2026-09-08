@@ -5,12 +5,21 @@ import glob
 import subprocess
 import math
 import re
+import time
 from PIL import Image, ImageFilter, ImageEnhance, ImageDraw, ImageFont
 
 from django.conf import settings
 from .renderer import VideoStudioRenderer
+from .process_tracker import RenderProcessTracker
 
 class ShortsEngineService:
+
+    @classmethod
+    def get_subprocess_kwargs(cls):
+        kwargs = {}
+        if sys.platform == 'win32':
+            kwargs['creationflags'] = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
+        return kwargs
 
     @classmethod
     def get_ffmpeg_binary(cls):
@@ -26,7 +35,7 @@ class ShortsEngineService:
         
         try:
             cmd = [ffmpeg, '-i', file_path]
-            proc = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True, errors='ignore')
+            proc = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True, errors='ignore', **cls.get_subprocess_kwargs())
             
             # Look for Duration: 00:03:45.67
             match = re.search(r'Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)', proc.stderr)
@@ -89,10 +98,11 @@ class ShortsEngineService:
         return chops
 
     @classmethod
-    def prepare_overlay_banner(cls, hook_text="", part_label="", theme="VIRAL_HOOK", width=1080, height=1920, output_png_path=None):
+    def prepare_overlay_banner(cls, hook_text="", part_label="", theme="VIRAL_HOOK", hook_position="TOP", width=1080, height=1920, output_png_path=None):
         """
         Creates a high-resolution transparent RGBA PNG overlay with modern typography,
         viral hook banner badges, and call-to-action pills for vertical 9:16 shorts.
+        Supports hook_position: 'TOP', 'CENTER', or 'BOTTOM'.
         """
         if theme == 'CLEAN' and not hook_text and not part_label:
             return None
@@ -125,9 +135,8 @@ class ShortsEngineService:
             font_small = font_large
             font_badge = font_large
 
-        # 1. Top Part / Viral Hook Banner
+        # 1. Part / Viral Hook Banner
         if hook_text or part_label:
-            banner_y = 160
             banner_text = hook_text.strip() if hook_text else (part_label.strip() if part_label else "WAIT FOR IT... 🔥")
             
             # Measure text size
@@ -144,7 +153,15 @@ class ShortsEngineService:
             box_w = min(width - 80, text_w + box_padding_x * 2)
             box_h = text_h + box_padding_y * 2
             box_x1 = (width - box_w) // 2
-            box_y1 = banner_y
+
+            pos_upper = str(hook_position or 'TOP').upper()
+            if pos_upper == 'CENTER':
+                box_y1 = (height - box_h) // 2
+            elif pos_upper == 'BOTTOM':
+                box_y1 = height - 400
+            else:  # TOP (default)
+                box_y1 = 160
+
             box_x2 = box_x1 + box_w
             box_y2 = box_y1 + box_h
 
@@ -214,11 +231,9 @@ class ShortsEngineService:
         return img
 
     @classmethod
-    def render_video_chop(cls, source_video_path, output_mp4_path, start_seconds, duration_seconds, aspect_mode='BLURRED_FIT', overlay_png_path=None):
+    def render_video_chop(cls, source_video_path, output_mp4_path, start_seconds, duration_seconds, aspect_mode='BLURRED_FIT', overlay_png_path=None, crop_focal_percent=50, project_id=None):
         """
-        Renders a 1080x1920 (9:16 vertical) video chop using FFmpeg.
-        Accurately trims from start_seconds with length duration_seconds.
-        Applies blurred ambient backdrop, center crop, or letterbox, and overlays banner if given.
+        Extracts and converts a video segment to 1080x1920 (9:16) with subject framing and overlay banners.
         """
         ffmpeg = cls.get_ffmpeg_binary()
         source_video_path = os.path.abspath(str(source_video_path))
@@ -227,18 +242,17 @@ class ShortsEngineService:
 
         start_s = max(0.0, float(start_seconds))
         dur_s = max(1.0, float(duration_seconds))
+        focal_pct = max(0.0, min(1.0, float(crop_focal_percent) / 100.0))
 
-        # Base filter graph for 9:16 vertical re-framing
         if aspect_mode == 'CENTER_CROP':
-            # Scale video so height is 1920, then crop 1080x1920 from center
-            vf_base = "[0:v]scale=-1:1920,crop=1080:1920[base]"
+            crop_x_expr = f"(iw-1080)*{focal_pct:.3f}"
+            vf_base = f"[0:v]scale=-1:1920,crop=1080:1920:{crop_x_expr}:(ih-1920)/2[base]"
         elif aspect_mode == 'LETTERBOX':
-            # Scale video to fit within 1080x1920 with black bars
             vf_base = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black[base]"
-        else:  # BLURRED_FIT (Default & Recommended)
-            # Create blurred background from source video + centered original video
+        else:  # BLURRED_FIT (Default & Recommended - High Performance Downscaled Blur)
+            crop_x_small = f"(iw-270)*{focal_pct:.3f}"
             vf_base = (
-                "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=25:5,eq=brightness=-0.25[bg]; "
+                f"[0:v]scale=270:480:force_original_aspect_ratio=increase,crop=270:480:{crop_x_small}:0,boxblur=8:2,eq=brightness=-0.25,scale=1080:1920:flags=fast_bilinear[bg]; "
                 "[0:v]scale=1080:-1[fg]; "
                 "[bg][fg]overlay=(W-w)/2:(H-h)/2[base]"
             )
@@ -264,7 +278,8 @@ class ShortsEngineService:
             '-map', map_out,
             '-map', '0:a?',
             '-c:v', 'libx264',
-            '-preset', 'fast',
+            '-preset', 'veryfast',
+            '-threads', '0',
             '-pix_fmt', 'yuv420p',
             '-c:a', 'aac',
             '-b:a', '192k',
@@ -272,14 +287,37 @@ class ShortsEngineService:
             output_mp4_path
         ]
 
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore')
-        if result.returncode != 0:
-            raise RuntimeError(f"FFmpeg video chop rendering failed: {result.stderr[-400:]}")
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore', **cls.get_subprocess_kwargs())
+        if project_id:
+            RenderProcessTracker.register('shorts', project_id, proc)
+
+        stdout, stderr = "", ""
+        try:
+            while True:
+                try:
+                    stdout, stderr = proc.communicate(timeout=0.5)
+                    break
+                except subprocess.TimeoutExpired:
+                    if project_id and RenderProcessTracker.is_cancelled('shorts', project_id):
+                        proc.kill()
+                        try:
+                            proc.communicate()
+                        except Exception:
+                            pass
+                        raise RuntimeError("Rendering cancelled by user.")
+        finally:
+            if project_id:
+                RenderProcessTracker.unregister('shorts', project_id, proc)
+
+        if proc.returncode != 0:
+            if project_id and RenderProcessTracker.is_cancelled('shorts', project_id):
+                raise RuntimeError("Rendering cancelled by user.")
+            raise RuntimeError(f"FFmpeg video chop rendering failed: {stderr[-400:]}")
 
         return output_mp4_path
 
     @classmethod
-    def render_audio_cover_chop(cls, cover_path, audio_path, output_mp4_path, start_seconds, duration_seconds, overlay_png_path=None):
+    def render_audio_cover_chop(cls, cover_path, audio_path, output_mp4_path, start_seconds, duration_seconds, overlay_png_path=None, project_id=None):
         """
         Renders a 1080x1920 vertical video from an audio file and cover image.
         """
@@ -323,7 +361,8 @@ class ShortsEngineService:
                 *map_args,
                 '-c:v', 'libx264',
                 '-tune', 'stillimage',
-                '-preset', 'fast',
+                '-preset', 'veryfast',
+                '-threads', '0',
                 '-pix_fmt', 'yuv420p',
                 '-c:a', 'aac',
                 '-b:a', '192k',
@@ -332,9 +371,32 @@ class ShortsEngineService:
                 output_mp4_path
             ])
 
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore')
-            if result.returncode != 0:
-                raise RuntimeError(f"FFmpeg audio/cover chop rendering failed: {result.stderr[-400:]}")
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors='ignore', **cls.get_subprocess_kwargs())
+            if project_id:
+                RenderProcessTracker.register('shorts', project_id, proc)
+
+            stdout, stderr = "", ""
+            try:
+                while True:
+                    try:
+                        stdout, stderr = proc.communicate(timeout=0.5)
+                        break
+                    except subprocess.TimeoutExpired:
+                        if project_id and RenderProcessTracker.is_cancelled('shorts', project_id):
+                            proc.kill()
+                            try:
+                                proc.communicate()
+                            except Exception:
+                                pass
+                            raise RuntimeError("Rendering cancelled by user.")
+            finally:
+                if project_id:
+                    RenderProcessTracker.unregister('shorts', project_id, proc)
+
+            if proc.returncode != 0:
+                if project_id and RenderProcessTracker.is_cancelled('shorts', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
+                raise RuntimeError(f"FFmpeg audio/cover chop rendering failed: {stderr[-400:]}")
 
             return output_mp4_path
         finally:

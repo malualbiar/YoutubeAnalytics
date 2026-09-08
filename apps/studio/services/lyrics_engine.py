@@ -5,16 +5,25 @@ import glob
 import subprocess
 import math
 import re
+import time
 from PIL import Image, ImageFilter, ImageEnhance, ImageDraw, ImageFont
 
 from django.conf import settings
 from .renderer import VideoStudioRenderer
+from .process_tracker import RenderProcessTracker
 
 class LyricsEngineService:
 
     @classmethod
     def get_ffmpeg_binary(cls):
         return VideoStudioRenderer.get_ffmpeg_binary()
+
+    @classmethod
+    def get_subprocess_kwargs(cls):
+        kwargs = {}
+        if os.name == 'nt':
+            kwargs['creationflags'] = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
+        return kwargs
 
     @classmethod
     def inspect_media_duration(cls, file_path):
@@ -633,7 +642,17 @@ class LyricsEngineService:
         font_size=48,
         highlight_color='#00E5FF',
         text_color='#FFFFFF',
-        position_mode='CENTER'
+        position_mode='CENTER',
+        font_weight='bold',
+        font_italic=False,
+        letter_spacing=0.0,
+        line_height=1.4,
+        text_transform='none',
+        text_stroke_width=2.5,
+        text_shadow_depth=2.0,
+        font_scale_x=100,
+        font_scale_y=100,
+        bg_opacity=0
     ):
         """
         Generates Advanced SubStation Alpha (.ass) subtitle file with karaoke wipes,
@@ -678,28 +697,30 @@ class LyricsEngineService:
         shadow_ass = cls.hex_to_ass_color('#000000', alpha=120)
         dimmed_ass = cls.hex_to_ass_color(text_color, alpha=160)
 
-        # Specific styling presets
+        # Base weight/italic extraction
+        italic_val = 1 if font_italic else 0
+        bold_val = 1 if font_weight in ('bold', 'black') else 0
+        
+        # Override presets with new typography fields
+        outline_width = text_stroke_width
+        shadow_depth = text_shadow_depth
+        bg_color_ass = cls.hex_to_ass_color('#000000', alpha=int(255 - (bg_opacity * 2.55)))
+        border_style = 3 if bg_opacity > 0 else 1
+
+        # Specific styling presets (adjusting defaults for certain styles if needed)
         if animation_style == 'CYBER_NEON':
             primary_ass = cls.hex_to_ass_color(highlight_color or '#00FFEA', alpha=0)
             secondary_ass = cls.hex_to_ass_color('#0F2A3F', alpha=20)
             outline_ass = cls.hex_to_ass_color(highlight_color or '#00FFEA', alpha=80)
-            outline_width = 3.5
+            outline_width = max(3.5, text_stroke_width)
             shadow_depth = 0
-            bold_val = 1
         elif animation_style == 'CINEMATIC':
             primary_ass = cls.hex_to_ass_color(highlight_color or '#F8F9FA', alpha=0)
             secondary_ass = cls.hex_to_ass_color('#A0AEC0', alpha=60)
             outline_ass = cls.hex_to_ass_color('#000000', alpha=100)
-            outline_width = 1.5
-            shadow_depth = 2.0
-            bold_val = 0
+            bold_val = 0 if font_weight in ('normal', 'light') else bold_val
             if font_family == 'Arial':
                 font_family = 'Georgia'
-        else:
-            # KARAOKE_WIPE & ROLLING_3LINE defaults
-            outline_width = 2.5
-            shadow_depth = 2.0
-            bold_val = 1
 
         script_content = [
             "[Script Info]",
@@ -713,11 +734,11 @@ class LyricsEngineService:
             "[V4+ Styles]",
             "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
             # Main Style
-            f"Style: Main,{font_family},{actual_font_size},{primary_ass},{secondary_ass},{outline_ass},{shadow_ass},{bold_val},0,0,0,100,100,0,0,1,{outline_width},{shadow_depth},{alignment},{margin_lr},{margin_lr},{margin_v},1",
+            f"Style: Main,{font_family},{actual_font_size},{primary_ass},{secondary_ass},{outline_ass},{bg_color_ass},{bold_val},{italic_val},0,0,{font_scale_x},{font_scale_y},{letter_spacing},0,{border_style},{outline_width},{shadow_depth},{alignment},{margin_lr},{margin_lr},{margin_v},1",
             # Dimmed Rolling Style
-            f"Style: RollingDim,{font_family},{int(actual_font_size * 0.78)},{dimmed_ass},{dimmed_ass},{outline_ass},{shadow_ass},0,0,0,0,100,100,0,0,1,1.5,1.0,{alignment},{margin_lr},{margin_lr},{margin_v},1",
+            f"Style: RollingDim,{font_family},{int(actual_font_size * 0.78)},{dimmed_ass},{dimmed_ass},{outline_ass},{bg_color_ass},{bold_val},{italic_val},0,0,{font_scale_x},{font_scale_y},{letter_spacing},0,{border_style},{max(0.5, outline_width*0.5)},{max(0.5, shadow_depth*0.5)},{alignment},{margin_lr},{margin_lr},{margin_v},1",
             # Neon Glow Style
-            f"Style: NeonGlow,{font_family},{actual_font_size},{primary_ass},{secondary_ass},{outline_ass},{shadow_ass},1,0,0,0,100,100,1,0,1,4.0,0,{alignment},{margin_lr},{margin_lr},{margin_v},1",
+            f"Style: NeonGlow,{font_family},{actual_font_size},{primary_ass},{secondary_ass},{outline_ass},{bg_color_ass},{bold_val},{italic_val},0,0,{font_scale_x},{font_scale_y},{letter_spacing},0,{border_style},{outline_width},{shadow_depth},{alignment},{margin_lr},{margin_lr},{margin_v},1",
             "",
             "[Events]",
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -729,6 +750,14 @@ class LyricsEngineService:
             if not raw_line:
                 continue
 
+            # Apply Text Transform
+            if text_transform == 'uppercase':
+                raw_line = raw_line.upper()
+            elif text_transform == 'lowercase':
+                raw_line = raw_line.lower()
+            elif text_transform == 'capitalize':
+                raw_line = raw_line.title()
+
             start_sec = float(item.get('start', 0.0))
             end_sec = float(item.get('end', start_sec + 4.0))
             if end_sec <= start_sec:
@@ -738,81 +767,121 @@ class LyricsEngineService:
             end_time_str = cls.seconds_to_ass_time(end_sec)
             duration_cs = max(10, int((end_sec - start_sec) * 100))
 
+            # Helper for line positions
+            x_center = res_x // 2
+            if position_mode == 'TOP':
+                y_center = margin_v + int(actual_font_size * 1.5)
+            elif position_mode == 'CENTER':
+                y_center = res_y // 2
+            else:
+                y_center = res_y - margin_v - int(actual_font_size * 0.5)
+            
+            # Apply dynamic line_height setting
+            y_prev = y_center - int(actual_font_size * line_height)
+            y_next = y_center + int(actual_font_size * line_height)
+
+            # Auto-synchronize word-level timestamps with edited line spellings
+            line_words_tokens = raw_line.split()
+            words_list = item.get('words')
+            if line_words_tokens:
+                if words_list and len(words_list) == len(line_words_tokens):
+                    # Preserve exact Whisper millisecond timings while updating corrected spelling
+                    words_list = [
+                        {
+                            'word': line_words_tokens[w_i],
+                            'start': words_list[w_i].get('start', start_sec),
+                            'end': words_list[w_i].get('end', end_sec)
+                        }
+                        for w_i in range(len(line_words_tokens))
+                    ]
+                elif words_list and len(words_list) != len(line_words_tokens):
+                    # Resynchronize redistributed words across line duration
+                    dur = max(0.4, end_sec - start_sec)
+                    slot = dur / len(line_words_tokens)
+                    words_list = [
+                        {
+                            'word': wt,
+                            'start': round(start_sec + w_i * slot, 2),
+                            'end': round(start_sec + (w_i + 1) * slot, 2)
+                        }
+                        for w_i, wt in enumerate(line_words_tokens)
+                    ]
+
             if animation_style == 'KARAOKE_WIPE':
-                # Check if exact word timestamps are provided
-                words_list = item.get('words')
                 if words_list and len(words_list) > 0:
-                    karaoke_text_parts = []
+                    k_parts = []
                     for w in words_list:
                         w_text = w.get('word', '')
-                        w_start = float(w.get('start', start_sec))
-                        w_end = float(w.get('end', w_start + 0.3))
-                        w_cs = max(5, int((w_end - w_start) * 100))
-                        karaoke_text_parts.append(f"{{\\k{w_cs}}}{w_text}")
-                    karaoke_line = " ".join(karaoke_text_parts)
+                        w_cs = max(5, int((float(w.get('end', float(w.get('start', start_sec)) + 0.3)) - float(w.get('start', start_sec))) * 100))
+                        k_parts.append(f"{{\\k{w_cs}}}{w_text}")
+                    karaoke_line = " ".join(k_parts)
                 else:
-                    # Fallback proportional word wipe
                     words = raw_line.split(' ')
                     total_chars = max(1, sum(len(w) for w in words))
-                    karaoke_text_parts = []
-                    for w in words:
-                        w_cs = max(8, int(duration_cs * (len(w) / total_chars)))
-                        karaoke_text_parts.append(f"{{\\k{w_cs}}}{w}")
-                    karaoke_line = " ".join(karaoke_text_parts)
-
-                script_content.append(
-                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{karaoke_line}"
-                )
-
-                if position_mode == 'TOP':
-                    y_center = margin_v + int(actual_font_size * 1.5)
-                elif position_mode == 'CENTER':
-                    y_center = res_y // 2
-                else:
-                    y_center = res_y - margin_v - int(actual_font_size * 0.5)
-                y_prev = y_center - int(actual_font_size * 1.5)
-                y_next = y_center + int(actual_font_size * 1.5)
-                x_center = res_x // 2
-
-                # 1. Previous line (if exists)
+                    karaoke_line = " ".join([f"{{\\k{max(8, int(duration_cs * (len(w) / total_chars)))}}}{w}" for w in words])
+                
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{karaoke_line}")
+                
+            elif animation_style == 'ROLLING_3LINE':
+                # 1. Previous line
                 if idx > 0 and lyrics_data[idx - 1].get('line'):
                     prev_text = lyrics_data[idx - 1]['line']
-                    script_content.append(
-                        f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,{{\\pos({x_center},{y_prev})\\fad(150,150)}}{prev_text}"
-                    )
+                    if text_transform == 'uppercase': prev_text = prev_text.upper()
+                    elif text_transform == 'lowercase': prev_text = prev_text.lower()
+                    elif text_transform == 'capitalize': prev_text = prev_text.title()
+                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,{{\\pos({x_center},{y_prev})\\fad(150,150)}}{prev_text}")
 
-                # 2. Current active line (highlighted + karaoke wipe or pulse)
-                script_content.append(
-                    f"Dialogue: 1,{start_time_str},{end_time_str},Main,,0,0,0,,{{\\pos({x_center},{y_center})\\fad(100,100)}}{raw_line}"
-                )
+                # 2. Current line
+                script_content.append(f"Dialogue: 1,{start_time_str},{end_time_str},Main,,0,0,0,,{{\\pos({x_center},{y_center})\\fad(100,100)}}{raw_line}")
 
-                # 3. Next line preview (if exists)
+                # 3. Next line
                 if idx + 1 < len(lyrics_data) and lyrics_data[idx + 1].get('line'):
                     next_text = lyrics_data[idx + 1]['line']
-                    script_content.append(
-                        f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,{{\\pos({x_center},{y_next})\\fad(150,150)}}{next_text}"
-                    )
+                    if text_transform == 'uppercase': next_text = next_text.upper()
+                    elif text_transform == 'lowercase': next_text = next_text.lower()
+                    elif text_transform == 'capitalize': next_text = next_text.title()
+                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,{{\\pos({x_center},{y_next})\\fad(150,150)}}{next_text}")
 
             elif animation_style == 'CYBER_NEON':
-                # Glowing Cyber Neon with glowing border blur and fade
                 words = raw_line.split(' ')
                 total_chars = max(1, sum(len(w) for w in words))
-                k_parts = [f"{{\\k{max(8, int(duration_cs * (len(w)/total_chars)))}}}{w}" for w in words]
-                neon_line = " ".join(k_parts)
-                script_content.append(
-                    f"Dialogue: 0,{start_time_str},{end_time_str},NeonGlow,,0,0,0,,{{\\blur2\\fad(120,120)}}{neon_line}"
-                )
+                neon_line = " ".join([f"{{\\k{max(8, int(duration_cs * (len(w)/total_chars)))}}}{w}" for w in words])
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},NeonGlow,,0,0,0,,{{\\blur2\\fad(120,120)}}{neon_line}")
 
             elif animation_style == 'CINEMATIC':
-                # Smooth, elegant fade with subtle serif display
-                script_content.append(
-                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{{\\fad(280,280)}}{raw_line}"
-                )
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{{\\fad(280,280)}}{raw_line}")
+
+            elif animation_style == 'BOUNCE_IN':
+                # Scale from 50% to current scale using \t transform over 200ms
+                s_x = font_scale_x
+                s_y = font_scale_y
+                bounce_tag = f"{{\\fscx50\\fscy50\\t(0,200,\\fscx{s_x}\\fscy{s_y})\\fad(100,150)}}"
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{bounce_tag}{raw_line}")
+
+            elif animation_style == 'TYPEWRITER':
+                # Per-character reveal
+                chars = list(raw_line)
+                char_duration = max(2, int(duration_cs / len(chars))) if chars else 2
+                type_line = ""
+                for c in chars:
+                    type_line += f"{{\\k{char_duration}}}{c}"
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{type_line}")
+
+            elif animation_style == 'WAVE_PULSE':
+                # Alternate color and slight scale pulse
+                s_x_max = int(font_scale_x * 1.05)
+                s_y_max = int(font_scale_y * 1.05)
+                pulse_tag = f"{{\\t(0,{duration_cs//2},\\fscx{s_x_max}\\fscy{s_y_max})\\t({duration_cs//2},{duration_cs},\\fscx{font_scale_x}\\fscy{font_scale_y})\\fad(150,150)}}"
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{pulse_tag}{raw_line}")
+
+            elif animation_style == 'SLIDE_UP':
+                # Move from slightly below to center
+                y_start = y_center + 60
+                move_tag = f"{{\\move({x_center},{y_start},{x_center},{y_center})\\fad(200,200)}}"
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{move_tag}{raw_line}")
+
             else:
-                # Default clean display
-                script_content.append(
-                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{raw_line}"
-                )
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{raw_line}")
 
         os.makedirs(os.path.dirname(os.path.abspath(output_ass_path)), exist_ok=True)
         with open(output_ass_path, 'w', encoding='utf-8') as f:
@@ -883,9 +952,20 @@ class LyricsEngineService:
         highlight_color='#00E5FF',
         text_color='#FFFFFF',
         position_mode='CENTER',
+        font_weight='bold',
+        font_italic=False,
+        letter_spacing=0.0,
+        line_height=1.4,
+        text_transform='none',
+        text_stroke_width=2.5,
+        text_shadow_depth=2.0,
+        font_scale_x=100,
+        font_scale_y=100,
+        bg_opacity=0,
         title='Lyric Video',
         artist='',
-        loop_video=True
+        loop_video=True,
+        project_id=None
     ):
         """
         Renders complete 1080p synchronized lyric video using local FFmpeg and ASS subtitle engine.
@@ -896,6 +976,11 @@ class LyricsEngineService:
         ffmpeg = cls.get_ffmpeg_binary()
         output_video_path = os.path.abspath(str(output_video_path))
         os.makedirs(os.path.dirname(output_video_path), exist_ok=True)
+
+        if project_id:
+            RenderProcessTracker.set_progress('lyrics', project_id, 10, "Inspecting media and preparing workspace...")
+            if RenderProcessTracker.is_cancelled('lyrics', project_id):
+                raise RuntimeError("Rendering cancelled by user.")
 
         # Validate input paths
         has_audio = bool(audio_path and os.path.exists(str(audio_path)))
@@ -929,6 +1014,11 @@ class LyricsEngineService:
         os.makedirs(temp_dir, exist_ok=True)
 
         try:
+            if project_id:
+                RenderProcessTracker.set_progress('lyrics', project_id, 25, "Generating synchronized ASS subtitle styling...")
+                if RenderProcessTracker.is_cancelled('lyrics', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
+
             # 1. Prepare ASS Subtitles
             ass_path = os.path.join(temp_dir, "lyrics.ass")
             cls.generate_ass_subtitles(
@@ -940,11 +1030,26 @@ class LyricsEngineService:
                 font_size=font_size,
                 highlight_color=highlight_color,
                 text_color=text_color,
-                position_mode=position_mode
+                position_mode=position_mode,
+                font_weight=font_weight,
+                font_italic=font_italic,
+                letter_spacing=letter_spacing,
+                line_height=line_height,
+                text_transform=text_transform,
+                text_stroke_width=text_stroke_width,
+                text_shadow_depth=text_shadow_depth,
+                font_scale_x=font_scale_x,
+                font_scale_y=font_scale_y,
+                bg_opacity=bg_opacity
             )
 
             # Escape subtitle path for FFmpeg filter on Windows
             escaped_ass_path = ass_path.replace('\\', '/').replace(':', '\\:')
+
+            if project_id:
+                RenderProcessTracker.set_progress('lyrics', project_id, 45, "Preparing visual composition & video layout...")
+                if RenderProcessTracker.is_cancelled('lyrics', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
 
             # 2. Build FFmpeg command depending on source media
             if has_video:
@@ -968,7 +1073,8 @@ class LyricsEngineService:
                         '-map', '1:a:0',
                         '-vf', vf_filter,
                         '-c:v', 'libx264',
-                        '-preset', 'fast',
+                        '-preset', 'veryfast',
+                        '-threads', '0',
                         '-crf', '20',
                         '-pix_fmt', 'yuv420p',
                         '-c:a', 'aac',
@@ -987,7 +1093,8 @@ class LyricsEngineService:
                         '-map', '0:v:0',
                         '-map', '0:a?',
                         '-c:v', 'libx264',
-                        '-preset', 'fast',
+                        '-preset', 'veryfast',
+                        '-threads', '0',
                         '-crf', '20',
                         '-pix_fmt', 'yuv420p',
                         '-c:a', 'aac',
@@ -1015,7 +1122,9 @@ class LyricsEngineService:
                     '-i', audio_path,
                     '-vf', vf_filter,
                     '-c:v', 'libx264',
-                    '-preset', 'fast',
+                    '-tune', 'stillimage',
+                    '-preset', 'veryfast',
+                    '-threads', '0',
                     '-crf', '20',
                     '-pix_fmt', 'yuv420p',
                     '-c:a', 'aac',
@@ -1026,17 +1135,49 @@ class LyricsEngineService:
                     output_video_path
                 ]
 
-            # Execute rendering command
-            proc = subprocess.run(
+            if project_id:
+                RenderProcessTracker.set_progress('lyrics', project_id, 55, "Encoding 1080p synchronized video frames with FFmpeg...")
+                if RenderProcessTracker.is_cancelled('lyrics', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
+
+            # Execute rendering command with live cancellation tracking
+            proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                errors='ignore'
+                errors='ignore',
+                **cls.get_subprocess_kwargs()
             )
 
+            if project_id:
+                RenderProcessTracker.register('lyrics', project_id, proc)
+
+            stdout, stderr = "", ""
+            try:
+                while True:
+                    try:
+                        stdout, stderr = proc.communicate(timeout=0.5)
+                        break
+                    except subprocess.TimeoutExpired:
+                        if project_id and RenderProcessTracker.is_cancelled('lyrics', project_id):
+                            proc.kill()
+                            try:
+                                proc.communicate()
+                            except Exception:
+                                pass
+                            raise RuntimeError("Rendering cancelled by user.")
+            finally:
+                if project_id:
+                    RenderProcessTracker.unregister('lyrics', project_id, proc)
+
             if proc.returncode != 0 or not os.path.exists(output_video_path) or os.path.getsize(output_video_path) == 0:
-                raise RuntimeError(f"FFmpeg lyric video render failed: {proc.stderr[-1000:]}")
+                if project_id and RenderProcessTracker.is_cancelled('lyrics', project_id):
+                    raise RuntimeError("Rendering cancelled by user.")
+                raise RuntimeError(f"FFmpeg lyric video render failed: {stderr[-1000:]}")
+
+            if project_id:
+                RenderProcessTracker.set_progress('lyrics', project_id, 95, "Finalizing MP4 video streams & metadata...")
 
             return {
                 'success': True,
@@ -1045,9 +1186,14 @@ class LyricsEngineService:
             }
 
         finally:
+            if project_id and not RenderProcessTracker.is_cancelled('lyrics', project_id):
+                RenderProcessTracker.set_progress('lyrics', project_id, 100, "Rendering complete!")
+
             # Clean up temporary working directory
             try:
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir, ignore_errors=True)
+            except Exception:
+                pass
             except Exception:
                 pass
