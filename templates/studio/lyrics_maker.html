@@ -29,17 +29,34 @@
 
         <!-- STEP 1: Media & Live Video Preview -->
         <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3">
                 <div class="flex items-center gap-2.5">
                     <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
-                    <h3 class="text-sm font-bold text-white">Media Files & Live Video Preview</h3>
+                    <h3 class="text-sm font-bold text-white">Media Source & Live Video Preview</h3>
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-xs text-zinc-400">Aspect Ratio:</label>
-                    <select name="aspect_ratio" id="aspectRatioSelect" class="px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
-                        <option value="16:9" selected>16:9 Landscape (YouTube)</option>
-                        <option value="9:16">9:16 Vertical (Shorts / Reels)</option>
-                    </select>
+
+                <div class="flex items-center gap-3 flex-wrap">
+                    <!-- Source Mode Selector (Audio vs Video) -->
+                    <div class="flex items-center p-1 bg-zinc-950 rounded-xl border border-zinc-800">
+                        <button type="button" id="modeAudioBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white flex items-center gap-1.5" data-mode="AUDIO">
+                            <i data-lucide="music" class="w-3.5 h-3.5"></i>
+                            <span>Audio + Cover</span>
+                        </button>
+                        <button type="button" id="modeVideoBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white flex items-center gap-1.5" data-mode="VIDEO">
+                            <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                            <span>Video File (Overlay)</span>
+                        </button>
+                    </div>
+                    <input type="hidden" name="source_type" id="sourceTypeInput" value="AUDIO_IMAGE">
+
+                    <!-- Aspect Ratio -->
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-xs text-zinc-400">Aspect:</label>
+                        <select name="aspect_ratio" id="aspectRatioSelect" class="px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-600">
+                            <option value="16:9" selected>16:9 Landscape (YouTube)</option>
+                            <option value="9:16">9:16 Vertical (Shorts / Reels)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -49,7 +66,7 @@
                     <!-- Title & Artist -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1">
-                            <label class="text-xs font-bold text-zinc-300">Song Title <span class="text-rose-400">*</span></label>
+                            <label class="text-xs font-bold text-zinc-300">Song / Video Title <span class="text-rose-400">*</span></label>
                             <input type="text" name="title" id="songTitleInput" required placeholder="e.g. Midnight Waves" 
                                    class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                         </div>
@@ -61,20 +78,21 @@
                         </div>
                     </div>
 
-                    <!-- Audio & Cover Uploads -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- MODE A: Audio + Cover Artwork Uploads -->
+                    <div id="audioModeContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <!-- Audio File -->
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-zinc-300">Audio Track (.mp3, .wav) <span class="text-rose-400">*</span></label>
-                            <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950">
-                                <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden" required>
+                            <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
                                 
                                 <div id="audioEmpty" class="py-2">
+                                    <i data-lucide="music" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
                                     <p class="text-xs font-bold text-white">Select Audio File</p>
                                     <p class="text-[10px] text-zinc-500 mt-0.5">MP3, WAV, AAC, or FLAC</p>
                                 </div>
 
-                                <div id="audioSelected" class="hidden">
+                                <div id="audioSelected" class="hidden text-left w-full">
                                     <p id="audioFileName" class="text-xs font-bold text-white truncate">audio.mp3</p>
                                     <p id="audioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">00:00 • 0.0 MB</p>
                                 </div>
@@ -84,19 +102,82 @@
                         <!-- Cover Artwork -->
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-zinc-300">Cover Artwork (Optional)</label>
-                            <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950">
+                            <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
                                 <input type="file" name="background_image" id="coverInput" accept="image/*" class="hidden">
                                 
                                 <div id="coverEmpty" class="py-2">
+                                    <i data-lucide="image" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
                                     <p class="text-xs font-bold text-white">Select Cover Image</p>
                                     <p class="text-[10px] text-zinc-500 mt-0.5">Square album art or wallpaper</p>
                                 </div>
 
                                 <div id="coverSelected" class="hidden flex items-center justify-center gap-2">
-                                    <img id="coverPreviewImg" class="w-7 h-7 rounded object-cover border border-zinc-800" src="" alt="Cover">
+                                    <img id="coverPreviewImg" class="w-8 h-8 rounded-lg object-cover border border-zinc-800 shrink-0" src="" alt="Cover">
                                     <p id="coverFileName" class="text-xs font-bold text-zinc-200 truncate">cover.jpg</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- MODE B: Video File Uploads (Overlay Lyrics on Video) -->
+                    <div id="videoModeContainer" class="hidden space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Source Video File -->
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-zinc-300">Source Video File (.mp4, .mov) <span class="text-rose-400">*</span></label>
+                                <div id="videoDropZone" class="border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                    <input type="file" name="video_file" id="videoInput" accept="video/*,.mp4,.mov,.webm,.mkv" class="hidden">
+                                    
+                                    <div id="videoEmpty" class="py-2">
+                                        <i data-lucide="film" class="w-5 h-5 text-zinc-400 mx-auto mb-1"></i>
+                                        <p class="text-xs font-bold text-white">Select Video File</p>
+                                        <p class="text-[10px] text-zinc-500 mt-0.5">MP4, MOV, MKV, or WebM</p>
+                                    </div>
+
+                                    <div id="videoSelected" class="hidden text-left w-full">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="video" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                                            <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
+                                        </div>
+                                        <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-1">00:00 • 1080p • 0.0 MB</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Master Audio Replacement -->
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-zinc-300">Replace Audio Track (Optional)</label>
+                                <div id="videoAudioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                    <input type="file" name="replacement_audio" id="videoReplaceAudioInput" accept="audio/*" class="hidden">
+                                    
+                                    <div id="videoAudioEmpty" class="py-2">
+                                        <i data-lucide="disc" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
+                                        <p class="text-xs font-bold text-zinc-300">Custom Master Audio</p>
+                                        <p class="text-[10px] text-zinc-500 mt-0.5">Default uses video's soundtrack</p>
+                                    </div>
+
+                                    <div id="videoAudioSelected" class="hidden text-left w-full flex items-center justify-between">
+                                        <div class="overflow-hidden mr-2">
+                                            <p id="videoAudioFileName" class="text-xs font-bold text-emerald-400 truncate">master.wav</p>
+                                            <p id="videoAudioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">Custom audio loaded • Video muted</p>
+                                        </div>
+                                        <button type="button" id="removeReplacementAudioBtn" class="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" title="Remove custom audio and unmute video">
+                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loop Video Checkbox Option -->
+                        <div>
+                            <label class="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-colors">
+                                <input type="checkbox" name="loop_video" id="loopVideoCheckbox" checked value="true" class="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-emerald-500 focus:ring-0 cursor-pointer">
+                                <div>
+                                    <p class="text-xs font-bold text-zinc-200">Loop video if shorter than audio/lyrics</p>
+                                    <p class="text-[10px] text-zinc-400">Seamlessly repeats short background clips to finish the complete song</p>
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -112,7 +193,7 @@
                         <canvas id="livePreviewCanvas" width="960" height="540" class="w-full h-full object-contain"></canvas>
                     </div>
 
-                    <p class="text-[10px] text-zinc-500 text-center">Simulates font rendering, styling, and word wipes in real-time.</p>
+                    <p class="text-[10px] text-zinc-500 text-center">Simulates live video playback, typography styling & word wipes in real-time.</p>
                 </div>
             </div>
         </div>
@@ -199,6 +280,7 @@
                         <!-- Audio Playback Widget -->
                         <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 space-y-2">
                             <audio id="audioPlayer" class="hidden" preload="auto"></audio>
+                            <video id="previewVideo" class="hidden" playsinline preload="auto"></video>
                             
                             <div class="flex items-center gap-3">
                                 <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center shrink-0 transition-colors">
@@ -351,7 +433,6 @@
     </form>
 </div>
 
-<!-- JavaScript Engine for Tap-to-Sync, Spacebar Rhythm Capture & Live Canvas Simulation -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // State
@@ -360,8 +441,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSyncIndex = 0;
     let activeAnimationStyle = 'KARAOKE_WIPE';
     let loadedCoverImage = null;
+    let currentMode = 'AUDIO'; // 'AUDIO' or 'VIDEO'
+    let videoAnimationId = null;
 
     // Elements
+    const modeAudioBtn = document.getElementById('modeAudioBtn');
+    const modeVideoBtn = document.getElementById('modeVideoBtn');
+    const sourceTypeInput = document.getElementById('sourceTypeInput');
+    const audioModeContainer = document.getElementById('audioModeContainer');
+    const videoModeContainer = document.getElementById('videoModeContainer');
+
     const audioInput = document.getElementById('audioInput');
     const audioDropZone = document.getElementById('audioDropZone');
     const audioEmpty = document.getElementById('audioEmpty');
@@ -369,6 +458,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioFileName = document.getElementById('audioFileName');
     const audioFileDetails = document.getElementById('audioFileDetails');
     const audioPlayer = document.getElementById('audioPlayer');
+
+    const videoInput = document.getElementById('videoInput');
+    const videoDropZone = document.getElementById('videoDropZone');
+    const videoEmpty = document.getElementById('videoEmpty');
+    const videoSelected = document.getElementById('videoSelected');
+    const videoFileName = document.getElementById('videoFileName');
+    const videoFileDetails = document.getElementById('videoFileDetails');
+
+    const videoReplaceAudioInput = document.getElementById('videoReplaceAudioInput');
+    const videoAudioDropZone = document.getElementById('videoAudioDropZone');
+    const videoAudioEmpty = document.getElementById('videoAudioEmpty');
+    const videoAudioSelected = document.getElementById('videoAudioSelected');
+    const videoAudioFileName = document.getElementById('videoAudioFileName');
+    const videoAudioFileDetails = document.getElementById('videoAudioFileDetails');
+    const removeReplacementAudioBtn = document.getElementById('removeReplacementAudioBtn');
+    const previewVideo = document.getElementById('previewVideo');
 
     const coverInput = document.getElementById('coverInput');
     const coverDropZone = document.getElementById('coverDropZone');
@@ -409,6 +514,68 @@ document.addEventListener('DOMContentLoaded', () => {
     const songTitleInput = document.getElementById('songTitleInput');
     const artistNameInput = document.getElementById('artistNameInput');
 
+    function hasReplacementAudio() {
+        return currentMode === 'VIDEO' && videoReplaceAudioInput && videoReplaceAudioInput.files && videoReplaceAudioInput.files[0];
+    }
+
+    // 0. Mode Switcher (Audio vs Video)
+    function setSourceMode(mode) {
+        currentMode = mode;
+        if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
+        if (previewVideo && !previewVideo.paused) previewVideo.pause();
+        if (videoAnimationId) cancelAnimationFrame(videoAnimationId);
+        playIcon.setAttribute('data-lucide', 'play');
+
+        if (mode === 'AUDIO') {
+            sourceTypeInput.value = 'AUDIO_IMAGE';
+            modeAudioBtn.className = "source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white flex items-center gap-1.5";
+            modeVideoBtn.className = "source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white flex items-center gap-1.5";
+            audioModeContainer.classList.remove('hidden');
+            videoModeContainer.classList.add('hidden');
+            previewVideo.muted = true;
+
+            if (audioPlayer.src && audioPlayer.duration) {
+                audioDuration = audioPlayer.duration;
+                totalDurationDisplay.textContent = formatTime(audioDuration);
+                audioScrubber.max = audioDuration;
+                audioScrubber.value = audioPlayer.currentTime;
+                currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+            }
+        } else {
+            sourceTypeInput.value = 'VIDEO';
+            modeVideoBtn.className = "source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white flex items-center gap-1.5";
+            modeAudioBtn.className = "source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white flex items-center gap-1.5";
+            videoModeContainer.classList.remove('hidden');
+            audioModeContainer.classList.add('hidden');
+
+            if (hasReplacementAudio()) {
+                previewVideo.muted = true;
+                if (audioPlayer.src && audioPlayer.duration) {
+                    audioDuration = audioPlayer.duration;
+                } else if (previewVideo.src && previewVideo.duration) {
+                    audioDuration = previewVideo.duration;
+                }
+            } else {
+                previewVideo.muted = false;
+                if (previewVideo.src && previewVideo.duration) {
+                    audioDuration = previewVideo.duration;
+                }
+            }
+
+            if (audioDuration) {
+                totalDurationDisplay.textContent = formatTime(audioDuration);
+                audioScrubber.max = audioDuration;
+                audioScrubber.value = previewVideo.currentTime || 0;
+                currentTimeDisplay.textContent = formatTime(previewVideo.currentTime || 0);
+            }
+        }
+        lucide.createIcons();
+        drawLiveCanvas();
+    }
+
+    if (modeAudioBtn) modeAudioBtn.addEventListener('click', () => setSourceMode('AUDIO'));
+    if (modeVideoBtn) modeVideoBtn.addEventListener('click', () => setSourceMode('VIDEO'));
+
     // 1. Audio Upload Handling
     audioDropZone.addEventListener('click', () => audioInput.click());
     audioInput.addEventListener('change', (e) => {
@@ -433,11 +600,111 @@ document.addEventListener('DOMContentLoaded', () => {
             audioScrubber.max = audioDuration;
             audioEmpty.classList.add('hidden');
             audioSelected.classList.remove('hidden');
-            requestAnimationFrame(drawLiveCanvas);
+            drawLiveCanvas();
         };
     });
 
-    // 2. Cover Artwork Upload
+    // 2. Video Upload Handling
+    if (videoDropZone) {
+        videoDropZone.addEventListener('click', () => videoInput.click());
+    }
+    if (videoInput) {
+        videoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            videoFileName.textContent = file.name;
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+
+            if (!songTitleInput.value) {
+                const rawName = file.name.replace(/\.[^/.]+$/, "");
+                songTitleInput.value = rawName.replace(/[_-]/g, ' ');
+            }
+
+            const objectUrl = URL.createObjectURL(file);
+            previewVideo.src = objectUrl;
+            previewVideo.muted = hasReplacementAudio(); // Mute if custom audio track already present
+            previewVideo.onloadedmetadata = () => {
+                if (!hasReplacementAudio()) {
+                    audioDuration = previewVideo.duration;
+                    totalDurationDisplay.textContent = formatTime(audioDuration);
+                    audioScrubber.max = audioDuration;
+                }
+                videoFileDetails.textContent = `${formatTime(previewVideo.duration)} • ${previewVideo.videoWidth}x${previewVideo.videoHeight} • ${sizeMb} MB`;
+                videoEmpty.classList.add('hidden');
+                videoSelected.classList.remove('hidden');
+
+                // Auto-detect Aspect Ratio from video dimensions
+                if (previewVideo.videoHeight > previewVideo.videoWidth) {
+                    aspectRatioSelect.value = '9:16';
+                    updateAspectRatioUI('9:16');
+                } else {
+                    aspectRatioSelect.value = '16:9';
+                    updateAspectRatioUI('16:9');
+                }
+
+                previewVideo.currentTime = 0;
+                drawLiveCanvas();
+            };
+        });
+    }
+
+    // Video Custom Master Audio Replacement
+    if (videoAudioDropZone) {
+        videoAudioDropZone.addEventListener('click', (e) => {
+            if (e.target.closest('#removeReplacementAudioBtn')) return;
+            videoReplaceAudioInput.click();
+        });
+    }
+    if (videoReplaceAudioInput) {
+        videoReplaceAudioInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            videoAudioFileName.textContent = file.name;
+            videoAudioFileDetails.textContent = `Custom audio loaded • Video muted (${(file.size / 1048576).toFixed(1)} MB)`;
+            videoAudioEmpty.classList.add('hidden');
+            videoAudioSelected.classList.remove('hidden');
+            videoAudioSelected.classList.add('flex');
+
+            // Immediately mute previewVideo
+            previewVideo.muted = true;
+
+            const objectUrl = URL.createObjectURL(file);
+            audioPlayer.src = objectUrl;
+            audioPlayer.onloadedmetadata = () => {
+                audioDuration = audioPlayer.duration || previewVideo.duration;
+                totalDurationDisplay.textContent = formatTime(audioDuration);
+                audioScrubber.max = audioDuration;
+            };
+            lucide.createIcons();
+        });
+    }
+
+    if (removeReplacementAudioBtn) {
+        removeReplacementAudioBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            videoReplaceAudioInput.value = '';
+            videoAudioSelected.classList.add('hidden');
+            videoAudioSelected.classList.remove('flex');
+            videoAudioEmpty.classList.remove('hidden');
+            
+            if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
+            audioPlayer.src = '';
+            
+            // Unmute source video when replacement audio is removed
+            previewVideo.muted = false;
+
+            if (previewVideo.duration) {
+                audioDuration = previewVideo.duration;
+                totalDurationDisplay.textContent = formatTime(audioDuration);
+                audioScrubber.max = audioDuration;
+            }
+            lucide.createIcons();
+        });
+    }
+
+    // 3. Cover Artwork Upload
     coverDropZone.addEventListener('click', () => coverInput.click());
     coverInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -457,31 +724,148 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsDataURL(file);
     });
 
-    // 3. Audio Player Controls
+    // 4. Playback & Video Frame Render Loop
+    function renderVideoLoop() {
+        if (currentMode === 'VIDEO' && previewVideo && !previewVideo.paused) {
+            drawLiveCanvas();
+            videoAnimationId = requestAnimationFrame(renderVideoLoop);
+        }
+    }
+
+    function getActiveTime() {
+        if (currentMode === 'VIDEO' && previewVideo && previewVideo.src) {
+            return previewVideo.currentTime || 0;
+        }
+        return (audioPlayer && audioPlayer.currentTime) || 0;
+    }
+
     playPauseBtn.addEventListener('click', () => {
-        if (!audioPlayer.src) {
-            audioInput.click();
-            return;
-        }
-        if (audioPlayer.paused) {
-            audioPlayer.play();
-            playIcon.setAttribute('data-lucide', 'pause');
+        if (currentMode === 'VIDEO') {
+            if (!previewVideo.src) {
+                videoInput.click();
+                return;
+            }
+            if (previewVideo.paused) {
+                if (hasReplacementAudio() && audioPlayer.src) {
+                    previewVideo.muted = true;
+                    audioPlayer.currentTime = previewVideo.currentTime;
+                    audioPlayer.play().catch(() => {});
+                } else {
+                    previewVideo.muted = false;
+                }
+                previewVideo.play().then(() => {
+                    playIcon.setAttribute('data-lucide', 'pause');
+                    lucide.createIcons();
+                    videoAnimationId = requestAnimationFrame(renderVideoLoop);
+                }).catch(() => {});
+            } else {
+                previewVideo.pause();
+                if (audioPlayer.src) audioPlayer.pause();
+                playIcon.setAttribute('data-lucide', 'play');
+                lucide.createIcons();
+                if (videoAnimationId) cancelAnimationFrame(videoAnimationId);
+                drawLiveCanvas();
+            }
         } else {
-            audioPlayer.pause();
-            playIcon.setAttribute('data-lucide', 'play');
+            if (!audioPlayer.src) {
+                audioInput.click();
+                return;
+            }
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                playIcon.setAttribute('data-lucide', 'pause');
+            } else {
+                audioPlayer.pause();
+                playIcon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
         }
-        lucide.createIcons();
     });
 
+    // Preview video event listeners
+    if (previewVideo) {
+        previewVideo.addEventListener('timeupdate', () => {
+            if (currentMode === 'VIDEO') {
+                const curTime = previewVideo.currentTime;
+                if (hasReplacementAudio()) {
+                    previewVideo.muted = true;
+                    if (audioPlayer.src && Math.abs(audioPlayer.currentTime - curTime) > 0.3) {
+                        audioPlayer.currentTime = curTime;
+                    }
+                }
+                currentTimeDisplay.textContent = formatTime(curTime);
+                audioScrubber.value = curTime;
+                updateActiveTimelineHighlight(curTime);
+                if (previewVideo.paused) drawLiveCanvas();
+            }
+        });
+        previewVideo.addEventListener('pause', () => {
+            if (hasReplacementAudio() && audioPlayer && !audioPlayer.paused) {
+                audioPlayer.pause();
+            }
+        });
+        previewVideo.addEventListener('play', () => {
+            if (hasReplacementAudio() && audioPlayer && audioPlayer.src && audioPlayer.paused) {
+                previewVideo.muted = true;
+                audioPlayer.currentTime = previewVideo.currentTime;
+                audioPlayer.play().catch(() => {});
+            }
+        });
+        previewVideo.addEventListener('ended', () => {
+            const loopEnabled = document.getElementById('loopVideoCheckbox')?.checked ?? true;
+            if (currentMode === 'VIDEO' && loopEnabled) {
+                if (hasReplacementAudio() && audioPlayer && !audioPlayer.paused && audioPlayer.currentTime < (audioDuration - 0.5)) {
+                    previewVideo.currentTime = 0;
+                    previewVideo.play().catch(() => {});
+                    return;
+                }
+            }
+            if (hasReplacementAudio() && audioPlayer && !audioPlayer.paused) {
+                audioPlayer.pause();
+            }
+            playIcon.setAttribute('data-lucide', 'play');
+            lucide.createIcons();
+            if (videoAnimationId) cancelAnimationFrame(videoAnimationId);
+            drawLiveCanvas();
+        });
+        previewVideo.addEventListener('seeked', () => {
+            if (currentMode === 'VIDEO') {
+                if (hasReplacementAudio() && audioPlayer.src) {
+                    audioPlayer.currentTime = previewVideo.currentTime;
+                }
+                drawLiveCanvas();
+            }
+        });
+    }
+
+    // Audio player event listeners
     audioPlayer.addEventListener('timeupdate', () => {
-        currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
-        audioScrubber.value = audioPlayer.currentTime;
-        updateActiveTimelineHighlight(audioPlayer.currentTime);
+        if (currentMode === 'AUDIO') {
+            const curTime = audioPlayer.currentTime;
+            currentTimeDisplay.textContent = formatTime(curTime);
+            audioScrubber.value = curTime;
+            updateActiveTimelineHighlight(curTime);
+            drawLiveCanvas();
+        }
+    });
+    audioPlayer.addEventListener('ended', () => {
+        playIcon.setAttribute('data-lucide', 'play');
+        lucide.createIcons();
         drawLiveCanvas();
     });
 
     audioScrubber.addEventListener('input', (e) => {
-        audioPlayer.currentTime = parseFloat(e.target.value);
+        const t = parseFloat(e.target.value);
+        if (currentMode === 'VIDEO' && previewVideo && previewVideo.src) {
+            previewVideo.currentTime = t;
+            if (hasReplacementAudio() && audioPlayer && audioPlayer.src) {
+                audioPlayer.currentTime = t;
+            }
+        }
+        if (currentMode === 'AUDIO' && audioPlayer && audioPlayer.src) {
+            audioPlayer.currentTime = t;
+        }
+        currentTimeDisplay.textContent = formatTime(t);
         drawLiveCanvas();
     });
 
@@ -489,7 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const speed = parseFloat(btn.dataset.speed);
-            audioPlayer.playbackRate = speed;
+            if (audioPlayer) audioPlayer.playbackRate = speed;
+            if (previewVideo) previewVideo.playbackRate = speed;
             document.querySelectorAll('.speed-btn').forEach(b => {
                 b.className = "speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold";
             });
@@ -562,24 +947,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const vocalSyncBtn = document.getElementById('vocalSyncBtn');
     const searchOnlineBtn = document.getElementById('searchOnlineBtn');
 
-    // 0. AI Lyrics Transcription & Millisecond Timestamp Sync (Local Whisper)
+    // AI Lyrics Transcription & Sync (Whisper AI)
     if (aiTranscribeBtn) {
         aiTranscribeBtn.addEventListener('click', async () => {
-            if (!audioInput.files || !audioInput.files[0]) {
-                alert('Please upload your audio track (.mp3 or .wav) in Step 1 first.');
-                audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                audioInput.click();
-                return;
+            let selectedFile = null;
+            if (currentMode === 'AUDIO') {
+                if (!audioInput.files || !audioInput.files[0]) {
+                    alert('Please upload your audio track (.mp3 or .wav) in Step 1 first.');
+                    audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    audioInput.click();
+                    return;
+                }
+                selectedFile = audioInput.files[0];
+            } else {
+                if (hasReplacementAudio()) {
+                    selectedFile = videoReplaceAudioInput.files[0];
+                } else if (videoInput.files && videoInput.files[0]) {
+                    selectedFile = videoInput.files[0];
+                } else {
+                    alert('Please upload your video file (.mp4 or .mov) in Step 1 first.');
+                    videoDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    videoInput.click();
+                    return;
+                }
             }
 
             const originalHtml = aiTranscribeBtn.innerHTML;
             aiTranscribeBtn.disabled = true;
             aiTranscribeBtn.innerHTML = `<span>AI Listening & Transcribing...</span>`;
-            startProgress('Transcribing song audio with Whisper AI & formatting lyric bars...', 7);
+
+            const usingReplacement = (currentMode === 'VIDEO' && hasReplacementAudio());
+            const progressLabel = usingReplacement
+                ? 'Transcribing replacement audio track with Whisper AI...'
+                : 'Transcribing song audio with Whisper AI & formatting lyric bars...';
+            startProgress(progressLabel, 7);
 
             try {
                 const formData = new FormData();
-                formData.append('audio_file', audioInput.files[0]);
+                if (usingReplacement) {
+                    // Send under replacement_audio key so backend prioritises it
+                    formData.append('replacement_audio', selectedFile);
+                } else {
+                    formData.append('audio_file', selectedFile);
+                }
                 formData.append('model_size', 'base');
                 
                 const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -606,8 +1016,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     completeProgress(`Transcribed ${lyricsArray.length} lyric lines with word-accurate sync!`);
                 } else {
-                    failProgress(data.error || 'AI could not detect lyrics in this audio segment.');
-                    alert(data.error || 'AI transcription could not detect distinct lyrics in this audio segment.');
+                    failProgress(data.error || 'AI could not detect lyrics in this media file.');
+                    alert(data.error || 'AI transcription could not detect distinct lyrics in this media file.');
                 }
             } catch (err) {
                 failProgress('AI Transcription error: ' + err.message);
@@ -620,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Raw Lyrics Line Counter & Auto-sync on text entry
+    // Raw Lyrics Line Counter & Auto-sync on text entry
     rawLyricsTextarea.addEventListener('input', () => {
         const text = rawLyricsTextarea.value.trim();
         const lines = text.split('\n').filter(l => l.trim().length > 0);
@@ -693,23 +1103,43 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        let selectedFile = null;
+        if (currentMode === 'AUDIO') {
+            if (audioInput.files && audioInput.files[0]) {
+                selectedFile = audioInput.files[0];
+            }
+        } else {
+            if (hasReplacementAudio()) {
+                selectedFile = videoReplaceAudioInput.files[0];
+            } else if (videoInput.files && videoInput.files[0]) {
+                selectedFile = videoInput.files[0];
+            }
+        }
+
         const originalHtml = vocalSyncBtn.innerHTML;
         vocalSyncBtn.disabled = true;
         vocalSyncBtn.innerHTML = `<span>Analyzing Vocals...</span>`;
-        startProgress('Analyzing vocal frequencies & syllable boundaries...', 4);
+
+        const usingReplacementVocal = hasReplacementAudio();
+        const vocalProgressLabel = usingReplacementVocal
+            ? 'Analyzing replacement audio vocal frequencies...'
+            : 'Analyzing vocal frequencies & syllable boundaries...';
+        startProgress(vocalProgressLabel, 4);
 
         try {
             const formData = new FormData();
             formData.append('raw_text', rawText);
-            formData.append('duration', audioDuration || (audioPlayer.duration || 180.0));
+            formData.append('duration', audioDuration || (getActiveTime() || 180.0));
             
             const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
             if (csrfTokenEl) {
                 formData.append('csrfmiddlewaretoken', csrfTokenEl.value);
             }
 
-            if (audioInput.files && audioInput.files[0]) {
-                formData.append('audio_file', audioInput.files[0]);
+            if (selectedFile) {
+                // Send under replacement_audio key when it's the custom audio track
+                const fileKey = usingReplacementVocal ? 'replacement_audio' : 'audio_file';
+                formData.append(fileKey, selectedFile);
             }
 
             const resp = await fetch(`{% url 'lyrics_vocal_sync_api' %}`, {
@@ -840,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
     });
 
-    // 5. Render Timeline Items List with Seeking and Timestamp Fine-Tuning
+    // 5. Render Timeline Items List
     function renderTimelineList() {
         syncedCount.textContent = lyricsArray.filter(l => l.start > 0).length;
         lyricsTimelineList.innerHTML = '';
@@ -876,7 +1306,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" class="seek-play-btn p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" data-time="${item.start}" title="Seek audio here">
+                    <button type="button" class="seek-play-btn p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" data-time="${item.start}" title="Seek here">
                         <i data-lucide="play" class="w-3 h-3"></i>
                     </button>
                     <button type="button" class="nudge-btn px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-mono text-[10px]" data-idx="${index}" data-delta="-0.2" title="Shift earlier 0.2s">-0.2s</button>
@@ -889,17 +1319,28 @@ document.addEventListener('DOMContentLoaded', () => {
             lyricsTimelineList.appendChild(row);
         });
 
-        // Seek Audio button
+        // Seek button
         document.querySelectorAll('.seek-play-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const t = parseFloat(btn.dataset.time);
-                if (t >= 0 && audioPlayer.src) {
-                    audioPlayer.currentTime = t;
-                    if (audioPlayer.paused) {
-                        audioPlayer.play();
-                        playIcon.setAttribute('data-lucide', 'pause');
-                        lucide.createIcons();
+                if (t >= 0) {
+                    if (currentMode === 'VIDEO' && previewVideo.src) {
+                        previewVideo.currentTime = t;
+                        if (previewVideo.paused) {
+                            previewVideo.play().then(() => {
+                                playIcon.setAttribute('data-lucide', 'pause');
+                                lucide.createIcons();
+                                videoAnimationId = requestAnimationFrame(renderVideoLoop);
+                            }).catch(() => {});
+                        }
+                    } else if (audioPlayer.src) {
+                        audioPlayer.currentTime = t;
+                        if (audioPlayer.paused) {
+                            audioPlayer.play();
+                            playIcon.setAttribute('data-lucide', 'pause');
+                            lucide.createIcons();
+                        }
                     }
                 }
             });
@@ -979,9 +1420,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fontFamilySelect.addEventListener('change', drawLiveCanvas);
     positionModeSelect.addEventListener('change', drawLiveCanvas);
 
-    // Aspect Ratio toggle
-    aspectRatioSelect.addEventListener('change', (e) => {
-        if (e.target.value === '9:16') {
+    // Aspect Ratio toggle helper
+    function updateAspectRatioUI(ratio) {
+        if (ratio === '9:16') {
             previewFrame.className = "w-48 aspect-[9/16] bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-xl transition-all";
             livePreviewCanvas.width = 540;
             livePreviewCanvas.height = 960;
@@ -993,6 +1434,10 @@ document.addEventListener('DOMContentLoaded', () => {
             previewAspectBadge.textContent = "16:9 HD";
         }
         drawLiveCanvas();
+    }
+
+    aspectRatioSelect.addEventListener('change', (e) => {
+        updateAspectRatioUI(e.target.value);
     });
 
     // 7. Live Interactive HTML5 Canvas Simulation Renderer
@@ -1004,8 +1449,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         canvasCtx.clearRect(0, 0, w, h);
 
-        // 1. Background & Artwork
-        if (loadedCoverImage) {
+        // 1. Background & Artwork / Video
+        if (currentMode === 'VIDEO' && previewVideo && previewVideo.src && previewVideo.readyState >= 2) {
+            // Draw video frame to canvas
+            canvasCtx.drawImage(previewVideo, 0, 0, w, h);
+
+            // Translucent dark overlay for optimal typography legibility over video
+            canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            canvasCtx.fillRect(0, 0, w, h);
+        } else if (loadedCoverImage && currentMode === 'AUDIO') {
             // Draw blurred ambient background
             canvasCtx.filter = 'blur(20px) brightness(0.35)';
             canvasCtx.drawImage(loadedCoverImage, 0, 0, w, h);
@@ -1035,7 +1487,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Active Lyric Line detection
-        const curTime = audioPlayer.currentTime || 0;
+        const curTime = getActiveTime();
         let activeIdx = -1;
         for (let i = 0; i < lyricsArray.length; i++) {
             if (curTime >= lyricsArray[i].start && curTime <= lyricsArray[i].end) {
@@ -1149,11 +1601,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderSubmitBtn = document.getElementById('renderSubmitBtn');
     if (lyricsForm) {
         lyricsForm.addEventListener('submit', (e) => {
-            if (!audioInput.files || !audioInput.files[0]) {
-                e.preventDefault();
-                alert('Please upload an audio track (.mp3 or .wav) in Step 1.');
-                audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
+            if (currentMode === 'AUDIO') {
+                if (!audioInput.files || !audioInput.files[0]) {
+                    e.preventDefault();
+                    alert('Please upload an audio track (.mp3 or .wav) in Step 1.');
+                    audioDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            } else {
+                if (!videoInput.files || !videoInput.files[0]) {
+                    e.preventDefault();
+                    alert('Please upload a source video file (.mp4 or .mov) in Step 1.');
+                    videoDropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
             }
             updateHiddenJson();
             renderSubmitBtn.disabled = true;

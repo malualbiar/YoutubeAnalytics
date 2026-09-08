@@ -273,6 +273,10 @@ class ShortVideoProject(models.Model):
 
 
 class LyricVideoProject(models.Model):
+    class SourceType(models.TextChoices):
+        AUDIO_IMAGE = 'AUDIO_IMAGE', 'Audio Track + Cover Art'
+        VIDEO = 'VIDEO', 'Source Video File (.mp4, .mov, .webm)'
+
     class AnimationStyle(models.TextChoices):
         KARAOKE_WIPE = 'KARAOKE_WIPE', 'Karaoke Color Wipe & Glow'
         ROLLING_3LINE = 'ROLLING_3LINE', 'Smooth 3-Line Rolling Display'
@@ -291,7 +295,12 @@ class LyricVideoProject(models.Model):
 
     title = models.CharField(max_length=255, default='My Song Lyrics')
     artist_name = models.CharField(max_length=255, blank=True, default='')
-    audio_file = models.FileField(upload_to='studio/lyrics_audio/')
+    source_type = models.CharField(
+        max_length=20,
+        choices=SourceType.choices,
+        default=SourceType.AUDIO_IMAGE
+    )
+    audio_file = models.FileField(upload_to='studio/lyrics_audio/', blank=True, null=True)
     background_image = models.ImageField(upload_to='studio/lyrics_bg/', blank=True, null=True)
     background_video = models.FileField(upload_to='studio/lyrics_bg_video/', blank=True, null=True)
 

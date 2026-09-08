@@ -340,8 +340,10 @@ class LyricsStudioTestCase(TestCase):
         self.assertEqual(len(data.get('lyrics_data')), 1)
 
     # 7. AI Whisper Lyrics Transcription & Sync
-    @patch('faster_whisper.WhisperModel')
-    def test_transcribe_and_sync_with_whisper(self, mock_whisper_class):
+    def test_transcribe_and_sync_with_whisper(self):
+        import sys
+        from unittest.mock import MagicMock
+
         class MockWord:
             def __init__(self, word, start, end):
                 self.word = word
@@ -360,6 +362,8 @@ class LyricsStudioTestCase(TestCase):
             language_probability = 0.98
             duration = 30.0
 
+        mock_module = MagicMock()
+        mock_whisper_class = mock_module.WhisperModel
         mock_instance = mock_whisper_class.return_value
         mock_instance.transcribe.return_value = (
             [
@@ -379,24 +383,25 @@ class LyricsStudioTestCase(TestCase):
             MockInfo()
         )
 
-        audio_file = self.create_mock_audio_file("ai_song.wav")
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tf:
-            tf.write(audio_file.read())
-            temp_path = tf.name
+        with patch.dict(sys.modules, {'faster_whisper': mock_module}):
+            audio_file = self.create_mock_audio_file("ai_song.wav")
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tf:
+                tf.write(audio_file.read())
+                temp_path = tf.name
 
-        try:
-            res = LyricsEngineService.transcribe_and_sync_with_whisper(temp_path, model_size='base')
-            self.assertTrue(res['success'])
-            self.assertEqual(len(res['lyrics_data']), 1)
-            self.assertEqual(res['lyrics_data'][0]['line'], "Starlight in the evening sky")
-            self.assertEqual(res['lyrics_data'][0]['start'], 2.5)
-            self.assertEqual(len(res['lyrics_data'][0]['words']), 5)
-            self.assertEqual(res['detected_language'], 'en')
-        finally:
-            import os
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+            try:
+                res = LyricsEngineService.transcribe_and_sync_with_whisper(temp_path, model_size='base')
+                self.assertTrue(res['success'])
+                self.assertEqual(len(res['lyrics_data']), 1)
+                self.assertEqual(res['lyrics_data'][0]['line'], "Starlight in the evening sky")
+                self.assertEqual(res['lyrics_data'][0]['start'], 2.5)
+                self.assertEqual(len(res['lyrics_data'][0]['words']), 5)
+                self.assertEqual(res['detected_language'], 'en')
+            finally:
+                import os
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
     @patch('apps.studio.services.lyrics_engine.LyricsEngineService.transcribe_and_sync_with_whisper')
     def test_lyrics_ai_transcribe_api_endpoint(self, mock_transcribe):
@@ -421,6 +426,28 @@ class LyricsStudioTestCase(TestCase):
         self.assertEqual(len(data.get('lyrics_data')), 1)
         self.assertIn("AI generated vocal line", data.get('plain_lyrics'))
 
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.transcribe_and_sync_with_whisper')
+    def test_lyrics_ai_transcribe_api_endpoint_with_video(self, mock_transcribe):
+        mock_transcribe.return_value = {
+            'success': True,
+            'lyrics_data': [
+                {'line': 'Video soundtrack lyrics line', 'start': 2.0, 'end': 6.0, 'words': []}
+            ],
+            'plain_lyrics': 'Video soundtrack lyrics line',
+            'detected_language': 'en',
+            'duration': 30.0
+        }
+
+        mock_video = SimpleUploadedFile("clip.mp4", b"dummy video content", content_type="video/mp4")
+        response = self.client.post(reverse('lyrics_ai_transcribe_api'), {
+            'video_file': mock_video,
+            'model_size': 'base'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(len(data.get('lyrics_data')), 1)
+
     def test_format_words_into_lyric_bars_splits_long_lines(self):
         words = [
             {'word': 'Dancing', 'start': 1.0, 'end': 1.5},
@@ -441,6 +468,55 @@ class LyricsStudioTestCase(TestCase):
         self.assertLessEqual(bars[0]['end'], 3.0)
         self.assertEqual(bars[1]['line'], "watching all the neon lights glow")
         self.assertEqual(bars[1]['start'], 3.0)
+
+    # 8. Video Source Rendering & APIs
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.render_lyrics_video')
+    def test_lyrics_render_view_video_source(self, mock_render):
+        mock_render.return_value = {'success': True, 'duration': 60.0, 'output_video': 'out_video.mp4'}
+
+        video_file = SimpleUploadedFile("music_video.mp4", b"fake video bytes", content_type="video/mp4")
+        lyrics_json = json.dumps([
+            {"line": "Overlaying lyrics on video", "start": 0.0, "end": 5.0}
+        ])
+
+        response = self.client.post(reverse('lyrics_render'), {
+            'title': 'My Music Video with Lyrics',
+            'artist_name': 'Director Cut',
+            'source_type': 'VIDEO',
+            'video_file': video_file,
+            'lyrics_data': lyrics_json,
+            'animation_style': 'CYBER_NEON',
+            'aspect_ratio': '16:9'
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        project = LyricVideoProject.objects.get(title='My Music Video with Lyrics')
+        self.assertEqual(project.source_type, LyricVideoProject.SourceType.VIDEO)
+        self.assertTrue(bool(project.background_video))
+        self.assertEqual(project.render_status, LyricVideoProject.Status.COMPLETED)
+        mock_render.assert_called_once()
+
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.detect_vocal_segments')
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.inspect_media_duration')
+    def test_lyrics_vocal_sync_api_with_video(self, mock_dur, mock_detect):
+        mock_dur.return_value = 50.0
+        mock_detect.return_value = [
+            {'start': 3.0, 'end': 12.0, 'duration': 9.0},
+            {'start': 16.0, 'end': 28.0, 'duration': 12.0}
+        ]
+
+        video_file = SimpleUploadedFile("clip_sync.mp4", b"fake video bytes", content_type="video/mp4")
+        response = self.client.post(reverse('lyrics_vocal_sync_api'), {
+            'raw_text': "Video Line 1\nVideo Line 2",
+            'video_file': video_file,
+            'duration': 50.0
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertTrue(data.get('is_vocal_detected'))
+        self.assertEqual(len(data.get('lyrics_data')), 2)
+
 
 
 

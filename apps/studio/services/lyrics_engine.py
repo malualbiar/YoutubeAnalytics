@@ -462,56 +462,132 @@ class LyricsEngineService:
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
-        # Choose efficient INT8 quantization on CPU
-        model = WhisperModel(model_size, device="cpu", compute_type="int8")
-        
-        # Transcribe with word timestamps and VAD filter to ignore silence
-        prompt_text = initial_prompt or "Song lyrics formatted in short musical bars and rhyming verse lines."
-        segments, info = model.transcribe(
-            audio_path,
-            beam_size=5,
-            word_timestamps=True,
-            vad_filter=True,
-            vad_parameters=dict(min_silence_duration_ms=350),
-            initial_prompt=prompt_text
-        )
+        # If input is a video file, pre-extract audio to a clean 16kHz mono WAV.
+        # This avoids codec issues and ensures Whisper processes the complete audio track.
+        _video_exts = {'.mp4', '.mov', '.mkv', '.webm', '.avi', '.m4v', '.flv'}
+        extracted_wav = None
+        if os.path.splitext(audio_path)[1].lower() in _video_exts:
+            import tempfile
+            ffmpeg = cls.get_ffmpeg_binary()
+            tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+            tmp.close()
+            extracted_wav = tmp.name
+            cmd = [
+                ffmpeg, '-y', '-i', audio_path,
+                '-vn',                # drop video stream
+                '-ac', '1',          # mono
+                '-ar', '16000',      # 16kHz — Whisper's native rate
+                '-c:a', 'pcm_s16le', # uncompressed WAV
+                extracted_wav
+            ]
+            result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            if result.returncode != 0 or not os.path.exists(extracted_wav):
+                # Fallback: pass the original file directly
+                extracted_wav = None
+            else:
+                audio_path = extracted_wav
 
-        all_words = []
+        try:
+            # Choose efficient INT8 quantization on CPU
+            model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
-        for seg in segments:
-            if seg.words:
-                for w in seg.words:
-                    clean_w = w.word.strip()
-                    if clean_w:
+            # VAD filter is disabled for music — it silences instrumental sections,
+            # reverb tails, and quiet passages, causing whole verses to be dropped.
+            # condition_on_previous_text=False prevents hallucination loops.
+            prompt_text = initial_prompt if initial_prompt else "Lyrics:"
+            segments, info = model.transcribe(
+                audio_path,
+                beam_size=5,
+                word_timestamps=True,
+                vad_filter=False,
+                condition_on_previous_text=False,
+                no_speech_threshold=0.5,
+                initial_prompt=prompt_text
+            )
+
+            all_words = []
+            _prompt_lower = prompt_text.lower().strip().rstrip(':').strip()
+
+            # Known Whisper hallucination phrases — only exact full-segment matches
+            _HALLUCINATION_PHRASES = {
+                "song lyrics formatted in short musical bars and rhyming verse lines",
+                "lyrics formatted in short musical bars and rhyming verse lines",
+                "thank you for watching",
+                "thanks for watching",
+                "please subscribe",
+                "like and subscribe",
+                "subtitles by",
+                "transcribed by",
+            }
+
+            def _is_hallucination(text):
+                t = text.lower().strip().rstrip('.')
+                if t in _HALLUCINATION_PHRASES:
+                    return True
+                if _prompt_lower and t == _prompt_lower:
+                    return True
+                return False
+
+            # Track repeated runs: skip a segment ONLY if it repeats 3+ consecutive times
+            # (real choruses repeat, but Whisper hallucination loops repeat 10-20+ times)
+            _repeat_text = None
+            _repeat_count = 0
+
+            for seg in segments:
+                seg_text = seg.text.strip() if seg.text else ''
+                if not seg_text:
+                    continue
+
+                if seg_text == _repeat_text:
+                    _repeat_count += 1
+                    if _repeat_count >= 3:
+                        continue
+                else:
+                    _repeat_text = seg_text
+                    _repeat_count = 1
+
+                if _is_hallucination(seg_text):
+                    continue
+
+                if seg.words:
+                    for w in seg.words:
+                        clean_w = w.word.strip()
+                        if clean_w:
+                            all_words.append({
+                                'word': clean_w,
+                                'start': round(w.start, 2),
+                                'end': round(w.end, 2)
+                            })
+                else:
+                    words_list = seg_text.split()
+                    dur = max(0.5, seg.end - seg.start)
+                    slot = dur / len(words_list)
+                    for s_idx, wt in enumerate(words_list):
                         all_words.append({
-                            'word': clean_w,
-                            'start': round(w.start, 2),
-                            'end': round(w.end, 2)
+                            'word': wt,
+                            'start': round(seg.start + s_idx * slot, 2),
+                            'end': round(seg.start + (s_idx + 1) * slot, 2)
                         })
-            elif seg.text and seg.text.strip():
-                # Fallback: estimate word timestamps if word-level missing
-                words_list = seg.text.strip().split()
-                dur = max(0.5, seg.end - seg.start)
-                slot = dur / len(words_list)
-                for s_idx, wt in enumerate(words_list):
-                    all_words.append({
-                        'word': wt,
-                        'start': round(seg.start + s_idx * slot, 2),
-                        'end': round(seg.start + (s_idx + 1) * slot, 2)
-                    })
 
-        # Format all timestamped words into clean, short song lyric bars (4-7 words per line)
-        lyrics_data = cls.format_words_into_lyric_bars(all_words, max_words=7, max_chars=36)
-        plain_lines = [b['line'] for b in lyrics_data]
+            # Format all timestamped words into clean, short song lyric bars
+            lyrics_data = cls.format_words_into_lyric_bars(all_words, max_words=7, max_chars=36)
+            plain_lines = [b['line'] for b in lyrics_data]
 
-        return {
-            'success': True,
-            'lyrics_data': lyrics_data,
-            'plain_lyrics': "\n".join(plain_lines),
-            'detected_language': info.language,
-            'language_probability': round(getattr(info, 'language_probability', 1.0), 2),
-            'duration': round(getattr(info, 'duration', 0.0), 2)
-        }
+            return {
+                'success': True,
+                'lyrics_data': lyrics_data,
+                'plain_lyrics': "\n".join(plain_lines),
+                'detected_language': info.language,
+                'language_probability': round(getattr(info, 'language_probability', 1.0), 2),
+                'duration': round(getattr(info, 'duration', 0.0), 2)
+            }
+        finally:
+            # Clean up temp extracted WAV if we created one from a video file
+            if extracted_wav and os.path.exists(extracted_wav):
+                try:
+                    os.remove(extracted_wav)
+                except Exception:
+                    pass
 
     @classmethod
     def hex_to_ass_color(cls, hex_str, alpha=0):
@@ -795,7 +871,7 @@ class LyricsEngineService:
     @classmethod
     def render_lyrics_video(
         cls,
-        audio_path,
+        audio_path=None,
         background_image_path=None,
         background_video_path=None,
         lyrics_data=None,
@@ -808,20 +884,39 @@ class LyricsEngineService:
         text_color='#FFFFFF',
         position_mode='CENTER',
         title='Lyric Video',
-        artist=''
+        artist='',
+        loop_video=True
     ):
         """
         Renders complete 1080p synchronized lyric video using local FFmpeg and ASS subtitle engine.
+        Supports both:
+        1. Source Video File (overlays lyrics onto existing video, preserving or replacing audio)
+        2. Audio File + Cover Artwork / Ambient Dark Canvas
         """
         ffmpeg = cls.get_ffmpeg_binary()
-        audio_path = os.path.abspath(str(audio_path))
         output_video_path = os.path.abspath(str(output_video_path))
         os.makedirs(os.path.dirname(output_video_path), exist_ok=True)
 
-        if not os.path.exists(audio_path):
-            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        # Validate input paths
+        has_audio = bool(audio_path and os.path.exists(str(audio_path)))
+        has_video = bool(background_video_path and os.path.exists(str(background_video_path)))
 
-        duration = cls.inspect_media_duration(audio_path)
+        if not has_audio and not has_video:
+            raise FileNotFoundError("Neither a valid audio file nor a source video file was provided.")
+
+        if has_audio:
+            audio_path = os.path.abspath(str(audio_path))
+            duration = cls.inspect_media_duration(audio_path)
+        else:
+            bg_vid = os.path.abspath(str(background_video_path))
+            duration = cls.inspect_media_duration(bg_vid)
+
+        # Ensure duration covers the entire lyrics timeline if looping enabled or audio present
+        if lyrics_data:
+            max_lyric_end = max([float(item.get('end', 0.0)) for item in lyrics_data if isinstance(item, dict) and 'end' in item] or [0.0])
+            if max_lyric_end > duration and (loop_video or has_audio):
+                duration = round(max_lyric_end, 2)
+
         if duration <= 0:
             duration = 60.0
 
@@ -851,34 +946,58 @@ class LyricsEngineService:
             # Escape subtitle path for FFmpeg filter on Windows
             escaped_ass_path = ass_path.replace('\\', '/').replace(':', '\\:')
 
-            # 2. Build FFmpeg command depending on background source
-            if background_video_path and os.path.exists(background_video_path):
+            # 2. Build FFmpeg command depending on source media
+            if has_video:
                 bg_vid = os.path.abspath(str(background_video_path))
-                # Loop background video to audio duration and burn in subtitles
                 vf_filter = (
                     f"scale={width}:{height}:force_original_aspect_ratio=increase,"
                     f"crop={width}:{height},"
                     f"ass='{escaped_ass_path}'"
                 )
-                cmd = [
-                    ffmpeg, '-y',
-                    '-stream_loop', '-1',
-                    '-i', bg_vid,
-                    '-i', audio_path,
-                    '-vf', vf_filter,
-                    '-c:v', 'libx264',
-                    '-preset', 'fast',
-                    '-crf', '20',
-                    '-pix_fmt', 'yuv420p',
-                    '-c:a', 'aac',
-                    '-b:a', '192k',
-                    '-shortest',
-                    '-t', str(duration),
-                    '-movflags', '+faststart',
-                    output_video_path
-                ]
+
+                stream_loop_args = ['-stream_loop', '-1'] if loop_video else []
+
+                if has_audio:
+                    # Video source + custom audio track replacement
+                    cmd = [
+                        ffmpeg, '-y'
+                    ] + stream_loop_args + [
+                        '-i', bg_vid,
+                        '-i', audio_path,
+                        '-map', '0:v:0',
+                        '-map', '1:a:0',
+                        '-vf', vf_filter,
+                        '-c:v', 'libx264',
+                        '-preset', 'fast',
+                        '-crf', '20',
+                        '-pix_fmt', 'yuv420p',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-t', str(duration),
+                        '-movflags', '+faststart',
+                        output_video_path
+                    ]
+                else:
+                    # Source video file alone (overlays lyrics onto video, preserves video soundtrack)
+                    cmd = [
+                        ffmpeg, '-y'
+                    ] + stream_loop_args + [
+                        '-i', bg_vid,
+                        '-vf', vf_filter,
+                        '-map', '0:v:0',
+                        '-map', '0:a?',
+                        '-c:v', 'libx264',
+                        '-preset', 'fast',
+                        '-crf', '20',
+                        '-pix_fmt', 'yuv420p',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-t', str(duration),
+                        '-movflags', '+faststart',
+                        output_video_path
+                    ]
             else:
-                # Prepare background image frame
+                # Prepare background image frame + audio
                 frame_path = os.path.join(temp_dir, "bg_frame.jpg")
                 cls.generate_ambient_background_frame(
                     background_image_path=background_image_path,

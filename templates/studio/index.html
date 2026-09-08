@@ -126,6 +126,8 @@
                             {{ l.title }}
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
+                            <span class="text-zinc-300 font-medium">{{ l.get_source_type_display }}</span>
+                            <span>•</span>
                             <span class="text-zinc-300 font-medium">{{ l.get_animation_style_display }}</span>
                             <span>•</span>
                             <span>{{ l.duration_formatted }}</span>

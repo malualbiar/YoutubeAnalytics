@@ -687,8 +687,8 @@ def shorts_export_zip_view(request, pk):
 def lyrics_maker_view(request):
     """
     Interactive Studio for creating synchronized lyric videos:
-    - Audio (.mp3, .wav) + Cover Art / Video Background
-    - Interactive Tap-to-Sync (Spacebar rhythmic capture)
+    - Audio (.mp3, .wav) + Cover Art / Video Background OR Direct Video File (.mp4, .mov)
+    - Interactive Tap-to-Sync (Spacebar rhythmic capture) with live video playback
     - Import / Export .LRC files or paste plain lyrics
     - Multi-style typography (Karaoke Wipe, Rolling 3-Line, Cyber Neon, Cinematic Minimal)
     - 16:9 Landscape & 9:16 Vertical formats
@@ -707,6 +707,7 @@ def lyrics_maker_view(request):
 
     return render(request, 'studio/lyrics_maker.html', {
         'edit_project': edit_project,
+        'source_types': LyricVideoProject.SourceType.choices,
         'animation_styles': LyricVideoProject.AnimationStyle.choices,
         'aspect_ratios': LyricVideoProject.AspectRatio.choices,
     })
@@ -717,6 +718,7 @@ def lyrics_maker_view(request):
 def lyrics_render_view(request):
     """
     Handles form submission to render a synchronized lyric video with FFmpeg.
+    Supports both Audio Track + Cover Art and direct Video File inputs.
     """
     if not request.user.is_super_admin:
         messages.error(request, "Access denied. Super Admin privileges required.")
@@ -724,6 +726,7 @@ def lyrics_render_view(request):
 
     title = request.POST.get('title', '').strip() or 'My Song Lyrics'
     artist_name = request.POST.get('artist_name', '').strip()
+    source_type = request.POST.get('source_type', LyricVideoProject.SourceType.AUDIO_IMAGE)
     animation_style = request.POST.get('animation_style', LyricVideoProject.AnimationStyle.KARAOKE_WIPE)
     aspect_ratio = request.POST.get('aspect_ratio', LyricVideoProject.AspectRatio.LANDSCAPE_16_9)
     font_family = request.POST.get('font_family', 'Arial').strip()
@@ -734,13 +737,22 @@ def lyrics_render_view(request):
     lyrics_raw_text = request.POST.get('lyrics_raw_text', '').strip()
 
     audio_file = request.FILES.get('audio_file')
+    replacement_audio = request.FILES.get('replacement_audio') or request.FILES.get('replacement_audio_file')
+    video_file = request.FILES.get('video_file') or request.FILES.get('background_video')
     background_image = request.FILES.get('background_image')
-    background_video = request.FILES.get('background_video')
     lrc_file = request.FILES.get('lrc_file')
     lyrics_data_raw = request.POST.get('lyrics_data', '').strip()
 
-    if not audio_file:
-        messages.error(request, "Please upload an audio file (.mp3 or .wav).")
+    # If video file uploaded or mode is video, adjust source_type
+    if video_file:
+        source_type = LyricVideoProject.SourceType.VIDEO
+        final_audio = replacement_audio
+    else:
+        source_type = LyricVideoProject.SourceType.AUDIO_IMAGE
+        final_audio = audio_file
+
+    if not final_audio and not video_file:
+        messages.error(request, "Please upload an audio file (.mp3, .wav) or a video file (.mp4, .mov).")
         return redirect('lyrics_maker')
 
     # Parse or build lyrics data list
@@ -766,9 +778,10 @@ def lyrics_render_view(request):
     project = LyricVideoProject.objects.create(
         title=title,
         artist_name=artist_name,
-        audio_file=audio_file,
+        source_type=source_type,
+        audio_file=final_audio,
         background_image=background_image,
-        background_video=background_video,
+        background_video=video_file,
         lyrics_raw_text=lyrics_raw_text,
         lyrics_data=lyrics_data,
         animation_style=animation_style,
@@ -787,15 +800,19 @@ def lyrics_render_view(request):
     out_path = os.path.join(lyrics_output_dir, out_filename)
 
     try:
-        audio_path = project.audio_file.path
-        bg_img_path = project.background_image.path if project.background_image else None
+        audio_path = project.audio_file.path if project.audio_file else None
         bg_vid_path = project.background_video.path if project.background_video else None
+        bg_img_path = project.background_image.path if project.background_image else None
 
-        # If lyrics_data was auto-estimated, refine with actual audio duration
-        duration = LyricsEngineService.inspect_media_duration(audio_path)
+        primary_media = audio_path or bg_vid_path
+        duration = LyricsEngineService.inspect_media_duration(primary_media) if primary_media else 180.0
+
+        # If lyrics_data was auto-estimated, refine with actual audio/video duration
         if (not lyrics_data_raw and not lrc_file) and lyrics_raw_text:
             lyrics_data = LyricsEngineService.auto_distribute_raw_lyrics(lyrics_raw_text, total_duration=duration)
             project.lyrics_data = lyrics_data
+
+        loop_video = request.POST.get('loop_video') in ('on', 'true', '1', True) or ('loop_video' not in request.POST)
 
         render_res = LyricsEngineService.render_lyrics_video(
             audio_path=audio_path,
@@ -811,7 +828,8 @@ def lyrics_render_view(request):
             text_color=text_color,
             position_mode=position_mode,
             title=title,
-            artist=artist_name
+            artist=artist_name,
+            loop_video=loop_video
         )
 
         project.output_video.name = f"studio/lyrics_output/{out_filename}"
@@ -936,37 +954,38 @@ def lyrics_vocal_sync_api(request):
     Automatic Vocal Frequency Alignment API:
     Isolates vocal frequency bandpass (300Hz-3400Hz), detects singing vs instrumental breaks,
     and automatically snaps text lines to the detected vocal phrase timestamps.
+    Accepts audio files (.mp3, .wav) or video files (.mp4, .mov, .webm, .mkv).
     """
     if not request.user.is_super_admin:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
     raw_text = request.POST.get('raw_text', '').strip()
-    audio_file = request.FILES.get('audio_file')
+    media_file = request.FILES.get('replacement_audio') or request.FILES.get('audio_file') or request.FILES.get('video_file') or request.FILES.get('background_video')
     duration = float(request.POST.get('duration', 180.0))
 
     if not raw_text:
         return JsonResponse({'error': 'Please provide song lyrics text to sync.'}, status=400)
 
-    if not audio_file:
-        # Fallback to even distribution if no audio file uploaded yet
+    if not media_file:
+        # Fallback to even distribution if no audio/video file uploaded yet
         distributed = LyricsEngineService.auto_distribute_raw_lyrics(raw_text, total_duration=duration)
         return JsonResponse({
             'success': True,
             'lyrics_data': distributed,
             'is_vocal_detected': False,
-            'message': 'No audio file uploaded yet. Lyrics spaced evenly across estimated duration.'
+            'message': 'No audio or video file uploaded yet. Lyrics spaced evenly across estimated duration.'
         })
 
     import tempfile
-    ext = os.path.splitext(audio_file.name)[1] or '.wav'
+    ext = os.path.splitext(media_file.name)[1] or '.wav'
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tf:
-        for chunk in audio_file.chunks():
+        for chunk in media_file.chunks():
             tf.write(chunk)
-        temp_audio_path = tf.name
+        temp_media_path = tf.name
 
     try:
-        total_dur = LyricsEngineService.inspect_media_duration(temp_audio_path)
-        vocal_segments = LyricsEngineService.detect_vocal_segments(temp_audio_path)
+        total_dur = LyricsEngineService.inspect_media_duration(temp_media_path)
+        vocal_segments = LyricsEngineService.detect_vocal_segments(temp_media_path)
         aligned = LyricsEngineService.align_lyrics_with_vocal_segments(raw_text, vocal_segments, total_dur)
 
         return JsonResponse({
@@ -987,9 +1006,9 @@ def lyrics_vocal_sync_api(request):
             'message': f'Frequency detector fallback: {str(e)}'
         })
     finally:
-        if os.path.exists(temp_audio_path):
+        if os.path.exists(temp_media_path):
             try:
-                os.remove(temp_audio_path)
+                os.remove(temp_media_path)
             except Exception:
                 pass
 
@@ -1016,29 +1035,29 @@ def lyrics_online_search_api(request):
 def lyrics_ai_transcribe_api(request):
     """
     AI Lyrics Transcription & Millisecond Timestamp Sync API (Local faster-whisper):
-    Takes audio file (AI generated, Suno/Udio, demo, or unreleased),
+    Takes audio file (.mp3, .wav) or video file (.mp4, .mov, .webm, .mkv),
     transcribes singing/speech, and extracts exact word/line timestamps.
     """
     if not request.user.is_super_admin:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
-    audio_file = request.FILES.get('audio_file')
-    if not audio_file:
-        return JsonResponse({'error': 'Please select or upload an audio file first.'}, status=400)
+    media_file = request.FILES.get('replacement_audio') or request.FILES.get('audio_file') or request.FILES.get('video_file') or request.FILES.get('background_video')
+    if not media_file:
+        return JsonResponse({'error': 'Please select or upload an audio or video file first.'}, status=400)
 
     model_size = request.POST.get('model_size', 'base').strip() or 'base'
     initial_prompt = request.POST.get('initial_prompt', '').strip() or None
 
     import tempfile
-    ext = os.path.splitext(audio_file.name)[1] or '.wav'
+    ext = os.path.splitext(media_file.name)[1] or '.wav'
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tf:
-        for chunk in audio_file.chunks():
+        for chunk in media_file.chunks():
             tf.write(chunk)
-        temp_audio_path = tf.name
+        temp_media_path = tf.name
 
     try:
         res = LyricsEngineService.transcribe_and_sync_with_whisper(
-            temp_audio_path,
+            temp_media_path,
             model_size=model_size,
             initial_prompt=initial_prompt
         )
@@ -1047,9 +1066,9 @@ def lyrics_ai_transcribe_api(request):
     except Exception as e:
         return JsonResponse({'error': f"AI Transcription error: {str(e)}"}, status=500)
     finally:
-        if os.path.exists(temp_audio_path):
+        if os.path.exists(temp_media_path):
             try:
-                os.remove(temp_audio_path)
+                os.remove(temp_media_path)
             except Exception:
                 pass
 

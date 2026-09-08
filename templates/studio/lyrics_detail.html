@@ -14,6 +14,9 @@
             <div>
                 <div class="flex items-center gap-2 mb-1">
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50">
+                        {{ project.get_source_type_display }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50">
                         {{ project.get_animation_style_display }}
                     </span>
                     <span class="text-xs text-zinc-400">• {{ project.get_aspect_ratio_display }}</span>
