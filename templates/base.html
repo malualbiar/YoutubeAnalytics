@@ -60,24 +60,121 @@
         ::-webkit-scrollbar-track { background: #121215; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-        
+
+        :root {
+            --sidebar-width: 16rem;
+            --sidebar-collapsed-width: 5.25rem;
+        }
+
         .glass-panel {
             background: rgba(24, 24, 27, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
+
+        .sidebar-shell {
+            width: var(--sidebar-width);
+            transition: width 0.28s ease, opacity 0.2s ease, transform 0.28s ease;
+        }
+
+        body.sidebar-collapsed #sidebar {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        body.sidebar-collapsed .sidebar-brand-copy,
+        body.sidebar-collapsed .sidebar-section-title,
+        body.sidebar-collapsed .sidebar-label,
+        body.sidebar-collapsed .user-meta,
+        body.sidebar-collapsed .nav-badge {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            pointer-events: none;
+            transform: translateX(-6px);
+            transition: opacity 0.18s ease, width 0.18s ease, transform 0.18s ease;
+        }
+
+        body.sidebar-collapsed .brand-logo {
+            display: none !important;
+            opacity: 0;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            overflow: hidden;
+            pointer-events: none;
+            transform: translateX(-6px);
+            transition: opacity 0.18s ease, width 0.18s ease, transform 0.18s ease;
+        }
+
+        a.sidebar-nav-link.flex,
+        .sidebar-nav-link.flex {
+            display: flex !important;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        body.sidebar-collapsed .sidebar-nav-link.flex {
+            gap: 0;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        body.sidebar-collapsed .sidebar-nav-link.flex .nav-text {
+            opacity: 0;
+            width: 0;
+            margin: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transform: translateX(-6px);
+            transition: opacity 0.18s ease, width 0.18s ease, transform 0.18s ease;
+        }
+
+        body.sidebar-collapsed .sidebar-nav-link.flex i {
+            flex-shrink: 0;
+            width: 1rem !important;
+            height: 1rem !important;
+            min-width: 1rem;
+            min-height: 1rem;
+        }
+
+        body.sidebar-collapsed .sidebar-user-card {
+            justify-content: center;
+        }
+
+        body.sidebar-collapsed .sidebar-user-card .user-meta,
+        body.sidebar-collapsed .sidebar-user-card .logout-link {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-dark-950 text-zinc-100 font-sans antialiased h-screen overflow-hidden flex selection:bg-emerald-500 selection:text-black">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('ytquid-sidebar-collapsed') === '1') {
+                    document.body.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {
+                // ignore storage failures
+            }
+        })();
+    </script>
 
     <div class="flex flex-1 h-screen w-full overflow-hidden">
         <!-- Sidebar (Fixed & Persistent) -->
-        <aside class="w-64 bg-dark-900 border-r border-zinc-800/80 flex flex-col h-full z-30 shrink-0 select-none">
+        <aside id="sidebar" class="sidebar-shell bg-dark-900 border-r border-zinc-800/80 flex flex-col h-full z-30 shrink-0 select-none">
             <!-- Brand Header -->
-            <div class="h-16 flex items-center px-6 border-b border-zinc-800/80 gap-3 shrink-0">
-                <img src="/static/img/favicon.svg" class="w-9 h-9 rounded-xl shadow-lg shadow-emerald-500/20 shrink-0" alt="YT Quid Logo">
-                <div>
+            <div class="h-16 flex items-center px-3 border-b border-zinc-800/80 gap-3 shrink-0">
+                <button id="sidebarToggleBtn" type="button" class="w-9 h-9 rounded-lg border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors flex items-center justify-center shrink-0" aria-label="Toggle sidebar">
+                    <i id="sidebarToggleIcon" data-lucide="chevrons-left" class="w-4 h-4"></i>
+                </button>
+                <img src="/static/img/favicon.svg" class="brand-logo w-9 h-9 rounded-xl shadow-lg shadow-emerald-500/20 shrink-0" alt="YT Quid Logo">
+                <div class="sidebar-brand-copy min-w-0 transition-all duration-200">
                     <h1 class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
                         YT Quid
                         <span class="text-[10px] uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-mono">PRO</span>
@@ -88,140 +185,140 @@
 
             <!-- Navigation Links (Scrollable independently if tall) -->
             <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-                <div class="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Main Menu</div>
+                <div class="sidebar-section-title px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-200">Main Menu</div>
                 
-                <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-white"></i>
-                    Dashboard
+                <a href="{% url 'dashboard' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Dashboard</span>
                 </a>
 
-                <a href="{% url 'artist_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'artist' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="mic-2" class="w-4 h-4 text-white"></i>
-                    Artists
+                <a href="{% url 'artist_list' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'artist' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="mic-2" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Artists</span>
                 </a>
 
-                <a href="{% url 'channels_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'channels_list' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="tv-2" class="w-4 h-4 text-white"></i>
-                    Channels
+                <a href="{% url 'channels_list' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'channels_list' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="tv-2" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Channels</span>
                 </a>
 
-                <a href="{% url 'video_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'video' in request.resolver_match.url_name and 'studio' not in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="film" class="w-4 h-4 text-white"></i>
-                    Videos & Songs
+                <a href="{% url 'video_list' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'video' in request.resolver_match.url_name and 'studio' not in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="film" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Videos &amp; Songs</span>
                 </a>
 
-                <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                <div class="sidebar-section-title pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-200">
                     Creator Studio
                 </div>
 
-                <a href="{% url 'lyrics_maker' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'lyrics' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
-                    <span>Lyrics Video Studio</span>
+                <a href="{% url 'lyrics_maker' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'lyrics' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Lyrics Video Studio</span>
                 </a>
 
-                <a href="{% url 'shorts_maker' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'shorts' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="scissors" class="w-4 h-4 text-white"></i>
-                    <span>Shorts Maker</span>
+                <a href="{% url 'shorts_maker' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'shorts' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="scissors" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Shorts Maker</span>
                 </a>
 
-                <a href="{% url 'mix_maker' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'mix' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="disc-3" class="w-4 h-4 text-white"></i>
-                    <span>Non-Stop Mix Studio</span>
+                <a href="{% url 'mix_maker' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'mix' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="disc-3" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Non-Stop Mix Studio</span>
                 </a>
 
-                <a href="{% url 'studio_home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'studio_home' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="video" class="w-4 h-4 text-white"></i>
-                    <span>1-Hour Loop Studio</span>
+                <a href="{% url 'studio_home' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'studio_home' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="video" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">1-Hour Loop Studio</span>
                 </a>
 
-                <a href="{% url 'radar_feed' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'radar' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="radio" class="w-4 h-4 text-white"></i>
-                    <span>AI Music Radar</span>
+                <a href="{% url 'radar_feed' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'radar' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="radio" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">AI Music Radar</span>
                 </a>
 
-                <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                <div class="sidebar-section-title pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-200">
                     Publishing
                 </div>
 
-                <a href="{% url 'publishing_dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'publishing_dashboard' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="upload-cloud" class="w-4 h-4 text-white"></i>
-                    <span>YouTube Publishing</span>
+                <a href="{% url 'publishing_dashboard' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'publishing_dashboard' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="upload-cloud" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">YouTube Publishing</span>
                 </a>
 
-                <a href="{% url 'publishing_queue' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'publishing_queue' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="list-ordered" class="w-4 h-4 text-white"></i>
-                    <span>Queue & History</span>
+                <a href="{% url 'publishing_queue' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'publishing_queue' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="list-ordered" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Queue &amp; History</span>
                 </a>
 
-                <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Intelligence</div>
+                <div class="sidebar-section-title pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-200">Intelligence</div>
 
-                <a href="{% url 'artist_comparison' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'comparison' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="columns-2" class="w-4 h-4 text-white"></i>
-                    Comparisons
+                <a href="{% url 'artist_comparison' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'comparison' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="columns-2" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Comparisons</span>
                 </a>
 
-                <a href="{% url 'revenue_prediction' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'revenue' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="trending-up" class="w-4 h-4 text-white"></i>
-                    Revenue Forecasting
+                <a href="{% url 'revenue_prediction' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'revenue' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Revenue Forecasting</span>
                 </a>
 
-                <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'report' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-white"></i>
-                    Reports & Export
+                <a href="{% url 'reports' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'report' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Reports &amp; Export</span>
                 </a>
 
-                <a href="{% url 'milestones_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'milestones_list' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="award" class="w-4 h-4 text-white"></i>
-                    Milestones
+                <a href="{% url 'milestones_list' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'milestones_list' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="award" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Milestones</span>
                 </a>
 
-                <a href="{% url 'notifications_list' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'notifications_list' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="bell" class="w-4 h-4 text-white"></i>
-                        Alerts
+                <a href="{% url 'notifications_list' %}" class="sidebar-nav-link flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'notifications_list' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i data-lucide="bell" class="w-4 h-4 text-white shrink-0"></i>
+                        <span class="nav-text">Alerts</span>
                     </div>
                     {% if unread_notifications_count > 0 %}
-                    <span class="bg-emerald-500 text-zinc-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ unread_notifications_count }}</span>
+                    <span class="nav-badge bg-emerald-500 text-zinc-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ unread_notifications_count }}</span>
                     {% endif %}
                 </a>
 
-                <div class="pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">System</div>
+                <div class="sidebar-section-title pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-200">System</div>
 
-                <a href="{% url 'api_usage' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'api_usage' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="activity" class="w-4 h-4 text-white"></i>
-                    API Quota Usage
+                <a href="{% url 'api_usage' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'api_usage' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="activity" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">API Quota Usage</span>
                 </a>
 
-                <a href="{% url 'sync_logs' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'sync_logs' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="history" class="w-4 h-4 text-white"></i>
-                    Sync Logs
+                <a href="{% url 'sync_logs' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'sync_logs' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="history" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Sync Logs</span>
                 </a>
 
                 {% if user.is_super_admin %}
-                <a href="{% url 'users_manage' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'users_manage' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="users" class="w-4 h-4 text-white"></i>
-                    Team / Users
+                <a href="{% url 'users_manage' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'users_manage' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="users" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Team / Users</span>
                 </a>
-                <a href="{% url 'system_settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'system_settings' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
-                    <i data-lucide="sliders" class="w-4 h-4 text-white"></i>
-                    Settings
+                <a href="{% url 'system_settings' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.resolver_match.url_name == 'system_settings' %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="sliders" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Settings</span>
                 </a>
                 {% endif %}
             </nav>
 
             <!-- Bottom User Card (Fixed & Permanently Pinned) -->
             <div class="p-3 border-t border-zinc-800/80 bg-dark-950/60 shrink-0 mt-auto">
-                <div class="flex items-center justify-between p-2 rounded-lg bg-dark-800/60 border border-zinc-800/60 hover:border-zinc-700/80 transition-all">
+                <div class="sidebar-user-card flex items-center justify-between p-2 rounded-lg bg-dark-800/60 border border-zinc-800/60 hover:border-zinc-700/80 transition-all">
                     <a href="{% url 'profile' %}" class="flex items-center gap-2.5 overflow-hidden flex-1 group" title="Manage Profile">
                         <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/30 group-hover:scale-105 transition-transform">
                             {{ user.first_name|default:user.username|slice:":1"|upper }}
                         </div>
-                        <div class="truncate">
+                        <div class="user-meta truncate">
                             <p class="text-xs font-medium text-white truncate group-hover:text-emerald-400 transition-colors">{{ user.get_full_name|default:user.username }}</p>
                             <p class="text-[10px] text-zinc-400 truncate">{{ user.get_role_display }}</p>
                         </div>
                     </a>
-                    <a href="{% url 'logout' %}" class="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-all ml-1 shrink-0" title="Logout">
+                    <a href="{% url 'logout' %}" class="logout-link p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-all ml-1 shrink-0" title="Logout">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
                     </a>
                 </div>
@@ -232,12 +329,14 @@
         <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
             <!-- Top Header Bar (Fixed at top of main area) -->
             <header class="h-16 bg-dark-900 border-b border-zinc-800/80 px-6 flex items-center justify-between shrink-0 z-20">
-                <!-- Search Button -->
-                <button onclick="openSearchModal()" class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all text-xs w-72">
-                    <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-400"></i>
-                    <span class="flex-1 text-left">Search artists, videos, channels...</span>
-                    <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] font-mono text-zinc-400">Ctrl K</kbd>
-                </button>
+                <div class="flex items-center gap-3">
+                    <!-- Search Button -->
+                    <button onclick="openSearchModal()" class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all text-xs w-72">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-400"></i>
+                        <span class="flex-1 text-left">Search artists, videos, channels...</span>
+                        <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] font-mono text-zinc-400">Ctrl K</kbd>
+                    </button>
+                </div>
 
                 <!-- Action Controls -->
                 <div class="flex items-center gap-3">
@@ -299,6 +398,60 @@
     </div>
 
     <script>
+        const body = document.body;
+        const key = 'ytquid-sidebar-collapsed';
+
+        function setSidebarState(collapsed) {
+            body.classList.toggle('sidebar-collapsed', collapsed);
+
+            const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+            const desktopButton = document.getElementById('desktopSidebarToggle');
+            const desktopIcon = desktopButton ? desktopButton.querySelector('i') : null;
+
+            if (sidebarToggleIcon) {
+                sidebarToggleIcon.setAttribute('data-lucide', collapsed ? 'chevrons-right' : 'chevrons-left');
+            }
+            if (desktopIcon) {
+                desktopIcon.setAttribute('data-lucide', collapsed ? 'chevrons-right' : 'chevrons-left');
+            }
+
+            try {
+                localStorage.setItem(key, collapsed ? '1' : '0');
+            } catch (e) {
+                // ignore storage failures in private browsing
+            }
+
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        function toggleSidebar() {
+            const collapsed = !body.classList.contains('sidebar-collapsed');
+            setSidebarState(collapsed);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebarToggle = document.getElementById('sidebarToggleBtn');
+            const desktopSidebarToggle = document.getElementById('desktopSidebarToggle');
+
+            try {
+                const saved = localStorage.getItem(key);
+                setSidebarState(saved === '1');
+            } catch (e) {
+                setSidebarState(false);
+            }
+
+            [sidebarToggle, desktopSidebarToggle].forEach((button) => {
+                if (!button) return;
+                button.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleSidebar();
+                });
+            });
+        });
+
         // Initialize Lucide icons
         lucide.createIcons();
 

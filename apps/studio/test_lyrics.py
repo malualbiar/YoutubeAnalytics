@@ -120,6 +120,17 @@ class LyricsStudioTestCase(TestCase):
         self.assertGreater(dist[1]['start'], dist[0]['start'])
         self.assertLessEqual(dist[3]['end'], 40.0)
 
+    def test_normalize_vocal_segments_merges_close_phrases(self):
+        segments = [
+            {'start': 5.0, 'end': 6.0, 'duration': 1.0},
+            {'start': 6.25, 'end': 6.75, 'duration': 0.5},
+            {'start': 7.0, 'end': 10.0, 'duration': 3.0},
+        ]
+        normalized = LyricsEngineService.normalize_vocal_segments(segments, min_gap=0.5, min_duration=0.8)
+        self.assertEqual(len(normalized), 1)
+        self.assertEqual(normalized[0]['start'], 5.0)
+        self.assertEqual(normalized[0]['end'], 10.0)
+
     # 3. ASS Subtitle Script Generation
     def test_generate_ass_subtitles_styles(self):
         lyrics = [
@@ -267,9 +278,9 @@ class LyricsStudioTestCase(TestCase):
         ]
         aligned = LyricsEngineService.align_lyrics_with_vocal_segments(raw_lyrics, vocal_segments, total_duration=40.0)
         self.assertEqual(len(aligned), 4)
-        self.assertGreaterEqual(aligned[0]['start'], 5.0)
+        self.assertGreater(aligned[0]['start'], 5.0)
         self.assertLessEqual(aligned[1]['end'], 15.0)
-        self.assertGreaterEqual(aligned[2]['start'], 20.0)
+        self.assertGreater(aligned[2]['start'], 20.0)
         self.assertLessEqual(aligned[3]['end'], 32.0)
 
     @patch('urllib.request.urlopen')

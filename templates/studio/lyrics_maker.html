@@ -41,21 +41,19 @@
             <div class="lg:col-span-7 space-y-6">
 
                 <!-- STEP 1: Song Info & Media Uploads -->
-                <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3">
+                <div class="p-4 rounded-2xl border border-zinc-800 bg-zinc-900 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-2.5 gap-3">
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center border border-zinc-700">1</span>
+                            <span class="w-5 h-5 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-[10px] flex items-center justify-center border border-zinc-700">1</span>
                             <h3 class="text-sm font-bold text-white">Media Source & Track Info</h3>
                         </div>
 
                         <!-- Source Mode Selector (Audio vs Video) -->
                         <div class="flex items-center p-1 bg-zinc-950 rounded-xl border border-zinc-800">
-                            <button type="button" id="modeAudioBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white flex items-center gap-1.5" data-mode="AUDIO">
-                                <i data-lucide="music" class="w-3.5 h-3.5"></i>
+                            <button type="button" id="modeAudioBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-zinc-800 text-white" data-mode="AUDIO">
                                 <span>Audio + Cover</span>
                             </button>
-                            <button type="button" id="modeVideoBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white flex items-center gap-1.5" data-mode="VIDEO">
-                                <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                            <button type="button" id="modeVideoBtn" class="source-mode-btn px-3 py-1 rounded-lg text-xs font-semibold transition-all text-zinc-400 hover:text-white" data-mode="VIDEO">
                                 <span>Video File (Overlay)</span>
                             </button>
                         </div>
@@ -63,19 +61,19 @@
                     </div>
 
                     <!-- Song Details & File Uploads -->
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         <!-- Title & Artist -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="space-y-1">
-                                <label class="text-xs font-bold text-zinc-300">Song / Video Title <span class="text-rose-400">*</span></label>
+                                <label class="text-[11px] font-bold text-zinc-300">Song / Video Title <span class="text-rose-400">*</span></label>
                                 <input type="text" name="title" id="songTitleInput" required placeholder="e.g. Midnight Waves" 
-                                       class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                                       class="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                             </div>
 
                             <div class="space-y-1">
-                                <label class="text-xs font-bold text-zinc-300">Artist Name</label>
+                                <label class="text-[11px] font-bold text-zinc-300">Artist Name</label>
                                 <input type="text" name="artist_name" id="artistNameInput" placeholder="e.g. Luna Echoes" 
-                                       class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
+                                       class="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600">
                             </div>
                         </div>
 
@@ -83,12 +81,11 @@
                         <div id="audioModeContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Audio File -->
                             <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-zinc-300">Audio Track (.mp3, .wav) <span class="text-rose-400">*</span></label>
-                                <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                <label class="text-[11px] font-bold text-zinc-300">Audio Track (.mp3, .wav) <span class="text-rose-400">*</span></label>
+                                <div id="audioDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-3 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[90px] flex flex-col items-center justify-center">
                                     <input type="file" name="audio_file" id="audioInput" accept="audio/*" class="hidden">
                                     
-                                    <div id="audioEmpty" class="py-2">
-                                        <i data-lucide="music" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
+                                    <div id="audioEmpty" class="py-1.5">
                                         <p class="text-xs font-bold text-white">Select Audio File</p>
                                         <p class="text-[10px] text-zinc-500 mt-0.5">MP3, WAV, AAC, or FLAC</p>
                                     </div>
@@ -102,14 +99,13 @@
 
                             <!-- Cover Artwork -->
                             <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-zinc-300">Cover Artwork (Optional)</label>
-                                <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-4 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[110px] flex flex-col items-center justify-center">
+                                <label class="text-[11px] font-bold text-zinc-300">Cover Artwork (Optional)</label>
+                                <div id="coverDropZone" class="border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-3 text-center cursor-pointer transition-colors bg-zinc-950 min-h-[90px] flex flex-col items-center justify-center">
                                     <input type="file" name="background_image" id="coverInput" accept="image/*" class="hidden">
                                     
-                                    <div id="coverEmpty" class="py-2">
-                                        <i data-lucide="image" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
+                                    <div id="coverEmpty" class="py-1.5">
                                         <p class="text-xs font-bold text-white">Select Cover Image</p>
-                                        <p class="text-[10px] text-zinc-500 mt-0.5">Square album art or wallpaper</p>
+                                        <p class="text-[10px] text-zinc-500 mt-0.5">Square art or wallpaper</p>
                                     </div>
 
                                     <div id="coverSelected" class="hidden flex items-center justify-center gap-2">
@@ -130,16 +126,12 @@
                                         <input type="file" name="video_file" id="videoInput" accept="video/*,.mp4,.mov,.webm,.mkv" class="hidden">
                                         
                                         <div id="videoEmpty" class="py-2">
-                                            <i data-lucide="film" class="w-5 h-5 text-zinc-400 mx-auto mb-1"></i>
                                             <p class="text-xs font-bold text-white">Select Video File</p>
                                             <p class="text-[10px] text-zinc-500 mt-0.5">MP4, MOV, MKV, or WebM</p>
                                         </div>
 
                                         <div id="videoSelected" class="hidden text-left w-full">
-                                            <div class="flex items-center gap-2">
-                                                <i data-lucide="video" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-                                                <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
-                                            </div>
+                                            <p id="videoFileName" class="text-xs font-bold text-white truncate">video.mp4</p>
                                             <p id="videoFileDetails" class="text-[10px] text-zinc-400 font-mono mt-1">00:00 • 1080p • 0.0 MB</p>
                                         </div>
                                     </div>
@@ -152,7 +144,6 @@
                                         <input type="file" name="replacement_audio" id="videoReplaceAudioInput" accept="audio/*" class="hidden">
                                         
                                         <div id="videoAudioEmpty" class="py-2">
-                                            <i data-lucide="disc" class="w-5 h-5 text-zinc-500 mx-auto mb-1"></i>
                                             <p class="text-xs font-bold text-zinc-300">Custom Master Audio</p>
                                             <p class="text-[10px] text-zinc-500 mt-0.5">Default uses video's soundtrack</p>
                                         </div>
@@ -163,7 +154,7 @@
                                                 <p id="videoAudioFileDetails" class="text-[10px] text-zinc-400 font-mono mt-0.5">Custom audio loaded • Video muted</p>
                                             </div>
                                             <button type="button" id="removeReplacementAudioBtn" class="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" title="Remove custom audio and unmute video">
-                                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                                Remove
                                             </button>
                                         </div>
                                     </div>
@@ -194,37 +185,8 @@
 
                         <!-- Utility actions -->
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <button type="button" id="toggleFindReplaceBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors flex items-center gap-1" title="Find and Replace misspelled words">
-                                <i data-lucide="search" class="w-3 h-3 text-zinc-400"></i>
+                            <button type="button" id="toggleFindReplaceBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors" title="Find and Replace misspelled words">
                                 <span>Find & Replace</span>
-                            </button>
-                            <!-- Format Case Dropdown -->
-                            <div class="relative inline-block text-left" id="caseDropdownContainer">
-                                <button type="button" id="caseDropdownBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors flex items-center gap-1">
-                                    <i data-lucide="case-sensitive" class="w-3 h-3 text-zinc-400"></i>
-                                    <span>Format</span>
-                                    <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-400"></i>
-                                </button>
-                                <div id="caseDropdownMenu" class="hidden absolute right-0 mt-1 w-44 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl z-40 p-1.5 space-y-0.5 text-xs">
-                                    <button type="button" onclick="formatLyricsCase('sentence')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">Sentence case</button>
-                                    <button type="button" onclick="formatLyricsCase('title')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">Title Case</button>
-                                    <button type="button" onclick="formatLyricsCase('upper')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">ALL CAPS</button>
-                                    <button type="button" onclick="formatLyricsCase('lower')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 font-medium">lowercase</button>
-                                    <button type="button" onclick="formatLyricsCase('clean_quotes')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-emerald-400 font-medium border-t border-zinc-800 mt-1 pt-1">Fix Smart Quotes</button>
-                                </div>
-                            </div>
-                            <button type="button" id="searchOnlineBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors" title="Search LRCLIB">
-                                Search Online
-                            </button>
-                            <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 cursor-pointer transition-colors">
-                                Import .LRC
-                                <input type="file" id="lrcFileInput" accept=".lrc,.txt" class="hidden">
-                            </label>
-                            <button type="button" id="exportLrcBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
-                                Export .LRC
-                            </button>
-                            <button type="button" id="autoDistributeBtn" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors">
-                                Even Space
                             </button>
                         </div>
                     </div>
@@ -265,87 +227,77 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                        <!-- Left: AI Transcribe & Raw Lyrics Textarea -->
-                        <div class="md:col-span-5 space-y-3">
-                            <!-- Primary AI Transcribe Action -->
-                            <button type="button" id="aiTranscribeBtn" class="w-full py-2.5 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/40 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40">
-                                <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
-                                <span>AI Transcribe & Sync Audio</span>
-                            </button>
-
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-bold text-zinc-300">Song Lyrics Text</label>
-                                <span id="lineCountBadge" class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">0 lines</span>
-                            </div>
-
-                            <textarea id="rawLyricsTextarea" name="lyrics_raw_text" rows="7" spellcheck="true" placeholder="Paste lyrics or click 'AI Transcribe & Sync Audio' above to auto-transcribe vocals with Whisper AI..." 
-                                      class="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-zinc-600"></textarea>
-                            
-                            <div class="space-y-2">
-                                <button type="button" id="vocalSyncBtn" class="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700/60 transition-colors flex items-center justify-center gap-1.5">
-                                    <i data-lucide="activity" class="w-3.5 h-3.5 text-zinc-400"></i>
-                                    <span>Vocal Frequency Auto-Sync</span>
-                                </button>
-                            </div>
-                        </div>
+                        <div class="md:col-span-0 hidden md:block"></div>
 
                         <!-- Right: Audio Player & Timeline View -->
-                        <div class="md:col-span-7 space-y-3 bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                            <!-- Player Controls -->
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between text-xs">
-                                    <span class="font-bold text-white uppercase tracking-wider">Audio Player</span>
-                                    <div class="flex items-center gap-1 text-[10px]">
-                                        <span class="text-zinc-500">Speed:</span>
-                                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="0.75">0.75x</button>
-                                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold" data-speed="1.0">1.0x</button>
-                                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="1.25">1.25x</button>
-                                    </div>
-                                </div>
+                        <div class="md:col-span-12 h-full">
+                            <div class="h-full flex flex-col space-y-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                                <!-- Primary AI Transcribe Action -->
+                                <button type="button" id="aiTranscribeBtn" class="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-bold rounded-xl border border-emerald-500/40 transition-colors shadow-lg shadow-emerald-950/40">
+                                    <span>AI Transcribe & Sync Audio</span>
+                                </button>
 
-                                <!-- Audio Playback Widget -->
-                                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 space-y-2">
-                                    <audio id="audioPlayer" class="hidden" preload="auto"></audio>
-                                    <!-- Hidden video element for audio & frame decoding -->
-                                    <video id="previewVideo" class="hidden" playsinline muted preload="auto"></video>
-                                    
-                                    <div class="flex items-center gap-3">
-                                        <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center shrink-0 transition-colors">
-                                            <i data-lucide="play" class="w-4 h-4 fill-current" id="playIcon"></i>
-                                        </button>
+                                <!-- Player Controls -->
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between text-[10px]">
+                                        <span class="font-bold text-white uppercase tracking-wider">Audio Player</span>
+                                        <div class="flex items-center gap-1 text-[9px]">
+                                            <span class="text-zinc-500">Speed:</span>
+                                            <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="0.75">0.75x</button>
+                                            <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-700 text-white font-semibold" data-speed="1.0">1.0x</button>
+                                            <button type="button" class="speed-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold" data-speed="1.25">1.25x</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Audio Playback Widget -->
+                                    <div class="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 space-y-2">
+                                        <audio id="audioPlayer" class="hidden" preload="auto"></audio>
+                                        <!-- Hidden video element for audio & frame decoding -->
+                                        <video id="previewVideo" class="hidden" playsinline muted preload="auto"></video>
                                         
-                                        <div class="flex-1 space-y-1">
-                                            <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                                                <span id="currentTimeDisplay" class="text-zinc-200 font-semibold">00:00.00</span>
-                                                <span id="totalDurationDisplay">00:00.00</span>
+                                        <div class="flex items-center gap-3">
+                                            <button type="button" id="playPauseBtn" class="w-9 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center shrink-0 transition-colors">
+                                                <i data-lucide="play" class="w-4 h-4 fill-current" id="playIcon"></i>
+                                            </button>
+                                            
+                                            <div class="flex-1 space-y-1">
+                                                <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                                                    <span id="currentTimeDisplay" class="text-zinc-200 font-semibold">00:00.00</span>
+                                                    <span id="totalDurationDisplay">00:00.00</span>
+                                                </div>
+                                                <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.01" 
+                                                       class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                                             </div>
-                                            <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.01" 
-                                                   class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Synchronized Lyric Lines List & Header Actions -->
-                            <div class="space-y-1.5 pt-1">
-                                <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-zinc-300">Synced Timeline (<span id="syncedCount">0</span> lines)</span>
-                                        <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-mono">Spellcheck Active</span>
+                                <!-- Synchronized Lyric Lines List & Header Actions -->
+                                <div class="flex-1 min-h-0 space-y-1.5 pt-1">
+                                    <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-zinc-300">Manual Lyrics Tuner (<span id="syncedCount">0</span> lines)</span>
+                                            <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-mono">Spellcheck Active</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" id="toggleManualLyricsBtn" class="text-[10px] text-zinc-300 hover:text-white font-semibold transition-colors">
+                                                Edit Lyrics
+                                            </button>
+                                            <button type="button" onclick="insertLineBelow(-1)" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold transition-colors" title="Add a new lyric line at start">
+                                                Add Line
+                                            </button>
+                                            <button type="button" id="openFullSpellEditorBtn" class="text-[10px] text-zinc-400 hover:text-white font-semibold transition-colors">
+                                                Full Editor
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" onclick="insertLineBelow(-1)" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5 transition-colors" title="Add a new lyric line at start">
-                                            <i data-lucide="plus" class="w-3 h-3"></i> Add Line
-                                        </button>
-                                        <button type="button" id="openFullSpellEditorBtn" class="text-[10px] text-zinc-400 hover:text-white font-semibold flex items-center gap-0.5 transition-colors">
-                                            <i data-lucide="edit-3" class="w-3 h-3"></i> Full Editor
-                                        </button>
-                                    </div>
-                                </div>
 
-                                <div id="lyricsTimelineList" class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-                                    <div class="text-center py-6 text-zinc-500 text-xs">
-                                        Click "AI Transcribe & Sync Audio" or paste lyrics to start.
+                                    <div id="manualLyricsEditorPanel" class="hidden h-0 overflow-hidden">
+                                        <div id="lyricsTimelineList" class="h-auto max-h-[360px] space-y-1 overflow-y-auto pr-1">
+                                            <div class="text-center py-4 text-zinc-500 text-[11px]">
+                                                Click "AI Transcribe & Sync Audio" or paste lyrics to start.
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -362,142 +314,275 @@
                         </div>
                     </div>
 
-                    <!-- Animation Style Selector Cards -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <!-- Karaoke Wipe -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between" data-style="KARAOKE_WIPE">
-                            <input type="radio" name="animation_style" value="KARAOKE_WIPE" class="hidden" checked>
-                            <span class="text-[11px] font-bold text-white">Karaoke Wipe</span>
-                        </label>
-                        <!-- Rolling 3-Line -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="ROLLING_3LINE">
-                            <input type="radio" name="animation_style" value="ROLLING_3LINE" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Rolling 3-Line</span>
-                        </label>
-                        <!-- Cyber Neon -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CYBER_NEON">
-                            <input type="radio" name="animation_style" value="CYBER_NEON" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Cyber Neon</span>
-                        </label>
-                        <!-- Cinematic -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="CINEMATIC">
-                            <input type="radio" name="animation_style" value="CINEMATIC" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Cinematic Serif</span>
-                        </label>
-                        <!-- Bounce In -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="BOUNCE_IN">
-                            <input type="radio" name="animation_style" value="BOUNCE_IN" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Bounce Pop-In</span>
-                        </label>
-                        <!-- Typewriter -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="TYPEWRITER">
-                            <input type="radio" name="animation_style" value="TYPEWRITER" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Typewriter</span>
-                        </label>
-                        <!-- Wave Pulse -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="WAVE_PULSE">
-                            <input type="radio" name="animation_style" value="WAVE_PULSE" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Wave Pulse</span>
-                        </label>
-                        <!-- Slide Up -->
-                        <label class="style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between" data-style="SLIDE_UP">
-                            <input type="radio" name="animation_style" value="SLIDE_UP" class="hidden">
-                            <span class="text-[11px] font-bold text-white">Smooth Slide Up</span>
-                        </label>
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-950/60 overflow-hidden">
+                        <button type="button" class="collapsible-header w-full flex items-center justify-between px-2.5 py-2.5 text-left" data-target="style-library" aria-expanded="true">
+                            <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Animation Styles</span>
+                            <svg class="chevron h-4 w-4 text-zinc-400 transition-transform rotate-180" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 7.5 10 12.25 14.75 7.5z"/></svg>
+                        </button>
+                        <div id="style-library" class="px-2.5 pb-2.5">
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <span class="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-400">Tier 1 · Core</span>
+                                    </div>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-emerald-400/60 bg-zinc-800/80 p-2 shadow-[0_0_0_1px_rgba(52,211,153,0.15)] transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-500 hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="KARAOKE_WIPE" tabindex="0">
+                                            <input type="radio" name="animation_style" value="KARAOKE_WIPE" class="hidden" checked>
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Karaoke Wipe</span>
+                                                <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-400">Classic</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="ROLLING_3LINE" tabindex="0">
+                                            <input type="radio" name="animation_style" value="ROLLING_3LINE" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Rolling 3-Line</span>
+                                                <span class="h-2 w-2 rounded-full bg-zinc-600"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Smooth</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="PLAYFUL_POP" tabindex="0">
+                                            <input type="radio" name="animation_style" value="PLAYFUL_POP" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Playful Pop</span>
+                                                <span class="h-2 w-2 rounded-full bg-pink-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Bouncy</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="BUBBLE_BOUNCE" tabindex="0">
+                                            <input type="radio" name="animation_style" value="BUBBLE_BOUNCE" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Bubble Bounce</span>
+                                                <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Bubbly</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <span class="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-400">Tier 2 · Creative</span>
+                                    </div>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="DREAMY_DRIFT" tabindex="0">
+                                            <input type="radio" name="animation_style" value="DREAMY_DRIFT" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Dreamy Drift</span>
+                                                <span class="h-2 w-2 rounded-full bg-violet-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Soft</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="NEON_GLOW" tabindex="0">
+                                            <input type="radio" name="animation_style" value="NEON_GLOW" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Neon Glow</span>
+                                                <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Electric</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="HANDWRITTEN_INK" tabindex="0">
+                                            <input type="radio" name="animation_style" value="HANDWRITTEN_INK" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Handwritten Ink</span>
+                                                <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Personal</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="RETRO_VHS" tabindex="0">
+                                            <input type="radio" name="animation_style" value="RETRO_VHS" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Retro VHS</span>
+                                                <span class="h-2 w-2 rounded-full bg-rose-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Nostalgic</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <span class="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-400">Tier 3 · Signature</span>
+                                    </div>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="CINEMATIC" tabindex="0">
+                                            <input type="radio" name="animation_style" value="CINEMATIC" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Cinematic Serif</span>
+                                                <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Epic</span>
+                                        </label>
+
+                                        <label class="style-card group relative flex min-h-[66px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80" data-style="VINTAGE_COUNTRY" tabindex="0">
+                                            <input type="radio" name="animation_style" value="VINTAGE_COUNTRY" class="hidden">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[10px] font-bold text-white">Vintage Country</span>
+                                                <span class="h-2 w-2 rounded-full bg-orange-400"></span>
+                                            </div>
+                                            <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Warm</span>
+                                        </label>
+                                        <div></div>
+                                        <div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Base Settings -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-zinc-300">Font</label>
-                            <select name="font_family" id="fontFamilySelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
-                                <option value="Arial" selected>Arial</option>
-                                <option value="Impact">Impact</option>
-                                <option value="Montserrat">Montserrat</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Verdana">Verdana</option>
-                                <option value="Courier New">Courier New</option>
-                                <option value="Tahoma">Tahoma</option>
-                                <option value="Trebuchet MS">Trebuchet MS</option>
-                                <option value="Comic Sans MS">Comic Sans MS</option>
-                                <option value="Segoe UI">Segoe UI</option>
-                                <option value="Consolas">Consolas</option>
-                                <option value="Times New Roman">Times New Roman</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-xs font-bold text-zinc-300">Size</label><span id="fontSizeDisplay" class="text-[10px] text-zinc-400">48px</span></div>
-                            <input type="range" name="font_size" id="fontSizeSlider" min="20" max="96" value="48" class="w-full accent-emerald-500">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-zinc-300">Position</label>
-                            <select name="position_mode" id="positionModeSelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
-                                <option value="TOP">Top</option><option value="CENTER" selected>Center</option><option value="BOTTOM">Bottom</option>
-                            </select>
-                        </div>
-                    </div>
+                    <div class="space-y-3">
+                        <div class="rounded-xl border border-zinc-800 bg-zinc-950/60 overflow-hidden">
+                            <button type="button" class="collapsible-header w-full flex items-center justify-between px-2.5 py-2.5 text-left" data-target="text-settings" aria-expanded="true">
+                                <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Text</span>
+                                <svg class="chevron h-4 w-4 text-zinc-400 transition-transform rotate-180" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 7.5 10 12.25 14.75 7.5z"/></svg>
+                            </button>
+                            <div id="text-settings" class="px-2.5 pb-2.5">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Font</label>
+                                        <select name="font_family" id="fontFamilySelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
+                                            <option value="Arial" selected>Arial</option>
+                                            <option value="Impact">Impact</option>
+                                            <option value="Montserrat">Montserrat</option>
+                                            <option value="Georgia">Georgia</option>
+                                            <option value="Verdana">Verdana</option>
+                                            <option value="Courier New">Courier New</option>
+                                            <option value="Tahoma">Tahoma</option>
+                                            <option value="Trebuchet MS">Trebuchet MS</option>
+                                            <option value="Comic Sans MS">Comic Sans MS</option>
+                                            <option value="Segoe UI">Segoe UI</option>
+                                            <option value="Consolas">Consolas</option>
+                                            <option value="Times New Roman">Times New Roman</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Size</label><span id="fontSizeDisplay" class="text-[9px] text-zinc-500">48px</span></div>
+                                        <input type="range" name="font_size" id="fontSizeSlider" min="20" max="96" value="48" class="w-full accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Position</label>
+                                        <select name="position_mode" id="positionModeSelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
+                                            <option value="TOP">Top</option><option value="CENTER" selected>Center</option><option value="BOTTOM">Bottom</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-                    <!-- Colors -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-zinc-400">Active Highlight</label>
-                            <div class="flex gap-1.5"><input type="color" name="highlight_color" id="highlightColorPicker" value="#00E5FF" class="w-6 h-6 p-0 border-0 rounded cursor-pointer"><input type="text" id="highlightColorHex" value="#00E5FF" class="w-full px-1.5 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white uppercase"></div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Highlight</label>
+                                        <div class="flex gap-1.5"><input type="color" name="highlight_color" id="highlightColorPicker" value="#00E5FF" class="w-6 h-6 p-0 border-0 rounded cursor-pointer"><input type="text" id="highlightColorHex" value="#00E5FF" class="w-full px-1.5 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white uppercase"></div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Text</label>
+                                        <div class="flex gap-1.5"><input type="color" name="text_color" id="textColorPicker" value="#FFFFFF" class="w-6 h-6 p-0 border-0 rounded cursor-pointer"><input type="text" id="textColorHex" value="#FFFFFF" class="w-full px-1.5 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white uppercase"></div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Weight</label>
+                                        <select name="font_weight" id="fontWeightSelect" class="w-full px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white">
+                                            <option value="normal">Normal</option><option value="bold" selected>Bold</option><option value="black">Black</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Transform</label>
+                                        <select name="text_transform" id="textTransformSelect" class="w-full px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white">
+                                            <option value="none" selected>None</option><option value="uppercase">UPPERCASE</option><option value="lowercase">lowercase</option><option value="capitalize">Capitalize</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-zinc-400">Base Text</label>
-                            <div class="flex gap-1.5"><input type="color" name="text_color" id="textColorPicker" value="#FFFFFF" class="w-6 h-6 p-0 border-0 rounded cursor-pointer"><input type="text" id="textColorHex" value="#FFFFFF" class="w-full px-1.5 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white uppercase"></div>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-zinc-400">Weight</label>
-                            <select name="font_weight" id="fontWeightSelect" class="w-full px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white">
-                                <option value="normal">Normal</option><option value="bold" selected>Bold</option><option value="black">Black</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-zinc-400">Transform</label>
-                            <select name="text_transform" id="textTransformSelect" class="w-full px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-white">
-                                <option value="none" selected>None</option><option value="uppercase">UPPERCASE</option><option value="lowercase">lowercase</option><option value="capitalize">Capitalize</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <!-- Advanced Spacing & Stroke -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Letter Space</label><span id="letterSpacingDisplay" class="text-[9px] text-zinc-500">0px</span></div>
-                            <input type="range" name="letter_spacing" id="letterSpacingSlider" min="-5" max="20" step="0.5" value="0" class="w-full h-1 accent-emerald-500">
+                        <div class="rounded-xl border border-zinc-800 bg-zinc-950/60 overflow-hidden">
+                            <button type="button" class="collapsible-header w-full flex items-center justify-between px-2.5 py-2.5 text-left" data-target="text-effects-settings" aria-expanded="false">
+                                <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Text Effects</span>
+                                <svg class="chevron h-4 w-4 text-zinc-400 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 7.5 10 12.25 14.75 7.5z"/></svg>
+                            </button>
+                            <div id="text-effects-settings" class="hidden px-2.5 pb-2.5">
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Letter Space</label><span id="letterSpacingDisplay" class="text-[9px] text-zinc-500">0px</span></div>
+                                        <input type="range" name="letter_spacing" id="letterSpacingSlider" min="-5" max="20" step="0.5" value="0" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Line Height</label><span id="lineHeightDisplay" class="text-[9px] text-zinc-500">1.4x</span></div>
+                                        <input type="range" name="line_height" id="lineHeightSlider" min="0.8" max="3.0" step="0.1" value="1.4" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Stroke</label><span id="strokeDisplay" class="text-[9px] text-zinc-500">2.5px</span></div>
+                                        <input type="range" name="text_stroke_width" id="textStrokeSlider" min="0" max="10" step="0.5" value="2.5" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Shadow</label><span id="shadowDisplay" class="text-[9px] text-zinc-500">2.0px</span></div>
+                                        <input type="range" name="text_shadow_depth" id="textShadowSlider" min="0" max="10" step="0.5" value="2.0" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Scale X</label><span id="scaleXDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" name="font_scale_x" id="fontScaleXSlider" min="50" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Scale Y</label><span id="scaleYDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" name="font_scale_y" id="fontScaleYSlider" min="50" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Box Opacity</label><span id="bgOpacityDisplay" class="text-[9px] text-zinc-500">0%</span></div>
+                                        <input type="range" name="bg_opacity" id="bgOpacitySlider" min="0" max="100" step="5" value="0" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-4">
+                                        <input type="checkbox" name="font_italic" id="fontItalicCheck" value="true" class="w-3.5 h-3.5 rounded bg-zinc-900 border-zinc-700 text-emerald-500">
+                                        <label class="text-[11px] font-bold text-zinc-300 cursor-pointer" for="fontItalicCheck">Italic</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Line Height</label><span id="lineHeightDisplay" class="text-[9px] text-zinc-500">1.4x</span></div>
-                            <input type="range" name="line_height" id="lineHeightSlider" min="0.8" max="3.0" step="0.1" value="1.4" class="w-full h-1 accent-emerald-500">
-                        </div>
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Stroke</label><span id="strokeDisplay" class="text-[9px] text-zinc-500">2.5px</span></div>
-                            <input type="range" name="text_stroke_width" id="textStrokeSlider" min="0" max="10" step="0.5" value="2.5" class="w-full h-1 accent-emerald-500">
-                        </div>
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Shadow</label><span id="shadowDisplay" class="text-[9px] text-zinc-500">2.0px</span></div>
-                            <input type="range" name="text_shadow_depth" id="textShadowSlider" min="0" max="10" step="0.5" value="2.0" class="w-full h-1 accent-emerald-500">
-                        </div>
-                    </div>
 
-                    <!-- Advanced Box & Skew -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-2 border-b border-zinc-800">
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Scale X</label><span id="scaleXDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                            <input type="range" name="font_scale_x" id="fontScaleXSlider" min="50" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
-                        </div>
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Scale Y</label><span id="scaleYDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                            <input type="range" name="font_scale_y" id="fontScaleYSlider" min="50" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
-                        </div>
-                        <div class="space-y-1">
-                            <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Box Opacity</label><span id="bgOpacityDisplay" class="text-[9px] text-zinc-500">0%</span></div>
-                            <input type="range" name="bg_opacity" id="bgOpacitySlider" min="0" max="100" step="5" value="0" class="w-full h-1 accent-emerald-500">
-                        </div>
-                        <div class="flex items-center gap-2 mt-4">
-                            <input type="checkbox" name="font_italic" id="fontItalicCheck" value="true" class="w-3.5 h-3.5 rounded bg-zinc-900 border-zinc-700 text-emerald-500">
-                            <label class="text-[11px] font-bold text-zinc-300 cursor-pointer" for="fontItalicCheck">Italicize Text</label>
+                        <div class="rounded-xl border border-zinc-800 bg-zinc-950/60 overflow-hidden">
+                            <button type="button" class="collapsible-header w-full flex items-center justify-between px-2.5 py-2.5 text-left" data-target="cover-settings" aria-expanded="false">
+                                <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Cover Art</span>
+                                <svg class="chevron h-4 w-4 text-zinc-400 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 7.5 10 12.25 14.75 7.5z"/></svg>
+                            </button>
+                            <div id="cover-settings" class="hidden px-2.5 pb-2.5">
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Size</label><span id="coverSizeDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" id="coverSizeSlider" min="50" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Blur</label><span id="coverBlurDisplay" class="text-[9px] text-zinc-500">0px</span></div>
+                                        <input type="range" id="coverBlurSlider" min="0" max="30" step="1" value="8" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Opacity</label><span id="coverOpacityDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" id="coverOpacitySlider" min="30" max="100" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Offset</label><span id="coverOffsetDisplay" class="text-[9px] text-zinc-500">0px</span></div>
+                                        <input type="range" id="coverOffsetSlider" min="-100" max="100" step="5" value="0" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Brightness</label><span id="coverBrightnessDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" id="coverBrightnessSlider" min="40" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Contrast</label><span id="coverContrastDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" id="coverContrastSlider" min="50" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Saturation</label><span id="coverSaturationDisplay" class="text-[9px] text-zinc-500">100%</span></div>
+                                        <input type="range" id="coverSaturationSlider" min="0" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Vignette</label><span id="coverVignetteDisplay" class="text-[9px] text-zinc-500">0%</span></div>
+                                        <input type="range" id="coverVignetteSlider" min="0" max="60" step="2" value="0" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -580,8 +665,7 @@
         </div>
 
         <div class="pt-2">
-            <button type="button" id="cancelRenderBtn" class="w-full py-2.5 bg-zinc-800/80 hover:bg-rose-950 hover:border-rose-700 text-zinc-300 hover:text-rose-200 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer">
-                <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+            <button type="button" id="cancelRenderBtn" class="w-full py-2.5 bg-zinc-800/80 hover:bg-rose-950 hover:border-rose-700 text-zinc-300 hover:text-rose-200 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-all cursor-pointer">
                 Cancel Rendering
             </button>
         </div>
@@ -593,17 +677,12 @@
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-white">Full Lyrics & Spelling Editor</h3>
-                    <p class="text-[11px] text-zinc-400">Edit entire song lyrics with built-in spellcheck and format normalizers</p>
-                </div>
+            <div>
+                <h3 class="text-sm font-bold text-white">Full Lyrics & Spelling Editor</h3>
+                <p class="text-[11px] text-zinc-400">Edit entire song lyrics with built-in spellcheck and format normalizers</p>
             </div>
             <button type="button" id="closeFullSpellEditorBtn" class="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
+                Close
             </button>
         </div>
 
@@ -640,8 +719,7 @@
             <button type="button" id="cancelFullSpellEditorBtn" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 Cancel
             </button>
-            <button type="button" id="saveFullSpellEditorBtn" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-950/40 flex items-center gap-2">
-                <i data-lucide="check" class="w-4 h-4"></i>
+            <button type="button" id="saveFullSpellEditorBtn" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-950/40">
                 <span>Apply Lyrics & Sync</span>
             </button>
         </div>
@@ -653,6 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let audioDuration = 0;
     let lyricsArray = []; // [{line: '...', start: 0.0, end: 0.0}]
+    let selectedLyricIndex = null;
     let activeAnimationStyle = 'KARAOKE_WIPE';
     let loadedCoverImage = null;
     let currentMode = 'AUDIO'; // 'AUDIO' or 'VIDEO'
@@ -718,6 +797,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalDurationDisplay = document.getElementById('totalDurationDisplay');
     const audioScrubber = document.getElementById('audioScrubber');
     const lyricsTimelineList = document.getElementById('lyricsTimelineList');
+    const manualLyricsEditorPanel = document.getElementById('manualLyricsEditorPanel');
+    const toggleManualLyricsBtn = document.getElementById('toggleManualLyricsBtn');
     const syncedCount = document.getElementById('syncedCount');
     const lyricsDataInput = document.getElementById('lyricsDataInput');
 
@@ -753,6 +834,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const bgOpacitySlider = document.getElementById('bgOpacitySlider');
     const bgOpacityDisplay = document.getElementById('bgOpacityDisplay');
     const fontItalicCheck = document.getElementById('fontItalicCheck');
+    const coverSizeSlider = document.getElementById('coverSizeSlider');
+    const coverSizeDisplay = document.getElementById('coverSizeDisplay');
+    const coverBlurSlider = document.getElementById('coverBlurSlider');
+    const coverBlurDisplay = document.getElementById('coverBlurDisplay');
+    const coverOpacitySlider = document.getElementById('coverOpacitySlider');
+    const coverOpacityDisplay = document.getElementById('coverOpacityDisplay');
+    const coverOffsetSlider = document.getElementById('coverOffsetSlider');
+    const coverOffsetDisplay = document.getElementById('coverOffsetDisplay');
+    const coverBrightnessSlider = document.getElementById('coverBrightnessSlider');
+    const coverBrightnessDisplay = document.getElementById('coverBrightnessDisplay');
+    const coverContrastSlider = document.getElementById('coverContrastSlider');
+    const coverContrastDisplay = document.getElementById('coverContrastDisplay');
+    const coverSaturationSlider = document.getElementById('coverSaturationSlider');
+    const coverSaturationDisplay = document.getElementById('coverSaturationDisplay');
+    const coverVignetteSlider = document.getElementById('coverVignetteSlider');
+    const coverVignetteDisplay = document.getElementById('coverVignetteDisplay');
 
     const songTitleInput = document.getElementById('songTitleInput');
     const artistNameInput = document.getElementById('artistNameInput');
@@ -793,7 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 artist: artistNameInput.value,
                 source_type: currentMode,
                 aspect_ratio: aspectRatioSelect.value,
-                raw_text: rawLyricsTextarea.value,
+                raw_text: rawLyricsTextarea ? rawLyricsTextarea.value : '',
                 lyrics_data: lyricsArray,
                 animation_style: activeAnimationStyle,
                 font_family: fontFamilySelect.value,
@@ -811,7 +908,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 font_scale_x: fontScaleXSlider.value,
                 font_scale_y: fontScaleYSlider.value,
                 bg_opacity: bgOpacitySlider.value,
-                font_italic: fontItalicCheck.checked
+                font_italic: fontItalicCheck.checked,
+                cover_size: coverSizeSlider?.value || 100,
+                cover_blur: coverBlurSlider?.value || 8,
+                cover_opacity: coverOpacitySlider?.value || 100,
+                cover_offset: coverOffsetSlider?.value || 0,
+                cover_brightness: coverBrightnessSlider?.value || 100,
+                cover_contrast: coverContrastSlider?.value || 100,
+                cover_saturation: coverSaturationSlider?.value || 100,
+                cover_vignette: coverVignetteSlider?.value || 0
             };
             localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
             if (draftStatusBanner) {
@@ -838,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 aspectRatioSelect.value = draft.aspect_ratio;
                 aspectRatioSelect.dispatchEvent(new Event('change'));
             }
-            if (draft.raw_text) rawLyricsTextarea.value = draft.raw_text;
+            if (draft.raw_text && rawLyricsTextarea) rawLyricsTextarea.value = draft.raw_text;
             if (draft.lyrics_data && Array.isArray(draft.lyrics_data)) {
                 lyricsArray = draft.lyrics_data;
                 renderTimelineList();
@@ -880,6 +985,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (draft.font_scale_y) { fontScaleYSlider.value = draft.font_scale_y; scaleYDisplay.textContent = `${draft.font_scale_y}%`; }
             if (draft.bg_opacity) { bgOpacitySlider.value = draft.bg_opacity; bgOpacityDisplay.textContent = `${draft.bg_opacity}%`; }
             if (draft.font_italic !== undefined) fontItalicCheck.checked = draft.font_italic;
+            if (draft.cover_size) { coverSizeSlider.value = draft.cover_size; coverSizeDisplay.textContent = `${draft.cover_size}%`; }
+            if (draft.cover_blur !== undefined) { coverBlurSlider.value = draft.cover_blur; coverBlurDisplay.textContent = `${draft.cover_blur}px`; }
+            if (draft.cover_opacity) { coverOpacitySlider.value = draft.cover_opacity; coverOpacityDisplay.textContent = `${draft.cover_opacity}%`; }
+            if (draft.cover_offset !== undefined) { coverOffsetSlider.value = draft.cover_offset; coverOffsetDisplay.textContent = `${draft.cover_offset}px`; }
+            if (draft.cover_brightness) { coverBrightnessSlider.value = draft.cover_brightness; coverBrightnessDisplay.textContent = `${draft.cover_brightness}%`; }
+            if (draft.cover_contrast) { coverContrastSlider.value = draft.cover_contrast; coverContrastDisplay.textContent = `${draft.cover_contrast}%`; }
+            if (draft.cover_saturation) { coverSaturationSlider.value = draft.cover_saturation; coverSaturationDisplay.textContent = `${draft.cover_saturation}%`; }
+            if (draft.cover_vignette !== undefined) { coverVignetteSlider.value = draft.cover_vignette; coverVignetteDisplay.textContent = `${draft.cover_vignette}%`; }
 
             if (draftStatusBanner) {
                 draftStatusBanner.classList.remove('hidden');
@@ -922,6 +1035,26 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     displayBinds.forEach(([slider, display, suffix]) => {
         if(slider && display) slider.addEventListener('input', (e) => { display.textContent = `${e.target.value}${suffix}`; drawLiveCanvas(); saveDraft(); });
+    });
+
+    const coverDisplayBinds = [
+        [coverSizeSlider, coverSizeDisplay, '%'],
+        [coverBlurSlider, coverBlurDisplay, 'px'],
+        [coverOpacitySlider, coverOpacityDisplay, '%'],
+        [coverOffsetSlider, coverOffsetDisplay, 'px'],
+        [coverBrightnessSlider, coverBrightnessDisplay, '%'],
+        [coverContrastSlider, coverContrastDisplay, '%'],
+        [coverSaturationSlider, coverSaturationDisplay, '%'],
+        [coverVignetteSlider, coverVignetteDisplay, '%']
+    ];
+    coverDisplayBinds.forEach(([slider, display, suffix]) => {
+        if (slider && display) {
+            slider.addEventListener('input', (e) => {
+                display.textContent = `${e.target.value}${suffix}`;
+                drawLiveCanvas();
+                saveDraft();
+            });
+        }
     });
 
     // Auto-save listeners
@@ -1138,17 +1271,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Animation Style Cards Selection
+    function setStyleCardSelection(card) {
+        document.querySelectorAll('.style-card').forEach(c => {
+            const radio = c.querySelector('input[type="radio"]');
+            c.className = "style-card group relative flex min-h-[78px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80";
+            const indicator = c.querySelector('span:last-of-type');
+            if (indicator) { indicator.className = 'h-2.5 w-2.5 rounded-full bg-zinc-600'; }
+            if (radio) radio.checked = false;
+        });
+
+        card.className = "style-card group relative flex min-h-[78px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-emerald-400/60 bg-zinc-800/80 p-2.5 shadow-[0_0_0_1px_rgba(52,211,153,0.15)] transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-500 hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80";
+        const cardIndicator = card.querySelector('span:last-of-type');
+        if (cardIndicator) { cardIndicator.className = 'h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]'; }
+
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        activeAnimationStyle = card.dataset.style;
+        saveDraft();
+        drawLiveCanvas();
+    }
+
     document.querySelectorAll('.style-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.style-card').forEach(c => {
-                c.className = "style-card p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer flex flex-col justify-between";
-            });
-            card.className = "style-card p-2.5 rounded-xl border border-zinc-600 bg-zinc-800/40 cursor-pointer flex flex-col justify-between";
-            const radio = card.querySelector('input[type="radio"]');
-            if (radio) radio.checked = true;
-            activeAnimationStyle = card.dataset.style;
-            saveDraft();
-            drawLiveCanvas();
+        card.addEventListener('click', () => setStyleCardSelection(card));
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setStyleCardSelection(card);
+            }
+        });
+    });
+
+    document.querySelectorAll('.collapsible-header').forEach(button => {
+        const target = document.getElementById(button.dataset.target);
+        if (!target) return;
+
+        button.addEventListener('click', () => {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            target.classList.toggle('hidden', isExpanded);
+            const chevron = button.querySelector('.chevron');
+            if (chevron) chevron.classList.toggle('rotate-180', !isExpanded);
         });
     });
 
@@ -1304,8 +1466,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (data.lyrics_data && data.lyrics_data.length > 0) {
                     lyricsArray = data.lyrics_data;
-                    rawLyricsTextarea.value = data.plain_lyrics || data.lyrics_data.map(l => l.line).join('\n');
-                    lineCountBadge.textContent = `${lyricsArray.length} lines`;
+                    if (rawLyricsTextarea) {
+                        rawLyricsTextarea.value = data.plain_lyrics || data.lyrics_data.map(l => l.line).join('\n');
+                    }
+                    if (lineCountBadge) {
+                        lineCountBadge.textContent = `${lyricsArray.length} lines`;
+                    }
                     renderTimelineList();
                     updateHiddenJson();
                     saveDraft();
@@ -1347,7 +1513,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             vocalSyncBtn.disabled = true;
-            vocalSyncBtn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Analyzing Vocal Frequencies...`;
+            vocalSyncBtn.textContent = 'Analyzing Vocal Frequencies...';
 
             try {
                 const resp = await fetch('/studio/lyrics/api/vocal-sync/', {
@@ -1373,8 +1539,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppToast.error('Vocal sync failed: ' + e.message);
             } finally {
                 vocalSyncBtn.disabled = false;
-                vocalSyncBtn.innerHTML = `<i data-lucide="activity" class="w-3.5 h-3.5 text-zinc-400"></i><span>Vocal Frequency Auto-Sync</span>`;
-                if (window.lucide) lucide.createIcons();
+                vocalSyncBtn.textContent = 'Vocal Frequency Auto-Sync';
             }
         });
     }
@@ -1467,22 +1632,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 2. Lyrics Parsing & Timeline Data Management
-    rawLyricsTextarea.addEventListener('input', () => {
-        parseRawLyrics();
-        saveDraft();
-    });
+    if (rawLyricsTextarea) {
+        rawLyricsTextarea.addEventListener('input', () => {
+            parseRawLyrics();
+            saveDraft();
+        });
+    }
 
     function parseRawLyrics() {
+        if (!rawLyricsTextarea) {
+            return;
+        }
+
         const text = rawLyricsTextarea.value.trim();
         if (!text) {
             lyricsArray = [];
-            lineCountBadge.textContent = '0 lines';
+            if (lineCountBadge) {
+                lineCountBadge.textContent = '0 lines';
+            }
             renderTimelineList();
             return;
         }
 
         const rawLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        lineCountBadge.textContent = `${rawLines.length} lines`;
+        if (lineCountBadge) {
+            lineCountBadge.textContent = `${rawLines.length} lines`;
+        }
 
         // Check if LRC format ([mm:ss.xx] Lyric)
         const lrcRegex = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
@@ -1537,24 +1712,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
     autoDistributeBtn.addEventListener('click', autoDistributeTimings);
 
+    function getCurrentAudioTime() {
+        if (audioPlayer && typeof audioPlayer.currentTime === 'number' && !Number.isNaN(audioPlayer.currentTime)) {
+            return audioPlayer.currentTime;
+        }
+        return 0;
+    }
+
     function updateHiddenJson() {
         lyricsDataInput.value = JSON.stringify(lyricsArray);
         syncedCount.textContent = lyricsArray.length;
     }
 
+    function selectLyricLine(idx) {
+        selectedLyricIndex = idx;
+        renderTimelineList();
+    }
+
+    let lyricPreviewTimer = null;
+
+    function previewLyricLineSegment(idx) {
+        if (!lyricsArray[idx]) return;
+
+        const line = lyricsArray[idx];
+        const start = Number(line.start || 0);
+        const end = Math.max(Number(line.end || start + 0.8), start + 0.3);
+        const duration = Math.max(0.4, end - start);
+
+        if (lyricPreviewTimer) {
+            clearTimeout(lyricPreviewTimer);
+            lyricPreviewTimer = null;
+        }
+
+        function stopPreview() {
+            if (currentMode === 'VIDEO' && !hasReplacementAudio()) {
+                if (previewVideo) previewVideo.pause();
+            } else if (audioPlayer) {
+                audioPlayer.pause();
+            }
+        }
+
+        if (currentMode === 'VIDEO' && !hasReplacementAudio()) {
+            if (previewVideo) {
+                previewVideo.currentTime = start;
+                previewVideo.play();
+                lyricPreviewTimer = setTimeout(() => {
+                    stopPreview();
+                    setActiveTime(start);
+                }, duration * 1000);
+            }
+            return;
+        }
+
+        if (audioPlayer) {
+            setActiveTime(start);
+            audioPlayer.play();
+            lyricPreviewTimer = setTimeout(() => {
+                stopPreview();
+                setActiveTime(start);
+            }, duration * 1000);
+        }
+    }
+
+    function applyLineTimeAdjustment(idx, field, delta) {
+        if (!lyricsArray[idx]) return;
+
+        const current = Number(lyricsArray[idx][field]) || 0;
+        const nextValue = Math.max(0, Number((current + delta).toFixed(2)));
+        lyricsArray[idx][field] = nextValue;
+
+        if (field === 'start' && nextValue >= Number(lyricsArray[idx].end || nextValue)) {
+            lyricsArray[idx].end = Number((nextValue + 0.25).toFixed(2));
+        }
+        if (field === 'end' && nextValue <= Number(lyricsArray[idx].start || nextValue)) {
+            lyricsArray[idx].start = Number(Math.max(0, nextValue - 0.25).toFixed(2));
+        }
+
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+        previewLyricLineSegment(idx);
+    }
+
+    function snapLineToPlayhead(idx, field) {
+        if (!lyricsArray[idx]) return;
+        const time = Number(getCurrentAudioTime().toFixed(2));
+        const currentStart = Number(lyricsArray[idx].start || 0);
+        const currentEnd = Number(lyricsArray[idx].end || currentStart + 1.5);
+
+        if (field === 'start') {
+            lyricsArray[idx].start = time;
+            if (lyricsArray[idx].start >= lyricsArray[idx].end) {
+                lyricsArray[idx].end = Number((lyricsArray[idx].start + 0.8).toFixed(2));
+            }
+        } else {
+            lyricsArray[idx].end = time;
+            if (lyricsArray[idx].end <= lyricsArray[idx].start) {
+                lyricsArray[idx].start = Number(Math.max(0, lyricsArray[idx].end - 0.8).toFixed(2));
+            }
+        }
+
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+    }
+
     function renderTimelineList() {
         if (lyricsArray.length === 0) {
+            selectedLyricIndex = null;
             lyricsTimelineList.innerHTML = `<div class="text-center py-6 text-zinc-500 text-xs">Click "AI Transcribe & Sync Audio" or paste lyrics to start.</div>`;
             return;
         }
 
         lyricsTimelineList.innerHTML = '';
         lyricsArray.forEach((item, idx) => {
+            const isSelected = selectedLyricIndex === idx;
             const row = document.createElement('div');
-            row.className = "group flex items-center justify-between p-2 bg-zinc-900/90 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all gap-2 text-xs";
+            row.className = `group flex items-center gap-1.5 p-1.5 rounded-lg border transition-all text-[10px] ${isSelected ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.2)]' : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700'}`;
+            row.setAttribute('data-index', String(idx));
+            row.onclick = () => selectLyricLine(idx);
             row.innerHTML = `
-                <div class="flex items-center gap-2 overflow-hidden flex-1">
-                    <span class="w-5 h-5 rounded bg-zinc-800 text-zinc-400 text-[10px] font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
+                <span class="w-4 h-4 rounded bg-zinc-800 text-zinc-400 text-[9px] font-bold flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500/20 text-emerald-300' : ''}">${idx + 1}</span>
+                <div class="flex items-center gap-1 overflow-hidden flex-1 min-w-0">
                     <input type="text" 
                            value="${item.line ? item.line.replace(/"/g, '&quot;') : ''}" 
                            spellcheck="true" 
@@ -1562,30 +1843,13 @@ document.addEventListener('DOMContentLoaded', () => {
                            autocapitalize="sentences"
                            oninput="updateLineText(${idx}, this.value)" 
                            placeholder="Type lyric line..." 
-                           class="bg-transparent border-0 text-white text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/50 rounded px-1.5 py-0.5 w-full">
+                           class="bg-transparent border-0 text-white text-[10px] font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/50 rounded px-1 py-0.5 w-full min-w-0">
                 </div>
-                <div class="flex items-center gap-1 shrink-0 font-mono text-[11px]">
-                    <button type="button" onclick="nudgeLineTime(${idx}, 'start', -0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]" title="Nudge start -0.2s">-</button>
-                    <input type="number" step="0.05" value="${item.start}" onchange="updateLineTime(${idx}, 'start', this.value)" class="w-14 bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-center text-emerald-400 font-semibold focus:outline-none">
-                    <button type="button" onclick="nudgeLineTime(${idx}, 'start', 0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]" title="Nudge start +0.2s">+</button>
-                    <span class="text-zinc-600">-</span>
-                    <input type="number" step="0.05" value="${item.end}" onchange="updateLineTime(${idx}, 'end', this.value)" class="w-14 bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-center text-zinc-400 focus:outline-none">
-                    
-                    <button type="button" onclick="seekToLine(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors ml-0.5" title="Jump playhead to line">
-                        <i data-lucide="play" class="w-3 h-3"></i>
-                    </button>
-                    <button type="button" onclick="splitLine(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors" title="Split this line in half">
-                        <i data-lucide="scissors" class="w-3 h-3 text-zinc-400"></i>
-                    </button>
-                    <button type="button" onclick="mergeLineWithNext(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors ${idx === lyricsArray.length - 1 ? 'hidden' : ''}" title="Merge with line below">
-                        <i data-lucide="link-2" class="w-3 h-3 text-zinc-400"></i>
-                    </button>
-                    <button type="button" onclick="insertLineBelow(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors" title="Insert new line below">
-                        <i data-lucide="plus" class="w-3 h-3 text-emerald-400"></i>
-                    </button>
-                    <button type="button" onclick="deleteLine(${idx})" class="p-1 rounded bg-zinc-800 hover:bg-rose-900/60 text-zinc-400 hover:text-rose-300 transition-colors" title="Delete line">
-                        <i data-lucide="trash-2" class="w-3 h-3"></i>
-                    </button>
+                <div class="flex items-center gap-1 shrink-0 font-mono text-[9px] justify-end">
+                    <button type="button" onclick="event.stopPropagation(); nudgeLineTime(${idx}, 'start', -0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300" title="Move earlier, then preview this lyric">Earlier</button>
+                    <span class="min-w-[42px] text-center text-emerald-400 font-semibold">${Number(item.start || 0).toFixed(2)}s</span>
+                    <button type="button" onclick="event.stopPropagation(); nudgeLineTime(${idx}, 'start', 0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300" title="Move later, then preview this lyric">Later</button>
+                    <button type="button" onclick="event.stopPropagation(); previewLineAtCurrentTiming(${idx})" class="px-1 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300" title="Preview this lyric segment">Play</button>
                 </div>
             `;
             lyricsTimelineList.appendChild(row);
@@ -1620,12 +1884,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.nudgeLineTime = function(idx, field, delta) {
         if (lyricsArray[idx]) {
-            lyricsArray[idx][field] = Math.max(0, Math.round((parseFloat(lyricsArray[idx][field] || 0) + delta) * 100) / 100);
-            renderTimelineList();
-            updateHiddenJson();
-            saveDraft();
-            drawLiveCanvas();
+            selectedLyricIndex = idx;
+            applyLineTimeAdjustment(idx, field, delta);
         }
+    };
+
+    window.previewLineAtCurrentTiming = function(idx) {
+        previewLyricLineSegment(idx);
     };
 
     window.splitLine = function(idx) {
@@ -1818,6 +2083,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function setManualLyricsVisible(isVisible) {
+        if (!manualLyricsEditorPanel || !toggleManualLyricsBtn) return;
+        manualLyricsEditorPanel.classList.toggle('hidden', !isVisible);
+        manualLyricsEditorPanel.style.height = isVisible ? 'auto' : '0px';
+        manualLyricsEditorPanel.style.minHeight = isVisible ? '180px' : '0px';
+        manualLyricsEditorPanel.style.maxHeight = isVisible ? '360px' : '0px';
+        toggleManualLyricsBtn.textContent = isVisible ? 'Hide Lyrics Editor' : 'Edit Lyrics';
+        toggleManualLyricsBtn.setAttribute('aria-expanded', String(isVisible));
+    }
+
+    if (toggleManualLyricsBtn) {
+        toggleManualLyricsBtn.addEventListener('click', () => {
+            const isVisible = manualLyricsEditorPanel && !manualLyricsEditorPanel.classList.contains('hidden');
+            setManualLyricsVisible(!isVisible);
+        });
+    }
+
     // Full Lyrics & Spellcheck Editor Modal Handlers
     const openFullSpellEditorBtn = document.getElementById('openFullSpellEditorBtn');
     const fullSpellEditorModal = document.getElementById('fullSpellEditorModal');
@@ -1832,6 +2114,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const lines = modalLyricsTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         modalLineCount.textContent = `${lines.length} lines`;
     }
+
+    document.addEventListener('keydown', (event) => {
+        const tagName = document.activeElement && document.activeElement.tagName;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+            return;
+        }
+        if (selectedLyricIndex === null || !lyricsArray[selectedLyricIndex]) return;
+
+        const step = event.shiftKey ? 0.2 : 0.05;
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            applyLineTimeAdjustment(selectedLyricIndex, 'start', -step);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            applyLineTimeAdjustment(selectedLyricIndex, 'start', step);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            applyLineTimeAdjustment(selectedLyricIndex, 'end', -step);
+        } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            applyLineTimeAdjustment(selectedLyricIndex, 'end', step);
+        }
+    });
 
     if (modalLyricsTextarea) {
         modalLyricsTextarea.addEventListener('input', updateModalLineCount);
@@ -1968,28 +2273,69 @@ document.addEventListener('DOMContentLoaded', () => {
             canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
             canvasCtx.fillRect(0, 0, w, h);
         } else if (loadedCoverImage && currentMode === 'AUDIO') {
-            // Draw blurred ambient background
-            canvasCtx.filter = 'blur(20px) brightness(0.35)';
-            canvasCtx.drawImage(loadedCoverImage, 0, 0, w, h);
-            canvasCtx.filter = 'none';
+            const coverScale = parseFloat(coverSizeSlider?.value || 100) / 100;
+            const coverBlur = parseFloat(coverBlurSlider?.value || 8);
+            const coverOpacity = parseFloat(coverOpacitySlider?.value || 100) / 100;
+            const coverOffset = parseFloat(coverOffsetSlider?.value || 0);
+            const coverBrightness = parseFloat(coverBrightnessSlider?.value || 100) / 100;
+            const coverContrast = parseFloat(coverContrastSlider?.value || 100) / 100;
+            const coverSaturation = parseFloat(coverSaturationSlider?.value || 100) / 100;
+            const coverVignette = parseFloat(coverVignetteSlider?.value || 0) / 100;
 
-            // Draw album art centered with vertical position consideration
-            const artSize = isVertical ? w * 0.55 : h * 0.45;
-            const artX = (w - artSize) / 2;
-            let artY;
-            if (posMode === 'TOP') {
-                artY = isVertical ? h * 0.46 : h * 0.42;
-            } else if (posMode === 'BOTTOM') {
-                artY = isVertical ? h * 0.20 : h * 0.16;
+            if (coverBlur <= 0) {
+                const fullCoverSize = Math.min(w, h) * (isVertical ? 0.72 : 0.68) * coverScale;
+                const fullCoverX = (w - fullCoverSize) / 2 + coverOffset;
+                const fullCoverY = (h - fullCoverSize) / 2 + coverOffset * 0.35;
+
+                canvasCtx.save();
+                canvasCtx.filter = `brightness(${coverBrightness}) contrast(${coverContrast}) saturate(${coverSaturation})`;
+                canvasCtx.globalAlpha = coverOpacity;
+                canvasCtx.drawImage(loadedCoverImage, fullCoverX, fullCoverY, fullCoverSize, fullCoverSize);
+                canvasCtx.restore();
+
+                if (coverVignette > 0) {
+                    const vignette = canvasCtx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.7);
+                    vignette.addColorStop(0, `rgba(0,0,0,0)`);
+                    vignette.addColorStop(1, `rgba(0,0,0,${0.25 + coverVignette})`);
+                    canvasCtx.fillStyle = vignette;
+                    canvasCtx.fillRect(0, 0, w, h);
+                }
             } else {
-                artY = isVertical ? h * 0.22 : h * 0.18;
+                // Draw ambient blurred background around the cover image
+                canvasCtx.save();
+                canvasCtx.filter = `blur(${coverBlur}px) brightness(${0.35 * coverBrightness}) contrast(${coverContrast}) saturate(${coverSaturation})`;
+                canvasCtx.globalAlpha = coverOpacity;
+                canvasCtx.drawImage(loadedCoverImage, 0, 0, w, h);
+                canvasCtx.restore();
+
+                // Draw album art with size, offset, and depth controls
+                const artSize = (isVertical ? w * 0.55 : h * 0.45) * coverScale;
+                const artX = (w - artSize) / 2 + coverOffset;
+                let artY;
+                if (posMode === 'TOP') {
+                    artY = isVertical ? h * 0.46 : h * 0.42;
+                } else if (posMode === 'BOTTOM') {
+                    artY = isVertical ? h * 0.20 : h * 0.16;
+                } else {
+                    artY = isVertical ? h * 0.22 : h * 0.18;
+                }
+
+                canvasCtx.save();
+                canvasCtx.filter = `brightness(${coverBrightness}) contrast(${coverContrast}) saturate(${coverSaturation})`;
+                canvasCtx.globalAlpha = coverOpacity;
+                canvasCtx.shadowColor = 'rgba(0,0,0,0.8)';
+                canvasCtx.shadowBlur = 25 + coverBlur;
+                canvasCtx.drawImage(loadedCoverImage, artX, artY, artSize, artSize);
+                canvasCtx.restore();
+
+                if (coverVignette > 0) {
+                    const vignette = canvasCtx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.7);
+                    vignette.addColorStop(0, `rgba(0,0,0,0)`);
+                    vignette.addColorStop(1, `rgba(0,0,0,${0.4 + coverVignette})`);
+                    canvasCtx.fillStyle = vignette;
+                    canvasCtx.fillRect(0, 0, w, h);
+                }
             }
-            
-            canvasCtx.save();
-            canvasCtx.shadowColor = 'rgba(0,0,0,0.8)';
-            canvasCtx.shadowBlur = 25;
-            canvasCtx.drawImage(loadedCoverImage, artX, artY, artSize, artSize);
-            canvasCtx.restore();
         } else {
             // Solid dark background
             canvasCtx.fillStyle = '#090d16';
@@ -2039,6 +2385,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             centerY = isVertical ? h * 0.50 : h * 0.50;
         }
+
+        const firstLineStart = lyricsArray.length > 0 ? Number(lyricsArray[0].start || 0) : Infinity;
 
         if (activeIdx !== -1) {
             const activeLine = lyricsArray[activeIdx];
@@ -2116,6 +2464,168 @@ document.addEventListener('DOMContentLoaded', () => {
                     canvasCtx.fillText(nextText, 0, 0);
                     canvasCtx.restore();
                 }
+
+            } else if (activeAnimationStyle === 'PLAYFUL_POP') {
+                const bounce = 1 + Math.sin(progress * Math.PI * 2) * 0.14;
+                const wobble = Math.sin(progress * Math.PI * 6) * 9;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2 + wobble, centerY - Math.sin(progress * Math.PI * 2) * 10);
+                canvasCtx.scale(scaleX * bounce, scaleY * bounce);
+                canvasCtx.shadowColor = highlightColor;
+                canvasCtx.shadowBlur = 18;
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'DREAMY_DRIFT') {
+                const drift = Math.sin(progress * Math.PI * 3) * 18;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY + drift);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.shadowColor = highlightColor;
+                canvasCtx.shadowBlur = 22;
+                canvasCtx.fillStyle = 'rgba(255,255,255,0.92)';
+                canvasCtx.fillText(text, 0, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(150,120,255,0.5)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'NEON_GLOW') {
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.shadowColor = highlightColor;
+                canvasCtx.shadowBlur = 26;
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+                    canvasCtx.lineWidth = strokeW * 1.4;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'HANDWRITTEN_INK') {
+                const scratch = Math.sin(progress * Math.PI * 8) * 5;
+                canvasCtx.save();
+                canvasCtx.font = `${italic} 700 ${fontSizeVal}px "Segoe Print", "Bradley Hand", cursive`;
+                canvasCtx.translate(w / 2 + scratch, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.35)';
+                    canvasCtx.lineWidth = strokeW * 0.8;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'RETRO_VHS') {
+                const offset = Math.sin(progress * Math.PI * 12) * 3;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2 + offset, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.fillStyle = 'rgba(255,255,255,0.15)';
+                canvasCtx.fillText(text, 2, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(0,0,0,0.7)';
+                    canvasCtx.lineWidth = strokeW;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'BUBBLE_BOUNCE') {
+                const bubbleScale = 0.9 + Math.sin(progress * Math.PI * 4) * 0.12;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY - Math.sin(progress * Math.PI * 3) * 12);
+                canvasCtx.scale(scaleX * bubbleScale, scaleY * bubbleScale);
+                canvasCtx.shadowColor = highlightColor;
+                canvasCtx.shadowBlur = 25;
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(255,255,255,0.7)';
+                    canvasCtx.lineWidth = Math.max(1.5, strokeW * 0.8);
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                for (let i = 0; i < 10; i++) {
+                    const drift = (i - 4.5) * 22;
+                    const bubbleY = -fontSizeVal * 0.9 + Math.sin(progress * Math.PI * 4 + i) * 20;
+                    canvasCtx.beginPath();
+                    canvasCtx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.32)' : 'rgba(120,255,255,0.22)';
+                    canvasCtx.arc(w / 2 + drift, centerY + bubbleY, 5 + (i % 3), 0, Math.PI * 2);
+                    canvasCtx.fill();
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'CLASSIC_LIFT') {
+                const lift = (1 - progress) * 18;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY - lift);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.font = `${italic} 700 ${fontSizeVal}px Georgia, serif`;
+                canvasCtx.shadowColor = 'rgba(0,0,0,0.6)';
+                canvasCtx.shadowBlur = 14;
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.fillText(text, 0, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+                    canvasCtx.lineWidth = strokeW * 0.75;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'SPARKLE_SWEEP') {
+                const sweep = Math.max(0, progress * 1.6 - 0.2);
+                const revealClip = totalTextWidth * sweep;
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.fillStyle = baseColor;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.save();
+                canvasCtx.beginPath();
+                canvasCtx.rect(-totalTextWidth / 2, -fontSizeVal, revealClip, fontSizeVal * 2.8);
+                canvasCtx.clip();
+                canvasCtx.fillStyle = highlightColor;
+                canvasCtx.shadowColor = highlightColor;
+                canvasCtx.shadowBlur = 20;
+                canvasCtx.fillText(text, 0, 0);
+                canvasCtx.restore();
+                for (let i = 0; i < 9; i++) {
+                    const sparkleX = -totalTextWidth / 2 + revealClip * (0.15 + i * 0.1);
+                    const sparkleY = -fontSizeVal * 0.65 + Math.sin(progress * 12 + i) * 12;
+                    canvasCtx.save();
+                    canvasCtx.fillStyle = i % 2 === 0 ? '#fff7b2' : highlightColor;
+                    canvasCtx.fillRect(sparkleX, sparkleY, 5, 5);
+                    canvasCtx.restore();
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'VINTAGE_COUNTRY') {
+                canvasCtx.save();
+                canvasCtx.translate(w / 2, centerY + Math.sin(progress * Math.PI * 2) * 6);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.fillStyle = '#f5e7c8';
+                canvasCtx.shadowColor = 'rgba(120,90,40,0.6)';
+                canvasCtx.shadowBlur = 12;
+                canvasCtx.fillText(text, 0, 0);
+                if (strokeW > 0) {
+                    canvasCtx.strokeStyle = 'rgba(82,58,26,0.7)';
+                    canvasCtx.lineWidth = strokeW * 0.9;
+                    canvasCtx.strokeText(text, 0, 0);
+                }
+                canvasCtx.restore();
 
             } else if (activeAnimationStyle === 'CYBER_NEON') {
                 canvasCtx.save();
@@ -2239,17 +2749,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvasCtx.restore();
             }
         } else {
-            // Default placeholder when no line active
-            canvasCtx.save();
-            canvasCtx.font = `${italic} ${weight} ${fontSizeVal * 0.8}px ${fontFam}`;
-            canvasCtx.fillStyle = 'rgba(255,255,255,0.5)';
-            canvasCtx.textAlign = 'center';
-            canvasCtx.textBaseline = 'middle';
-            canvasCtx.translate(w / 2, centerY);
-            canvasCtx.scale(scaleX, scaleY);
-            const sampleText = songTitleInput.value ? `♪ ${songTitleInput.value} ♪` : '♪ Synced Lyrics Preview ♪';
-            canvasCtx.fillText(sampleText, 0, 0);
-            canvasCtx.restore();
+            // Only show the song title at the very start of the song, not during later quiet gaps.
+            const shouldShowSongTitle = Number.isFinite(firstLineStart) && curTime < firstLineStart + 1.5 && songTitleInput.value;
+            if (shouldShowSongTitle) {
+                canvasCtx.save();
+                canvasCtx.font = `${italic} ${weight} ${fontSizeVal * 0.8}px ${fontFam}`;
+                canvasCtx.fillStyle = 'rgba(255,255,255,0.7)';
+                canvasCtx.textAlign = 'center';
+                canvasCtx.textBaseline = 'middle';
+                canvasCtx.translate(w / 2, centerY);
+                canvasCtx.scale(scaleX, scaleY);
+                canvasCtx.fillText(`♪ ${songTitleInput.value} ♪`, 0, 0);
+                canvasCtx.restore();
+            }
         }
     }
 

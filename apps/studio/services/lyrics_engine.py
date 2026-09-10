@@ -175,7 +175,40 @@ class LyricsEngineService:
         return result
 
     @classmethod
-    def detect_vocal_segments(cls, audio_path, min_silence_duration=0.35, noise_threshold_db=-30):
+    def normalize_vocal_segments(cls, vocal_segments, min_gap=0.75, min_duration=1.0):
+        """
+        Merge nearby vocal phrases split by brief breaths or tiny instrumental gaps,
+        while rejecting fragments too short to represent a sung phrase.
+        """
+        if not vocal_segments:
+            return []
+
+        normalized = []
+        for segment in sorted(vocal_segments, key=lambda s: s.get('start', 0.0)):
+            start = float(segment.get('start', 0.0))
+            end = float(segment.get('end', start))
+            duration = max(0.0, end - start)
+
+            if normalized and (start - normalized[-1]['end']) <= min_gap:
+                normalized[-1]['end'] = max(normalized[-1]['end'], end)
+                normalized[-1]['duration'] = round(normalized[-1]['end'] - normalized[-1]['start'], 2)
+            else:
+                normalized.append({
+                    'start': round(start, 2),
+                    'end': round(end, 2),
+                    'duration': round(duration, 2)
+                })
+
+        filtered = []
+        for segment in normalized:
+            duration = max(0.0, segment['end'] - segment['start'])
+            if duration >= min_duration:
+                filtered.append(segment)
+
+        return filtered
+
+    @classmethod
+    def detect_vocal_segments(cls, audio_path, min_silence_duration=0.35, noise_threshold_db=-35):
         """
         Uses vocal frequency bandpass filtering (300Hz-3400Hz) and silence detection
         to identify active vocal singing segments vs instrumental intros, solos & breaks.
@@ -186,12 +219,13 @@ class LyricsEngineService:
         audio_path = os.path.abspath(str(audio_path))
         total_duration = cls.inspect_media_duration(audio_path)
 
-        # 1. Bandpass filter around vocal formant region (300Hz to 3800Hz)
-        # 2. Dynamic gate / compand to isolate singing energy
-        # 3. Silence detector
+        # 1. Focus on the vocal formant band while trimming obvious low-end percussion energy.
+        # 2. Use a stricter gain curve so kick/snare transients do not dominate the result.
+        # 3. Silence detector is then applied to sustained vocal-like activity instead of broad mix energy.
         af_filter = (
-            f"bandpass=f=1850:width_type=h:w=3100,"
-            f"compand=attacks=0.03:decays=0.15:points=-80/-80|-45/-30|-20/-10|0/0,"
+            f"highpass=f=120,"
+            f"lowpass=f=3000,"
+            f"compand=attacks=0.02:decays=0.12:points=-70/-70|-30/-12|-10/-3|0/0,"
             f"silencedetect=noise={noise_threshold_db}dB:d={min_silence_duration}"
         )
 
@@ -245,7 +279,8 @@ class LyricsEngineService:
                     'duration': round(total_duration - last_end, 2)
                 })
 
-            valid_segments = [s for s in vocal_segments if s['duration'] >= 0.6]
+            valid_segments = [s for s in vocal_segments if s['duration'] >= 0.9]
+            valid_segments = cls.normalize_vocal_segments(valid_segments)
             return valid_segments if valid_segments else [{'start': 2.0, 'end': total_duration - 1.0, 'duration': total_duration - 3.0}]
 
         except Exception:
@@ -274,32 +309,46 @@ class LyricsEngineService:
             for idx, line in enumerate(cleaned_lines):
                 seg_idx = int(idx * (seg_count / line_count))
                 seg = vocal_segments[min(seg_idx, seg_count - 1)]
+                seg_dur = max(1.0, seg['end'] - seg['start'])
+                lead_in = seg_dur * 0.16
+                start = round(seg['start'] + lead_in, 2)
+                end = round(min(seg['end'], seg['start'] + seg_dur * 0.9), 2)
+                if end <= start:
+                    end = round(min(seg['end'], start + 0.9), 2)
                 result.append({
                     'line': line,
-                    'start': seg['start'],
-                    'end': seg['end']
+                    'start': start,
+                    'end': end
                 })
         else:
-            lines_per_seg = math.ceil(line_count / seg_count)
-            line_idx = 0
+            lines_left = line_count
+            for seg_idx, seg in enumerate(vocal_segments):
+                if lines_left <= 0:
+                    break
 
-            for seg in vocal_segments:
-                seg_lines = cleaned_lines[line_idx : line_idx + lines_per_seg]
-                line_idx += lines_per_seg
+                remaining_slots = max(1, seg_count - seg_idx)
+                target_lines = max(1, math.ceil(lines_left / remaining_slots))
+                seg_lines = cleaned_lines[len(result):len(result) + target_lines]
                 if not seg_lines:
                     break
 
                 seg_dur = max(1.0, seg['end'] - seg['start'])
-                sub_slot = seg_dur / len(seg_lines)
+                phrase_start = seg['start'] + (seg_dur * 0.18)
+                usable_dur = max(0.8, seg['end'] - phrase_start)
+                sub_slot = usable_dur / len(seg_lines)
 
                 for s_idx, s_line in enumerate(seg_lines):
-                    start = round(seg['start'] + (s_idx * sub_slot), 2)
-                    end = round(min(seg['end'], start + sub_slot * 0.95), 2)
+                    start = round(phrase_start + (s_idx * sub_slot), 2)
+                    end = round(min(seg['end'], start + max(0.9, sub_slot * 0.9)), 2)
+                    if end <= start:
+                        end = round(min(seg['end'], start + 0.9), 2)
                     result.append({
                         'line': s_line,
                         'start': start,
                         'end': end
                     })
+
+                lines_left -= len(seg_lines)
 
         return result
 
@@ -391,60 +440,45 @@ class LyricsEngineService:
         bars = []
         current_bar_words = []
 
-        for i, w in enumerate(words):
-            current_bar_words.append(w)
-            
-            is_last = (i == len(words) - 1)
-            if is_last:
-                break
-
-            next_w = words[i + 1]
-            pause_after = max(0.0, next_w['start'] - w['end'])
-            word_count = len(current_bar_words)
-            char_len = sum(len(x['word']) for x in current_bar_words) + (word_count - 1)
-            bar_dur = w['end'] - current_bar_words[0]['start']
-            w_text = w['word'].strip()
-
-            # Conditions to break into a new short lyric bar (line):
-            # 1. Natural musical breath pause between words (e.g. >= 0.35s)
-            is_pause_split = (pause_after >= min_pause and word_count >= 2) or (pause_after >= 0.6)
-            # 2. Punctuation break after at least 3 words
-            is_punct_split = (w_text.endswith((',', '.', '!', '?', ';', ':', '—', '-')) and word_count >= 3)
-            # 3. Maximum words per line (4 to 7 words is ideal for music bars)
-            is_length_split = (word_count >= max_words) or (char_len >= max_chars)
-            # 4. Maximum duration cap
-            is_duration_split = (bar_dur >= max_duration and word_count >= 3)
-
-            if is_pause_split or is_punct_split or is_length_split or is_duration_split:
-                bar_start = round(current_bar_words[0]['start'], 2)
-                bar_end = round(max(current_bar_words[-1]['end'], bar_start + 0.8), 2)
-                if next_w['start'] > bar_end:
-                    bar_end = round(min(next_w['start'], bar_end + 0.4), 2)
-
-                bar_line = " ".join(x['word'].strip() for x in current_bar_words).strip()
-                if bar_line:
-                    bars.append({
-                        'line': bar_line,
-                        'start': bar_start,
-                        'end': bar_end,
-                        'words': list(current_bar_words)
-                    })
-                current_bar_words = []
-
-        # Flush any trailing words
-        if current_bar_words:
-            bar_start = round(current_bar_words[0]['start'], 2)
-            bar_end = round(max(current_bar_words[-1]['end'], bar_start + 1.0), 2)
-            bar_line = " ".join(x['word'].strip() for x in current_bar_words).strip()
-            if bar_line:
+        def flush_bar(bar_words):
+            if not bar_words:
+                return
+            bar_start = round(bar_words[0]['start'], 2)
+            bar_end = round(max(bar_words[-1]['end'], bar_start + 0.8), 2)
+            line = " ".join(x['word'].strip() for x in bar_words).strip()
+            if line:
                 bars.append({
-                    'line': bar_line,
+                    'line': line,
                     'start': bar_start,
                     'end': bar_end,
-                    'words': list(current_bar_words)
+                    'words': list(bar_words)
                 })
 
-        # Smooth out transitions and eliminate timestamp overlaps
+        for i, w in enumerate(words):
+            if not current_bar_words:
+                current_bar_words = [w]
+                continue
+
+            prev_w = current_bar_words[-1]
+            pause_after = max(0.0, w['start'] - prev_w['end'])
+            word_count = len(current_bar_words) + 1
+            char_len = sum(len(x['word']) for x in current_bar_words) + len(w['word']) + (word_count - 1)
+            bar_dur = w['end'] - current_bar_words[0]['start']
+            prev_text = prev_w['word'].strip()
+
+            is_pause_split = (pause_after >= min_pause and len(current_bar_words) >= 2) or (pause_after >= 0.6)
+            is_punct_split = prev_text.endswith((',', '.', '!', '?', ';', ':', '—', '-')) and len(current_bar_words) >= 2
+            is_length_split = (word_count > max_words) or (char_len >= max_chars)
+            is_duration_split = (bar_dur >= max_duration and len(current_bar_words) >= 2)
+
+            if is_pause_split or is_punct_split or is_length_split or is_duration_split:
+                flush_bar(current_bar_words)
+                current_bar_words = []
+
+            current_bar_words.append(w)
+
+        flush_bar(current_bar_words)
+
         for idx in range(len(bars)):
             if idx + 1 < len(bars):
                 next_start = bars[idx + 1]['start']
