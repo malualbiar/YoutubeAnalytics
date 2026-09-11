@@ -806,6 +806,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentMode = 'AUDIO'; // 'AUDIO' or 'VIDEO'
     let videoAnimationId = null;
 
+    // Idle animation preview — ticks 0→1 on a ~3s cycle so style effects
+    // are visible in the canvas even when audio is paused / not yet loaded.
+    let previewAnimClock = 0;
+    let previewAnimRafId = null;
+    let previewAnimLastTs = null;
+    const PREVIEW_ANIM_PERIOD = 3000; // ms per full 0→1 cycle
+
     const DRAFT_KEY = 'yt_quid_lyrics_draft';
 
     // Elements
@@ -1360,6 +1367,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const radio = card.querySelector('input[type="radio"]');
         if (radio) radio.checked = true;
         activeAnimationStyle = card.dataset.style;
+        // Reset the idle clock so the new style starts from progress=0
+        previewAnimClock = 0;
+        previewAnimLastTs = null;
         saveDraft();
         drawLiveCanvas();
     }
@@ -1482,6 +1492,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isPlaying) {
             videoAnimationId = requestAnimationFrame(loopRenderCanvas);
         }
+    }
+
+    // Idle preview loop — runs continuously, advances previewAnimClock when
+    // audio is not playing so the style animation is always visible on canvas.
+    function idlePreviewTick(ts) {
+        previewAnimRafId = requestAnimationFrame(idlePreviewTick);
+        const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+        if (isPlaying) {
+            // Real playback is running — loopRenderCanvas owns drawing; just keep our clock in sync.
+            previewAnimLastTs = null;
+            return;
+        }
+        if (previewAnimLastTs === null) previewAnimLastTs = ts;
+        const delta = ts - previewAnimLastTs;
+        previewAnimLastTs = ts;
+        previewAnimClock = (previewAnimClock + delta / PREVIEW_ANIM_PERIOD) % 1.0;
+        drawLiveCanvas();
+    }
+
+    function startIdlePreviewLoop() {
+        if (previewAnimRafId) cancelAnimationFrame(previewAnimRafId);
+        previewAnimLastTs = null;
+        previewAnimRafId = requestAnimationFrame(idlePreviewTick);
     }
 
     // -------------------------------------------------------------
@@ -2919,10 +2952,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const firstLineStart = lyricsArray.length > 0 ? Number(lyricsArray[0].start || 0) : Infinity;
 
-        if (activeIdx !== -1) {
-            const activeLine = lyricsArray[activeIdx];
+        // When audio is NOT playing, pick a representative line to preview and
+        // use the continuously-ticking previewAnimClock as the animation progress.
+        const isAudioPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+        let previewIdx = activeIdx;
+        if (!isAudioPlaying && previewIdx === -1 && lyricsArray.length > 0) {
+            // Pick the middle line as a stable demo line when nothing is active
+            previewIdx = Math.floor(lyricsArray.length / 2);
+        }
+
+        if (previewIdx !== -1) {
+            const activeLine = lyricsArray[previewIdx];
             const lineDur = Math.max(0.1, activeLine.end - activeLine.start);
-            const progress = Math.min(1.0, Math.max(0.0, (curTime - activeLine.start) / lineDur));
+            const progress = isAudioPlaying
+                ? Math.min(1.0, Math.max(0.0, (curTime - activeLine.start) / lineDur))
+                : previewAnimClock;
             const text = applyTransform(activeLine.line);
 
             if ('letterSpacing' in canvasCtx) {
@@ -3281,7 +3325,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             // Only show the song title at the very start of the song, not during later quiet gaps.
-            const shouldShowSongTitle = Number.isFinite(firstLineStart) && curTime < firstLineStart + 1.5 && songTitleInput.value;
+            const isAudioPlayingTitle = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+            const shouldShowSongTitle = isAudioPlayingTitle && Number.isFinite(firstLineStart) && curTime < firstLineStart + 1.5 && songTitleInput.value;
             if (shouldShowSongTitle) {
                 canvasCtx.save();
                 canvasCtx.font = `${italic} ${weight} ${fontSizeVal * 0.8}px ${fontFam}`;
@@ -3475,6 +3520,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load saved draft on startup
     loadDraft();
+
+    // Start the idle animation preview loop — keeps the canvas animating
+    // even when audio is paused so style effects are always visible.
+    startIdlePreviewLoop();
 });
 </script>
 {% endblock %}
