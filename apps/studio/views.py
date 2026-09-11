@@ -931,7 +931,16 @@ def lyrics_render_view(request):
     highlight_color = request.POST.get('highlight_color', '#00E5FF').strip()
     text_color = request.POST.get('text_color', '#FFFFFF').strip()
     position_mode = request.POST.get('position_mode', 'CENTER').strip()
-    
+    cover_layout = request.POST.get('cover_layout', LyricVideoProject.CoverLayout.AMBIENT).strip()
+    cover_size = float(request.POST.get('cover_size') or 1.0)
+    cover_blur = float(request.POST.get('cover_blur') or 8.0)
+    cover_opacity = float(request.POST.get('cover_opacity') or 1.0)
+    cover_offset = float(request.POST.get('cover_offset') or 0.0)
+    cover_brightness = float(request.POST.get('cover_brightness') or 1.0)
+    cover_contrast = float(request.POST.get('cover_contrast') or 1.0)
+    cover_saturation = float(request.POST.get('cover_saturation') or 1.0)
+    cover_vignette = float(request.POST.get('cover_vignette') or 0.0)
+
     # Advanced Typography Parameters
     font_weight = request.POST.get('font_weight', 'bold').strip()
     font_italic = request.POST.get('font_italic') == 'true'
@@ -1024,6 +1033,15 @@ def _execute_lyrics_render(project_id, title, artist_name, loop_video):
             highlight_color=project.highlight_color,
             text_color=project.text_color,
             position_mode=project.position_mode,
+            cover_layout=project.cover_layout,
+            cover_size=project.cover_size,
+            cover_blur=project.cover_blur,
+            cover_opacity=project.cover_opacity,
+            cover_offset=project.cover_offset,
+            cover_brightness=project.cover_brightness,
+            cover_contrast=project.cover_contrast,
+            cover_saturation=project.cover_saturation,
+            cover_vignette=project.cover_vignette,
             font_weight=project.font_weight,
             font_italic=project.font_italic,
             letter_spacing=project.letter_spacing,
@@ -1086,6 +1104,15 @@ def lyrics_render_view(request):
     highlight_color = request.POST.get('highlight_color', '#00E5FF').strip()
     text_color = request.POST.get('text_color', '#FFFFFF').strip()
     position_mode = request.POST.get('position_mode', LyricVideoProject.PositionMode.CENTER)
+    cover_layout = request.POST.get('cover_layout', LyricVideoProject.CoverLayout.AMBIENT)
+    cover_size = float(request.POST.get('cover_size') or 1.0)
+    cover_blur = float(request.POST.get('cover_blur') or 8.0)
+    cover_opacity = float(request.POST.get('cover_opacity') or 1.0)
+    cover_offset = float(request.POST.get('cover_offset') or 0.0)
+    cover_brightness = float(request.POST.get('cover_brightness') or 1.0)
+    cover_contrast = float(request.POST.get('cover_contrast') or 1.0)
+    cover_saturation = float(request.POST.get('cover_saturation') or 1.0)
+    cover_vignette = float(request.POST.get('cover_vignette') or 0.0)
 
     # Advanced typography settings
     font_weight = request.POST.get('font_weight', 'bold').strip()
@@ -1159,6 +1186,15 @@ def lyrics_render_view(request):
         highlight_color=highlight_color,
         text_color=text_color,
         position_mode=position_mode,
+        cover_layout=cover_layout,
+        cover_size=cover_size,
+        cover_blur=cover_blur,
+        cover_opacity=cover_opacity,
+        cover_offset=cover_offset,
+        cover_brightness=cover_brightness,
+        cover_contrast=cover_contrast,
+        cover_saturation=cover_saturation,
+        cover_vignette=cover_vignette,
         font_weight=font_weight,
         font_italic=font_italic,
         letter_spacing=letter_spacing,

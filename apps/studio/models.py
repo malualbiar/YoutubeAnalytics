@@ -314,14 +314,21 @@ class LyricVideoProject(models.Model):
         VIDEO = 'VIDEO', 'Source Video File (.mp4, .mov, .webm)'
 
     class AnimationStyle(models.TextChoices):
-        KARAOKE_WIPE = 'KARAOKE_WIPE', 'Karaoke Color Wipe & Glow'
-        ROLLING_3LINE = 'ROLLING_3LINE', 'Smooth 3-Line Rolling Display'
-        CYBER_NEON = 'CYBER_NEON', 'Cyber Neon Glow'
-        CINEMATIC = 'CINEMATIC', 'Cinematic Minimal Serif'
-        BOUNCE_IN = 'BOUNCE_IN', 'Bounce Pop-In'
-        TYPEWRITER = 'TYPEWRITER', 'Typewriter Reveal'
-        WAVE_PULSE = 'WAVE_PULSE', 'Wave Color Pulse'
-        SLIDE_UP = 'SLIDE_UP', 'Smooth Slide Up'
+        KARAOKE_WIPE    = 'KARAOKE_WIPE',    'Karaoke Color Wipe & Glow'
+        ROLLING_3LINE   = 'ROLLING_3LINE',   'Smooth 3-Line Rolling Display'
+        PLAYFUL_POP     = 'PLAYFUL_POP',     'Playful Pop'
+        BUBBLE_BOUNCE   = 'BUBBLE_BOUNCE',   'Bubble Bounce'
+        DREAMY_DRIFT    = 'DREAMY_DRIFT',    'Dreamy Drift'
+        NEON_GLOW       = 'NEON_GLOW',       'Neon Glow'
+        HANDWRITTEN_INK = 'HANDWRITTEN_INK', 'Handwritten Ink'
+        RETRO_VHS       = 'RETRO_VHS',       'Retro VHS'
+        VINTAGE_COUNTRY = 'VINTAGE_COUNTRY', 'Vintage Country'
+        CYBER_NEON      = 'CYBER_NEON',      'Cyber Neon Glow'
+        CINEMATIC       = 'CINEMATIC',       'Cinematic Minimal Serif'
+        BOUNCE_IN       = 'BOUNCE_IN',       'Bounce Pop-In'
+        TYPEWRITER      = 'TYPEWRITER',      'Typewriter Reveal'
+        WAVE_PULSE      = 'WAVE_PULSE',      'Wave Color Pulse'
+        SLIDE_UP        = 'SLIDE_UP',        'Smooth Slide Up'
 
     class AspectRatio(models.TextChoices):
         LANDSCAPE_16_9 = '16:9', '16:9 Landscape (YouTube Full HD 1080p)'
@@ -331,6 +338,10 @@ class LyricVideoProject(models.Model):
         CENTER = 'CENTER', 'Center'
         BOTTOM = 'BOTTOM', 'Bottom Third'
         TOP = 'TOP', 'Top'
+
+    class CoverLayout(models.TextChoices):
+        AMBIENT = 'AMBIENT', 'Ambient / Centered Artwork'
+        FULL = 'FULL', 'Full Cover Background'
 
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -368,7 +379,20 @@ class LyricVideoProject(models.Model):
     highlight_color = models.CharField(max_length=20, default='#00E5FF')
     text_color = models.CharField(max_length=20, default='#FFFFFF')
     position_mode = models.CharField(max_length=20, choices=PositionMode.choices, default=PositionMode.CENTER)
-    
+    cover_layout = models.CharField(
+        max_length=20,
+        choices=CoverLayout.choices,
+        default=CoverLayout.AMBIENT
+    )
+    cover_size = models.FloatField(default=1.0)
+    cover_blur = models.FloatField(default=8.0)
+    cover_opacity = models.FloatField(default=1.0)
+    cover_offset = models.FloatField(default=0.0)
+    cover_brightness = models.FloatField(default=1.0)
+    cover_contrast = models.FloatField(default=1.0)
+    cover_saturation = models.FloatField(default=1.0)
+    cover_vignette = models.FloatField(default=0.0)
+
     # Advanced Typography Settings
     font_weight = models.CharField(max_length=10, default='bold')
     font_italic = models.BooleanField(default=False)
@@ -411,6 +435,10 @@ class LyricVideoProject(models.Model):
         if hours > 0:
             return f"{hours}h {minutes:02d}m {seconds:02d}s"
         return f"{minutes:02d}m {seconds:02d}s"
+
+    @property
+    def artwork_layout_display(self):
+        return self.get_cover_layout_display()
 
     @property
     def lrc_content(self):

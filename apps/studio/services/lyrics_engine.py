@@ -479,15 +479,43 @@ class LyricsEngineService:
 
         flush_bar(current_bar_words)
 
+        # Trim bar end times and inject ♪ instrumental placeholders for gaps
+        # longer than this threshold — these are intros, solos, and bridges
+        # where no vocals are present. Without this, the screen is blank for
+        # potentially 20–30 seconds with no feedback to the viewer.
+        INSTRUMENTAL_GAP_THRESHOLD = 4.0  # seconds
+
+        filled = []
         for idx in range(len(bars)):
+            bar = bars[idx]
+
             if idx + 1 < len(bars):
                 next_start = bars[idx + 1]['start']
-                if bars[idx]['end'] > next_start:
-                    bars[idx]['end'] = round(next_start, 2)
-                elif next_start - bars[idx]['end'] < 0.6:
-                    bars[idx]['end'] = round(next_start, 2)
+                # Clamp overlapping or nearly-adjacent bar ends
+                if bar['end'] > next_start:
+                    bar['end'] = round(next_start, 2)
+                elif next_start - bar['end'] < 0.6:
+                    bar['end'] = round(next_start, 2)
 
-        return bars
+                filled.append(bar)
+
+                # Insert instrumental placeholder if the gap to the next bar
+                # is long enough to be a meaningful instrumental section
+                gap = bars[idx + 1]['start'] - bar['end']
+                if gap >= INSTRUMENTAL_GAP_THRESHOLD:
+                    instr_start = round(bar['end'] + 0.3, 2)
+                    instr_end = round(bars[idx + 1]['start'] - 0.3, 2)
+                    if instr_end > instr_start:
+                        filled.append({
+                            'line': '♪',
+                            'start': instr_start,
+                            'end': instr_end,
+                            'words': []
+                        })
+            else:
+                filled.append(bar)
+
+        return filled
 
     @classmethod
     def transcribe_and_sync_with_whisper(cls, audio_path, model_size='base', initial_prompt=None):
@@ -531,12 +559,17 @@ class LyricsEngineService:
                 audio_path = extracted_wav
 
         try:
+            from difflib import SequenceMatcher
+
             # Choose efficient INT8 quantization on CPU
             model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
             # VAD filter is disabled for music — it silences instrumental sections,
             # reverb tails, and quiet passages, causing whole verses to be dropped.
             # condition_on_previous_text=False prevents hallucination loops.
+            # no_speech_threshold lowered to 0.3 so filler vocalizations (hmm, ohh,
+            # ah) are not silently dropped — they sit at the edge of Whisper's
+            # speech/music classifier and a threshold of 0.5 kills them.
             prompt_text = initial_prompt if initial_prompt else "Lyrics:"
             segments, info = model.transcribe(
                 audio_path,
@@ -544,7 +577,7 @@ class LyricsEngineService:
                 word_timestamps=True,
                 vad_filter=False,
                 condition_on_previous_text=False,
-                no_speech_threshold=0.5,
+                no_speech_threshold=0.3,
                 initial_prompt=prompt_text
             )
 
@@ -571,33 +604,52 @@ class LyricsEngineService:
                     return True
                 return False
 
-            # Track repeated runs: skip a segment ONLY if it repeats 3+ consecutive times
-            # (real choruses repeat, but Whisper hallucination loops repeat 10-20+ times)
+            # Fuzzy repeat suppression — real hallucination loops repeat 10-20+
+            # times with near-identical text. Real choruses repeat 2-4 times and
+            # often have minor variation. We suppress only when:
+            #   - similarity ratio > 0.92 (nearly identical text)
+            #   - AND the run has repeated 5+ consecutive times
+            # This prevents the old threshold-of-3 from killing genuine chorus lines.
             _repeat_text = None
             _repeat_count = 0
 
+            def _is_hallucination_loop(text):
+                nonlocal _repeat_text, _repeat_count
+                if _repeat_text is None:
+                    _repeat_text = text
+                    _repeat_count = 1
+                    return False
+                ratio = SequenceMatcher(None, text.lower(), _repeat_text.lower()).ratio()
+                if ratio > 0.92:
+                    _repeat_count += 1
+                else:
+                    _repeat_text = text
+                    _repeat_count = 1
+                return _repeat_count >= 5
+
+            # Whisper emits music-note tokens (♪, ♫) and transcribes filler sounds
+            # like "hmm", "mm", "oh", "ah" as real words. We preserve them all —
+            # stripping them was the original cause of missing fillers.
+            # Only strip pure-whitespace tokens.
             for seg in segments:
                 seg_text = seg.text.strip() if seg.text else ''
                 if not seg_text:
                     continue
 
-                if seg_text == _repeat_text:
-                    _repeat_count += 1
-                    if _repeat_count >= 3:
-                        continue
-                else:
-                    _repeat_text = seg_text
-                    _repeat_count = 1
-
                 if _is_hallucination(seg_text):
+                    continue
+
+                if _is_hallucination_loop(seg_text):
                     continue
 
                 if seg.words:
                     for w in seg.words:
-                        clean_w = w.word.strip()
-                        if clean_w:
+                        # Preserve the raw token — only skip truly empty strings.
+                        # This keeps ♪, hmm, oh, ah, mm intact.
+                        raw_w = w.word.strip()
+                        if raw_w:
                             all_words.append({
-                                'word': clean_w,
+                                'word': raw_w,
                                 'start': round(w.start, 2),
                                 'end': round(w.end, 2)
                             })
@@ -784,6 +836,18 @@ class LyricsEngineService:
             if not raw_line:
                 continue
 
+            # Instrumental placeholder — render as a dimmed, centred ♪ with a
+            # slow fade regardless of the chosen animation style. Skip transforms.
+            if raw_line == '♪':
+                instr_color = cls.hex_to_ass_color(text_color, alpha=160)
+                script_content.append(
+                    f"Dialogue: 0,{cls.seconds_to_ass_time(float(item.get('start', 0.0)))},"
+                    f"{cls.seconds_to_ass_time(float(item.get('end', float(item.get('start', 0.0)) + 4.0)))},"
+                    f"RollingDim,,0,0,0,,"
+                    f"{{\\pos({x_center},{y_center})\\c{instr_color}\\fad(400,400)}}♪"
+                )
+                continue
+
             # Apply Text Transform
             if text_transform == 'uppercase':
                 raw_line = raw_line.upper()
@@ -842,6 +906,9 @@ class LyricsEngineService:
                     ]
 
             if animation_style == 'KARAOKE_WIPE':
+                # Entry: soft fade-in + blur that clears on the first beat so the
+                # line doesn't hard-cut into view. Exit: short fade-out.
+                # The \k wipe runs across the full duration as before.
                 if words_list and len(words_list) > 0:
                     k_parts = []
                     for w in words_list:
@@ -853,59 +920,442 @@ class LyricsEngineService:
                     words = raw_line.split(' ')
                     total_chars = max(1, sum(len(w) for w in words))
                     karaoke_line = " ".join([f"{{\\k{max(8, int(duration_cs * (len(w) / total_chars)))}}}{w}" for w in words])
-                
-                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{karaoke_line}")
-                
+                entry_tag = f"{{\\pos({x_center},{y_center})\\blur2\\t(0,120,\\blur0)\\fad(80,80)}}"
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{entry_tag}{karaoke_line}")
+
+            elif animation_style == 'PLAYFUL_POP':
+                # Spring bounce entry + confetti burst of ✦ · ★ particles.
+                # Each confetti glyph gets a unique position offset, scale, and
+                # staggered start so they scatter outward on the beat of entry.
+                duration_ms = duration_cs * 10
+                exit_start_ms = max(200, duration_ms - 200)
+                s_x = font_scale_x
+                s_y = font_scale_y
+                pop_tag = (
+                    f"{{\\pos({x_center},{y_center})"
+                    f"\\fscx{int(s_x * 0.5)}\\fscy{int(s_y * 0.5)}\\alpha&HFF&"
+                    f"\\t(0,120,\\fscx{int(s_x * 1.18)}\\fscy{int(s_y * 1.18)}\\alpha&H00&)"
+                    f"\\t(120,220,\\fscx{int(s_x * 0.95)}\\fscy{int(s_y * 0.95)})"
+                    f"\\t(220,300,\\fscx{s_x}\\fscy{s_y})"
+                    f"\\t({exit_start_ms},{duration_ms},\\fscx{int(s_x * 0.4)}\\fscy{int(s_y * 0.4)}\\alpha&HFF&)}}"
+                )
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{pop_tag}{raw_line}")
+
+                # Confetti particles — scatter outward from text center on entry,
+                # each fades out over ~400ms. Positions/sizes use a deterministic
+                # pattern seeded by line index so every line gets a unique burst.
+                confetti_glyphs = ['✦', '✧', '·', '★', '✦', '·', '✧', '★', '·', '✦']
+                confetti_offsets = [
+                    (-110, -35), ( 120, -28), (-80,  30), ( 90,  38),
+                    (-145, -10), ( 148,  12), (-50, -48), ( 55, -44),
+                    (-30,  50), (  35,  52),
+                ]
+                confetti_scales = [55, 40, 30, 60, 35, 28, 50, 45, 25, 38]
+                confetti_colors = [
+                    highlight_color, '#FFFFFF', highlight_color, '#FFFFFF',
+                    highlight_color, '#FFFFFF', highlight_color, '#FFFFFF',
+                    highlight_color, '#FFFFFF',
+                ]
+                for p_i, (glyph, (ox, oy), scale, color) in enumerate(zip(
+                    confetti_glyphs, confetti_offsets, confetti_scales, confetti_colors
+                )):
+                    p_delay_ms = p_i * 18   # stagger each particle by 18ms
+                    p_x = x_center + ox + ((idx * 7 + p_i * 13) % 30) - 15
+                    p_y = y_center + oy
+                    p_color = cls.hex_to_ass_color(color, alpha=0)
+                    # Each particle: appear at p_x/p_y, scale up then fade out
+                    p_start_sec = round(start_sec + p_delay_ms / 1000.0, 3)
+                    p_start_str = cls.seconds_to_ass_time(p_start_sec)
+                    p_end_str   = cls.seconds_to_ass_time(round(p_start_sec + 0.45, 3))
+                    script_content.append(
+                        f"Dialogue: 0,{p_start_str},{p_end_str},Main,,0,0,0,,"
+                        f"{{\\pos({p_x},{p_y})\\c{p_color}"
+                        f"\\fscx{scale}\\fscy{scale}"
+                        f"\\t(0,200,\\fscx{scale + 20}\\fscy{scale + 20})"
+                        f"\\fad(0,220)}}{glyph}"
+                    )
+
+            elif animation_style == 'BUBBLE_BOUNCE':
+                # Elastic bounce entry + rising ○ bubble particles.
+                # Bubbles spawn near the text, drift upward at different speeds,
+                # and fade out — giving a light, airy, soapy feel.
+                duration_ms = duration_cs * 10
+                mid_ms = duration_ms // 2
+                s_x = font_scale_x
+                s_y = font_scale_y
+                bubble_tag = (
+                    f"{{\\move({x_center},{y_center + 22},{x_center},{y_center})"
+                    f"\\fscx{int(s_x * 0.88)}\\fscy{int(s_y * 0.88)}"
+                    f"\\t(0,400,\\fscx{s_x}\\fscy{s_y})"
+                    f"\\t(400,{mid_ms},\\fscx{int(s_x * 1.04)}\\fscy{int(s_y * 1.04)})"
+                    f"\\t({mid_ms},{duration_ms},\\fscx{s_x}\\fscy{s_y})"
+                    f"\\fad(180,220)}}"
+                )
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{bubble_tag}{raw_line}")
+
+                # Bubble particles — ○ glyphs of varying sizes rising upward.
+                # Each bubble has a unique x-offset, rise speed (via move y delta),
+                # size, and delay. They stay alive for 0.7–1.1s then fade out.
+                bubble_configs = [
+                    # (x_offset, y_start_offset, y_rise, scale, delay_ms, lifetime_ms)
+                    (-120,  20,  90, 38, 0,   900),
+                    (  80,  18, 110, 28, 80,  800),
+                    ( 150,  10,  75, 50, 160, 950),
+                    ( -60,  25,  95, 22, 240, 750),
+                    ( -185, 15, 120, 32, 100, 1000),
+                    ( 195,  22,  85, 42, 200, 850),
+                    (  30,  28, 100, 18, 320, 700),
+                    ( -95,  12,  80, 36, 50,  900),
+                ]
+                b_color = cls.hex_to_ass_color(highlight_color, alpha=50)
+                for b_i, (bx_off, by_off, y_rise, bscale, delay_ms, lifetime_ms) in enumerate(bubble_configs):
+                    b_start_sec = round(start_sec + delay_ms / 1000.0, 3)
+                    b_end_sec   = round(b_start_sec + lifetime_ms / 1000.0, 3)
+                    # Cap bubble lifetime to line end
+                    b_end_sec = min(b_end_sec, end_sec)
+                    if b_end_sec <= b_start_sec:
+                        continue
+                    b_start_str = cls.seconds_to_ass_time(b_start_sec)
+                    b_end_str   = cls.seconds_to_ass_time(b_end_sec)
+                    b_x = x_center + bx_off + ((idx * 11 + b_i * 17) % 24) - 12
+                    b_y_from = y_center + by_off
+                    b_y_to   = y_center + by_off - y_rise
+                    script_content.append(
+                        f"Dialogue: 0,{b_start_str},{b_end_str},Main,,0,0,0,,"
+                        f"{{\\move({b_x},{b_y_from},{b_x},{b_y_to})"
+                        f"\\c{b_color}\\fscx{bscale}\\fscy{bscale}"
+                        f"\\fad(80,300)}}○"
+                    )
+
+            elif animation_style == 'DREAMY_DRIFT':
+                # Drift + ♪ ♫ floating music note particles.
+                # Notes appear near the text and float upward, fading as they rise —
+                # reinforcing the ethereal, musical atmosphere of the preset.
+                duration_ms = duration_cs * 10
+                exit_start_ms = max(300, duration_ms - 400)
+                drift_tag = (
+                    f"{{\\move({x_center},{y_center - 18},{x_center},{y_center + 22})"
+                    f"\\blur6\\t(0,350,\\blur0)"
+                    f"\\t({exit_start_ms},{duration_ms},\\blur4)"
+                    f"\\fad(300,350)}}"
+                )
+                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{drift_tag}{raw_line}")
+
+                # Floating note particles — ♪ ♫ drift upward and dissolve.
+                note_configs = [
+                    # (x_offset, y_start_offset, y_rise, scale, delay_ms, lifetime_ms)
+                    (-160,  10, 100, 55, 0,   1200),
+                    ( 170,   8,  80, 45, 300, 1000),
+                    ( -80,  15, 120, 35, 600, 1100),
+                    ( 110,  12,  90, 50, 150, 1300),
+                    (-210,   5, 110, 40, 450, 900),
+                ]
+                note_glyphs = ['♪', '♫', '♪', '♫', '♪']
+                note_color = cls.hex_to_ass_color(highlight_color, alpha=60)
+                for n_i, (nx_off, ny_off, y_rise, nscale, delay_ms, lifetime_ms) in enumerate(note_configs):
+                    n_start_sec = round(start_sec + delay_ms / 1000.0, 3)
+                    n_end_sec   = round(n_start_sec + lifetime_ms / 1000.0, 3)
+                    n_end_sec   = min(n_end_sec, end_sec)
+                    if n_end_sec <= n_start_sec:
+                        continue
+                    n_start_str = cls.seconds_to_ass_time(n_start_sec)
+                    n_end_str   = cls.seconds_to_ass_time(n_end_sec)
+                    n_x = x_center + nx_off + ((idx * 9 + n_i * 19) % 20) - 10
+                    n_y_from = y_center + ny_off
+                    n_y_to   = y_center + ny_off - y_rise
+                    script_content.append(
+                        f"Dialogue: 0,{n_start_str},{n_end_str},Main,,0,0,0,,"
+                        f"{{\\move({n_x},{n_y_from},{n_x},{n_y_to})"
+                        f"\\c{note_color}\\fscx{nscale}\\fscy{nscale}"
+                        f"\\blur1\\fad(150,400)}}{note_glyphs[n_i]}"
+                    )
+
+            elif animation_style == 'NEON_GLOW':
+                # Two-layer neon effect:
+                # Layer 0 (bloom): a blurred copy of the whole line in the highlight
+                #   color at 60% alpha — acts as the neon tube glow behind the text.
+                #   Fades in/out with the line. blur5 gives a wide soft corona.
+                # Layer 1 (wipe): the sharp karaoke wipe on top using \ko (outline
+                #   karaoke) so the outline pulses as each word is highlighted,
+                #   reinforcing the neon-on-dark-glass look.
+                if words_list and len(words_list) > 0:
+                    k_parts = []
+                    for w in words_list:
+                        w_text = w.get('word', '')
+                        w_cs = max(5, int((float(w.get('end', float(w.get('start', start_sec)) + 0.3)) - float(w.get('start', start_sec))) * 100))
+                        k_parts.append(f"{{\\ko{w_cs}}}{w_text}")
+                    neon_line = " ".join(k_parts)
+                else:
+                    words = raw_line.split(' ')
+                    total_chars = max(1, sum(len(w) for w in words))
+                    neon_line = " ".join([f"{{\\ko{max(8, int(duration_cs * (len(w) / total_chars)))}}}{w}" for w in words])
+                bloom_color = cls.hex_to_ass_color(highlight_color, alpha=100)
+                # Bloom layer
+                script_content.append(
+                    f"Dialogue: 0,{start_time_str},{end_time_str},NeonGlow,,0,0,0,,"
+                    f"{{\\pos({x_center},{y_center})\\blur5\\c{bloom_color}\\fad(120,120)}}{raw_line}"
+                )
+                # Sharp wipe layer on top
+                script_content.append(
+                    f"Dialogue: 1,{start_time_str},{end_time_str},NeonGlow,,0,0,0,,"
+                    f"{{\\pos({x_center},{y_center})\\blur0\\fad(80,80)}}{neon_line}"
+                )
+
+                # Electric spark particles — ✦ ✧ scatter around the text,
+                # each appearing at a staggered time and fading out quickly.
+                # They use the highlight color to match the neon tube glow.
+                spark_glyphs   = ['✦', '✧', '✦', '✧', '✦', '✧', '✦', '✧']
+                spark_offsets  = [
+                    (-170, -22), ( 175, -18), (-100, -38), ( 105, -35),
+                    (-195,  10), ( 198,  14), ( -55,  32), (  60,  30),
+                ]
+                spark_scales   = [35, 28, 22, 32, 25, 20, 30, 18]
+                spark_color    = cls.hex_to_ass_color(highlight_color, alpha=20)
+                for sp_i, (glyph, (sx_off, sy_off), sscale) in enumerate(zip(
+                    spark_glyphs, spark_offsets, spark_scales
+                )):
+                    sp_delay_ms  = sp_i * 60 + (idx * 23 % 40)
+                    sp_start_sec = round(start_sec + sp_delay_ms / 1000.0, 3)
+                    sp_end_sec   = round(sp_start_sec + 0.35, 3)
+                    sp_end_sec   = min(sp_end_sec, end_sec)
+                    if sp_end_sec <= sp_start_sec:
+                        continue
+                    sp_x = x_center + sx_off
+                    sp_y = y_center + sy_off
+                    script_content.append(
+                        f"Dialogue: 0,{cls.seconds_to_ass_time(sp_start_sec)},"
+                        f"{cls.seconds_to_ass_time(sp_end_sec)},NeonGlow,,0,0,0,,"
+                        f"{{\\pos({sp_x},{sp_y})\\c{spark_color}"
+                        f"\\fscx{sscale}\\fscy{sscale}"
+                        f"\\t(0,120,\\fscx{sscale + 15}\\fscy{sscale + 15})"
+                        f"\\fad(40,180)}}{glyph}"
+                    )
+
+            elif animation_style == 'HANDWRITTEN_INK':
+                # \kf character-fill reveal + micro ink-splatter dots.
+                # Small · dots appear just ahead of the writing position,
+                # simulating ink hitting the page before the stroke arrives.
+                chars = list(raw_line)
+                if not chars:
+                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{raw_line}")
+                else:
+                    char_dur = max(3, int(duration_cs / len(chars)))
+                    ink_line = "".join(f"{{\\kf{char_dur}}}{c}" for c in chars)
+                    ink_tag = f"{{\\move({x_center},{y_center + 8},{x_center},{y_center})\\fad(0,200)}}"
+                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{ink_tag}{ink_line}")
+
+                    # Ink splatter dots — · appear at staggered positions near
+                    # the start of the line and fade quickly (80ms lifetime).
+                    # X positions spread outward from center left, matching the
+                    # left-to-right writing direction of the kf reveal.
+                    n_chars = len(chars)
+                    splat_color = cls.hex_to_ass_color(highlight_color, alpha=80)
+                    splat_offsets = [-160, -120, -80, -40, 0, 40, 80, 120, 160]
+                    splat_y_jitter = [-8, 10, -5, 12, -10, 7, -12, 5, -7]
+                    for sp_i, (sx_off, sy_jit) in enumerate(zip(splat_offsets, splat_y_jitter)):
+                        # Stagger: each dot appears as the \kf wipe reaches its x position
+                        sp_frac = (sp_i / len(splat_offsets))
+                        sp_start_sec = round(start_sec + sp_frac * (end_sec - start_sec) * 0.85, 3)
+                        sp_end_sec   = round(sp_start_sec + 0.12, 3)
+                        sp_end_sec   = min(sp_end_sec, end_sec)
+                        if sp_end_sec <= sp_start_sec:
+                            continue
+                        sp_x = x_center + sx_off + ((idx * 5 + sp_i * 11) % 16) - 8
+                        sp_y = y_center + sy_jit
+                        sp_scale = 20 + (sp_i % 3) * 8
+                        script_content.append(
+                            f"Dialogue: 0,{cls.seconds_to_ass_time(sp_start_sec)},"
+                            f"{cls.seconds_to_ass_time(sp_end_sec)},Main,,0,0,0,,"
+                            f"{{\\pos({sp_x},{sp_y})\\c{splat_color}"
+                            f"\\fscx{sp_scale}\\fscy{sp_scale}\\fad(0,60)}}·"
+                        )
+
+            elif animation_style == 'RETRO_VHS':
+                # Three-layer RGB chromatic aberration + scanline noise overlay.
+                # Layers 0-1: red/cyan channel shift (as before).
+                # Layer 2: main white text.
+                # Scanline layer: ░ block glyphs at very low alpha across the
+                # text height — simulate VHS tracking noise / interlace lines.
+                duration_ms = duration_cs * 10
+                red_color  = cls.hex_to_ass_color('#FF4444', alpha=140)
+                cyan_color = cls.hex_to_ass_color('#44FFEE', alpha=150)
+                # Red channel drifts right: x+3→x+7 over the line duration
+                script_content.append(
+                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\move({x_center + 3},{y_center - 2},{x_center + 7},{y_center - 2})"
+                    f"\\c{red_color}\\blur1\\fad(30,30)}}{raw_line}"
+                )
+                # Cyan channel: fixed offset left
+                script_content.append(
+                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\pos({x_center - 3},{y_center + 2})\\c{cyan_color}\\blur1"
+                    f"\\fad(30,30)}}{raw_line}"
+                )
+                # Main white layer on top
+                script_content.append(
+                    f"Dialogue: 1,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\pos({x_center},{y_center})\\fad(50,50)}}{raw_line}"
+                )
+
+                # Scanline noise — horizontal ░ strips at varying y offsets and
+                # very low alpha, flickering in/out at different times.
+                # Each strip is a wide, short-lived block at one of 6 y positions.
+                noise_color = cls.hex_to_ass_color('#FFFFFF', alpha=210)
+                noise_rows = [
+                    # (y_offset, x_offset, fscx, fscy, delay_ms, lifetime_ms)
+                    ( -18, -80, 280, 18,  0,   180),
+                    (   8,  60, 220, 14,  90,  160),
+                    (  18, -40, 300, 16,  40,  200),
+                    ( -10,  20, 180, 12, 130,  150),
+                    (  -4, -60, 240, 20,  70,  170),
+                    (  14,  30, 260, 14, 160,  140),
+                ]
+                for nr_i, (ny_off, nx_off, nfscx, nfscy, delay_ms, lifetime_ms) in enumerate(noise_rows):
+                    nr_start_sec = round(start_sec + delay_ms / 1000.0, 3)
+                    nr_end_sec   = round(nr_start_sec + lifetime_ms / 1000.0, 3)
+                    nr_end_sec   = min(nr_end_sec, end_sec)
+                    if nr_end_sec <= nr_start_sec:
+                        continue
+                    nr_x = x_center + nx_off
+                    nr_y = y_center + ny_off
+                    script_content.append(
+                        f"Dialogue: 0,{cls.seconds_to_ass_time(nr_start_sec)},"
+                        f"{cls.seconds_to_ass_time(nr_end_sec)},Main,,0,0,0,,"
+                        f"{{\\pos({nr_x},{nr_y})\\c{noise_color}"
+                        f"\\fscx{nfscx}\\fscy{nfscy}\\fad(0,60)}}░"
+                    )
+
+            elif animation_style == 'VINTAGE_COUNTRY':
+                # Warm slow fade — line fades in from nothing over 400ms,
+                # holds clean, then fades out slowly over 500ms. The slow dissolve
+                # feels warm and unhurried. Uses the main style with amber highlight.
+                script_content.append(
+                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\pos({x_center},{y_center})\\fad(400,500)}}{raw_line}"
+                )
+
             elif animation_style == 'ROLLING_3LINE':
-                # 1. Previous line
-                if idx > 0 and lyrics_data[idx - 1].get('line'):
-                    prev_text = lyrics_data[idx - 1]['line']
-                    if text_transform == 'uppercase': prev_text = prev_text.upper()
-                    elif text_transform == 'lowercase': prev_text = prev_text.lower()
-                    elif text_transform == 'capitalize': prev_text = prev_text.title()
-                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,{{\\pos({x_center},{y_prev})\\fad(150,150)}}{prev_text}")
+                # Slide-based rolling display — lines physically move rather than
+                # fading in place, matching how Spotify/Apple Music render lyrics.
+                #
+                # Transition window: first 180ms of each line's display period.
+                # Previous line: slides from y_center → y_prev (moves up) during entry.
+                # Current line: slides from y_next → y_center (arrives from below).
+                # Next line: appears statically at y_next, dim.
+                slide_ms = 180  # transition duration in ms
 
-                # 2. Current line
-                script_content.append(f"Dialogue: 1,{start_time_str},{end_time_str},Main,,0,0,0,,{{\\pos({x_center},{y_center})\\fad(100,100)}}{raw_line}")
+                # 1. Previous line — slides upward as new line arrives
+                if idx > 0:
+                    prev_item = lyrics_data[idx - 1]
+                    if prev_item.get('line') and prev_item['line'] != '♪':
+                        prev_text = prev_item['line']
+                        if text_transform == 'uppercase': prev_text = prev_text.upper()
+                        elif text_transform == 'lowercase': prev_text = prev_text.lower()
+                        elif text_transform == 'capitalize': prev_text = prev_text.title()
+                        script_content.append(
+                            f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,"
+                            f"{{\\move({x_center},{y_center},{x_center},{y_prev})"
+                            f"\\fad(0,200)}}{prev_text}"
+                        )
 
-                # 3. Next line
-                if idx + 1 < len(lyrics_data) and lyrics_data[idx + 1].get('line'):
-                    next_text = lyrics_data[idx + 1]['line']
-                    if text_transform == 'uppercase': next_text = next_text.upper()
-                    elif text_transform == 'lowercase': next_text = next_text.lower()
-                    elif text_transform == 'capitalize': next_text = next_text.title()
-                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,{{\\pos({x_center},{y_next})\\fad(150,150)}}{next_text}")
+                # 2. Current line — slides up from y_next into y_center
+                script_content.append(
+                    f"Dialogue: 1,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\move({x_center},{y_next},{x_center},{y_center})"
+                    f"\\fad(80,120)}}{raw_line}"
+                )
+
+                # 3. Next line — static at y_next, dim, no movement yet
+                if idx + 1 < len(lyrics_data):
+                    next_item = lyrics_data[idx + 1]
+                    if next_item.get('line') and next_item['line'] != '♪':
+                        next_text = next_item['line']
+                        if text_transform == 'uppercase': next_text = next_text.upper()
+                        elif text_transform == 'lowercase': next_text = next_text.lower()
+                        elif text_transform == 'capitalize': next_text = next_text.title()
+                        script_content.append(
+                            f"Dialogue: 0,{start_time_str},{end_time_str},RollingDim,,0,0,0,,"
+                            f"{{\\pos({x_center},{y_next})\\fad(200,100)}}{next_text}"
+                        )
 
             elif animation_style == 'CYBER_NEON':
+                # unchanged — already has blur + karaoke wipe on NeonGlow style
                 words = raw_line.split(' ')
                 total_chars = max(1, sum(len(w) for w in words))
                 neon_line = " ".join([f"{{\\k{max(8, int(duration_cs * (len(w)/total_chars)))}}}{w}" for w in words])
                 script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},NeonGlow,,0,0,0,,{{\\blur2\\fad(120,120)}}{neon_line}")
 
             elif animation_style == 'CINEMATIC':
-                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{{\\fad(280,280)}}{raw_line}")
+                # Slow-burn reveal: entry blur 2 → 0 over 200ms + imperceptible
+                # upward float (8px over full duration) — how film subtitles move.
+                # A second dimmed shadow layer sits 2px below for depth.
+                duration_ms = duration_cs * 10
+                shadow_color = cls.hex_to_ass_color('#000000', alpha=160)
+                script_content.append(
+                    f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\pos({x_center},{y_center + 2})\\c{shadow_color}\\blur2"
+                    f"\\fad(280,280)}}{raw_line}"
+                )
+                script_content.append(
+                    f"Dialogue: 1,{start_time_str},{end_time_str},Main,,0,0,0,,"
+                    f"{{\\move({x_center},{y_center + 4},{x_center},{y_center - 4})"
+                    f"\\blur2\\t(0,200,\\blur0)\\fad(280,280)}}{raw_line}"
+                )
 
             elif animation_style == 'BOUNCE_IN':
-                # Scale from 50% to current scale using \t transform over 200ms
+                # Entry: scale 50%→108%→100% spring (overshoot + settle).
+                # Exit: scale down to 60% + fade — matches the entry energy.
+                # Fixed \pos so position doesn't drift across renderers.
+                duration_ms = duration_cs * 10
+                exit_start_ms = max(200, duration_ms - 180)
                 s_x = font_scale_x
                 s_y = font_scale_y
-                bounce_tag = f"{{\\fscx50\\fscy50\\t(0,200,\\fscx{s_x}\\fscy{s_y})\\fad(100,150)}}"
+                bounce_tag = (
+                    f"{{\\pos({x_center},{y_center})"
+                    f"\\fscx{int(s_x * 0.5)}\\fscy{int(s_y * 0.5)}"
+                    f"\\t(0,180,\\fscx{int(s_x * 1.08)}\\fscy{int(s_y * 1.08)})"
+                    f"\\t(180,280,\\fscx{s_x}\\fscy{s_y})"
+                    f"\\t({exit_start_ms},{duration_ms},\\fscx{int(s_x * 0.6)}\\fscy{int(s_y * 0.6)}\\alpha&HFF&)"
+                    f"\\fad(0,0)}}"
+                )
                 script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{bounce_tag}{raw_line}")
 
             elif animation_style == 'TYPEWRITER':
-                # Per-character reveal
+                # True character-by-character reveal using per-char Dialogue events.
+                # Each character gets its own event starting at its reveal time,
+                # so characters literally appear from nothing rather than color-wiping.
+                # Previously used \k which does a color wipe — not a real typewriter.
                 chars = list(raw_line)
-                char_duration = max(2, int(duration_cs / len(chars))) if chars else 2
-                type_line = ""
-                for c in chars:
-                    type_line += f"{{\\k{char_duration}}}{c}"
-                script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{type_line}")
+                if not chars:
+                    script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{raw_line}")
+                else:
+                    n = len(chars)
+                    char_slot_sec = (end_sec - start_sec) / n
+                    # Build incrementally: each event shows all revealed chars so far
+                    for c_i in range(n):
+                        c_start_sec = round(start_sec + c_i * char_slot_sec, 3)
+                        c_start_str = cls.seconds_to_ass_time(c_start_sec)
+                        revealed = "".join(chars[:c_i + 1])
+                        script_content.append(
+                            f"Dialogue: {c_i},{c_start_str},{end_time_str},Main,,0,0,0,,"
+                            f"{{\\pos({x_center},{y_center})\\fad(0,120)}}{revealed}"
+                        )
 
             elif animation_style == 'WAVE_PULSE':
-                # Alternate color and slight scale pulse
-                s_x_max = int(font_scale_x * 1.05)
-                s_y_max = int(font_scale_y * 1.05)
-                pulse_tag = f"{{\\t(0,{duration_cs//2},\\fscx{s_x_max}\\fscy{s_y_max})\\t({duration_cs//2},{duration_cs},\\fscx{font_scale_x}\\fscy{font_scale_y})\\fad(150,150)}}"
+                # Bug fix: \t uses milliseconds, not centiseconds.
+                # Grow to 105% over first half, shrink back over second half.
+                # Added \pos and a colour shift on the peak for extra visual punch.
+                duration_ms = duration_cs * 10
+                mid_ms = duration_ms // 2
+                s_x_max = int(font_scale_x * 1.06)
+                s_y_max = int(font_scale_y * 1.06)
+                peak_color = cls.hex_to_ass_color(highlight_color, alpha=0)
+                pulse_tag = (
+                    f"{{\\pos({x_center},{y_center})"
+                    f"\\t(0,{mid_ms},\\fscx{s_x_max}\\fscy{s_y_max}\\c{peak_color})"
+                    f"\\t({mid_ms},{duration_ms},\\fscx{font_scale_x}\\fscy{font_scale_y})"
+                    f"\\fad(150,150)}}"
+                )
                 script_content.append(f"Dialogue: 0,{start_time_str},{end_time_str},Main,,0,0,0,,{pulse_tag}{raw_line}")
 
             elif animation_style == 'SLIDE_UP':
@@ -924,31 +1374,86 @@ class LyricsEngineService:
         return output_ass_path
 
     @classmethod
-    def generate_ambient_background_frame(cls, background_image_path, width, height, output_frame_path):
+    def generate_ambient_background_frame(
+        cls,
+        background_image_path,
+        width,
+        height,
+        output_frame_path,
+        cover_layout='AMBIENT',
+        cover_size=1.0,
+        cover_blur=8.0,
+        cover_opacity=1.0,
+        cover_offset=0.0,
+        cover_brightness=1.0,
+        cover_contrast=1.0,
+        cover_saturation=1.0,
+        cover_vignette=0.0
+    ):
         """
         Creates a high-resolution ambient background frame with smooth Gaussian blur,
-        dark vignette enhancement, and centered cover art if provided.
+        dark vignette enhancement, and either a centered cover or a full-bleed cover.
         """
         os.makedirs(os.path.dirname(os.path.abspath(output_frame_path)), exist_ok=True)
 
         if background_image_path and os.path.exists(background_image_path):
             img = Image.open(background_image_path).convert('RGB')
-            # 1. Ambient blurred background
-            bg = img.resize((width, height), Image.Resampling.LANCZOS)
-            bg = bg.filter(ImageFilter.GaussianBlur(radius=30))
-            enhancer = ImageEnhance.Brightness(bg)
-            bg = enhancer.enhance(0.35)
 
-            # 2. Centered album artwork with rounded corner effect & shadow
-            target_art_size = int(min(width, height) * 0.42)
-            art_thumb = img.resize((target_art_size, target_art_size), Image.Resampling.LANCZOS)
-            
-            pos_x = (width - target_art_size) // 2
-            # Center vertically or shift slightly up to make room for lyrics
-            pos_y = int((height - target_art_size) * 0.30) if height > width else int((height - target_art_size) * 0.25)
-            
-            # Paste art onto background
-            bg.paste(art_thumb, (pos_x, pos_y))
+            if cover_layout == 'FULL':
+                # Full cover background with the same effect stack as the preview.
+                img_ratio = img.width / max(img.height, 1)
+                canvas_ratio = width / max(height, 1)
+                target_w = int(width * min(max(cover_size, 0.2), 1.8))
+                target_h = int(height * min(max(cover_size, 0.2), 1.8))
+
+                if img_ratio > canvas_ratio:
+                    new_h = int(target_h)
+                    new_w = int(target_h * img_ratio)
+                    left = max((width - new_w) // 2 + int(cover_offset), 0)
+                    top = max((height - new_h) // 2, 0)
+                    bg = Image.new('RGB', (width, height), color=(12, 12, 18))
+                    resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                    bg.paste(resized, (left, top))
+                else:
+                    new_w = int(target_w)
+                    new_h = int(target_w / img_ratio)
+                    left = max((width - new_w) // 2 + int(cover_offset), 0)
+                    top = max((height - new_h) // 2, 0)
+                    bg = Image.new('RGB', (width, height), color=(12, 12, 18))
+                    resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                    bg.paste(resized, (left, top))
+
+                if cover_blur > 0:
+                    bg = bg.filter(ImageFilter.GaussianBlur(radius=float(cover_blur)))
+
+                bg = ImageEnhance.Brightness(bg).enhance(max(cover_brightness, 0.1))
+                bg = ImageEnhance.Contrast(bg).enhance(max(cover_contrast, 0.1))
+                bg = ImageEnhance.Color(bg).enhance(max(cover_saturation, 0.0))
+
+                if cover_opacity < 1.0:
+                    bg = Image.blend(Image.new('RGB', bg.size, (12, 12, 18)), bg, float(max(min(cover_opacity, 1.0), 0.0)))
+
+                if cover_vignette > 0:
+                    vignette = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+                    draw = ImageDraw.Draw(vignette)
+                    alpha = int(255 * min(max(cover_vignette, 0.0), 0.7))
+                    draw.rectangle((0, 0, width, height), fill=(0, 0, 0, alpha))
+                    bg = Image.alpha_composite(bg.convert('RGBA'), vignette).convert('RGB')
+            else:
+                # 1. Ambient blurred background
+                bg = img.resize((width, height), Image.Resampling.LANCZOS)
+                bg = bg.filter(ImageFilter.GaussianBlur(radius=30))
+                enhancer = ImageEnhance.Brightness(bg)
+                bg = enhancer.enhance(0.35)
+
+                # 2. Centered album artwork with rounded corner effect & shadow
+                target_art_size = int(min(width, height) * 0.42)
+                art_thumb = img.resize((target_art_size, target_art_size), Image.Resampling.LANCZOS)
+
+                pos_x = (width - target_art_size) // 2
+                pos_y = int((height - target_art_size) * 0.30) if height > width else int((height - target_art_size) * 0.25)
+                bg.paste(art_thumb, (pos_x, pos_y))
+
             bg.save(output_frame_path, 'JPEG', quality=95)
         else:
             # Generate sleek dark gradient background
@@ -986,6 +1491,15 @@ class LyricsEngineService:
         highlight_color='#00E5FF',
         text_color='#FFFFFF',
         position_mode='CENTER',
+        cover_layout='AMBIENT',
+        cover_size=1.0,
+        cover_blur=8.0,
+        cover_opacity=1.0,
+        cover_offset=0.0,
+        cover_brightness=1.0,
+        cover_contrast=1.0,
+        cover_saturation=1.0,
+        cover_vignette=0.0,
         font_weight='bold',
         font_italic=False,
         letter_spacing=0.0,
@@ -1144,7 +1658,16 @@ class LyricsEngineService:
                     background_image_path=background_image_path,
                     width=width,
                     height=height,
-                    output_frame_path=frame_path
+                    output_frame_path=frame_path,
+                    cover_layout=cover_layout,
+                    cover_size=cover_size,
+                    cover_blur=cover_blur,
+                    cover_opacity=cover_opacity,
+                    cover_offset=cover_offset,
+                    cover_brightness=cover_brightness,
+                    cover_contrast=cover_contrast,
+                    cover_saturation=cover_saturation,
+                    cover_vignette=cover_vignette
                 )
 
                 vf_filter = f"ass='{escaped_ass_path}'"

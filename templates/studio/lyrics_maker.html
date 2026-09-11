@@ -429,6 +429,7 @@
                                             </div>
                                             <span class="mt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-zinc-500">Warm</span>
                                         </label>
+
                                         <div></div>
                                         <div></div>
                                     </div>
@@ -448,10 +449,12 @@
                                     <div class="space-y-1">
                                         <label class="text-[10px] font-bold text-zinc-400">Font</label>
                                         <select name="font_family" id="fontFamilySelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
-                                            <option value="Arial" selected>Arial</option>
-                                            <option value="Impact">Impact</option>
+                                            <option value="Segoe Print" selected>My Happy Ending</option>
+                                            <option value="Impact">Losing Grip</option>
+                                            <option value="Georgia">Opera-Lyrics Smooth</option>
+                                            <option value="Segoe Script">Ready For It</option>
+                                            <option value="Arial">Arial</option>
                                             <option value="Montserrat">Montserrat</option>
-                                            <option value="Georgia">Georgia</option>
                                             <option value="Verdana">Verdana</option>
                                             <option value="Courier New">Courier New</option>
                                             <option value="Tahoma">Tahoma</option>
@@ -551,35 +554,42 @@
                                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Size</label><span id="coverSizeDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                                        <input type="range" id="coverSizeSlider" min="50" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverSizeSlider" name="cover_size" min="50" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Blur</label><span id="coverBlurDisplay" class="text-[9px] text-zinc-500">0px</span></div>
-                                        <input type="range" id="coverBlurSlider" min="0" max="30" step="1" value="8" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverBlurSlider" name="cover_blur" min="0" max="30" step="1" value="8" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Opacity</label><span id="coverOpacityDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                                        <input type="range" id="coverOpacitySlider" min="30" max="100" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverOpacitySlider" name="cover_opacity" min="30" max="100" step="5" value="100" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Offset</label><span id="coverOffsetDisplay" class="text-[9px] text-zinc-500">0px</span></div>
-                                        <input type="range" id="coverOffsetSlider" min="-100" max="100" step="5" value="0" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverOffsetSlider" name="cover_offset" min="-100" max="100" step="5" value="0" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Brightness</label><span id="coverBrightnessDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                                        <input type="range" id="coverBrightnessSlider" min="40" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverBrightnessSlider" name="cover_brightness" min="40" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Contrast</label><span id="coverContrastDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                                        <input type="range" id="coverContrastSlider" min="50" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverContrastSlider" name="cover_contrast" min="50" max="180" step="5" value="100" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Saturation</label><span id="coverSaturationDisplay" class="text-[9px] text-zinc-500">100%</span></div>
-                                        <input type="range" id="coverSaturationSlider" min="0" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverSaturationSlider" name="cover_saturation" min="0" max="200" step="5" value="100" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Vignette</label><span id="coverVignetteDisplay" class="text-[9px] text-zinc-500">0%</span></div>
-                                        <input type="range" id="coverVignetteSlider" min="0" max="60" step="2" value="0" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverVignetteSlider" name="cover_vignette" min="0" max="60" step="2" value="0" class="w-full h-1 accent-emerald-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-bold text-zinc-400">Layout</label>
+                                        <select name="cover_layout" id="coverLayoutSelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
+                                            <option value="AMBIENT" selected>Ambient / Centered</option>
+                                            <option value="FULL">Full Cover Background</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -672,57 +682,116 @@
     </div>
 </div>
 
-<!-- Full Lyrics & Spellcheck Editor Modal -->
-<div id="fullSpellEditorModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
-        <!-- Modal Header -->
-        <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
+<!-- Full Lyrics Studio Editor Modal (full-screen) -->
+<div id="fullSpellEditorModal" class="fixed inset-0 bg-zinc-950 z-50 hidden flex-col overflow-hidden">
+
+    <!-- Top Bar -->
+    <div class="flex items-center justify-between px-5 py-3 border-b border-zinc-800 bg-zinc-900 shrink-0">
+        <div class="flex items-center gap-3">
             <div>
-                <h3 class="text-sm font-bold text-white">Full Lyrics & Spelling Editor</h3>
-                <p class="text-[11px] text-zinc-400">Edit entire song lyrics with built-in spellcheck and format normalizers</p>
+                <h3 class="text-sm font-bold text-white leading-none">Lyrics Studio</h3>
+                <p class="text-[10px] text-zinc-500 mt-0.5">Live playback · per-line timing · spellcheck</p>
             </div>
-            <button type="button" id="closeFullSpellEditorBtn" class="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors">
+        </div>
+
+        <!-- Format tools -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] text-zinc-500 font-semibold mr-1 hidden sm:inline">Format:</span>
+            <button type="button" onclick="formatModalCase('sentence')" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-medium border border-zinc-700/50">Sentence</button>
+            <button type="button" onclick="formatModalCase('title')"    class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-medium border border-zinc-700/50">Title</button>
+            <button type="button" onclick="formatModalCase('upper')"    class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-medium border border-zinc-700/50">CAPS</button>
+            <button type="button" onclick="formatModalCase('lower')"    class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-medium border border-zinc-700/50">lower</button>
+            <button type="button" onclick="formatModalCase('clean_quotes')" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-[10px] font-medium border border-zinc-700/50">Fix Quotes</button>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono text-zinc-500" id="modalLineCount">0 lines</span>
+            <button type="button" id="closeFullSpellEditorBtn" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/60 transition-colors">
                 Close
             </button>
         </div>
+    </div>
 
-        <!-- Toolbar -->
-        <div class="px-6 py-2.5 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between gap-3 flex-wrap text-xs">
-            <div class="flex items-center gap-2">
-                <span class="text-zinc-400 font-semibold text-[11px]">Quick Format:</span>
-                <button type="button" onclick="formatModalCase('sentence')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">Sentence case</button>
-                <button type="button" onclick="formatModalCase('title')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">Title Case</button>
-                <button type="button" onclick="formatModalCase('upper')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">ALL CAPS</button>
-                <button type="button" onclick="formatModalCase('lower')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700/60">lowercase</button>
-                <button type="button" onclick="formatModalCase('clean_quotes')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-[11px] font-medium border border-zinc-700/60">Fix Smart Quotes</button>
-            </div>
-            <div class="text-[11px] text-zinc-500 font-mono" id="modalLineCount">
-                0 lines
-            </div>
-        </div>
+    <!-- Body: 3-column layout -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
 
-        <!-- Body -->
-        <div class="p-6 flex-1 overflow-y-auto space-y-4">
-            <div class="space-y-1.5">
-                <div class="flex items-center justify-between text-xs text-zinc-400">
-                    <span>Edit lyrics text below (spellings highlighted automatically by your browser):</span>
-                    <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-mono">Spellcheck Active</span>
+        <!-- LEFT: Cover art + player -->
+        <div class="w-[260px] shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-900">
+
+            <!-- Cover art canvas -->
+            <div class="relative flex items-center justify-center bg-zinc-950 p-4 border-b border-zinc-800">
+                <canvas id="studioEditorCanvas" width="480" height="270"
+                        class="w-full rounded-xl border border-zinc-800 shadow-xl object-contain"></canvas>
+                <!-- Active lyric overlay pill -->
+                <div id="studioActiveLyricPill" class="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/70 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold whitespace-nowrap max-w-[90%] truncate hidden"></div>
+            </div>
+
+            <!-- Player controls -->
+            <div class="p-3 space-y-2.5 flex-1">
+                <!-- Time bar -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                        <span id="studioCurrentTime" class="text-zinc-200 font-semibold">00:00.00</span>
+                        <span id="studioDuration">00:00.00</span>
+                    </div>
+                    <input type="range" id="studioScrubber" min="0" max="100" value="0" step="0.01"
+                           class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                 </div>
-                <textarea id="modalLyricsTextarea" rows="14" spellcheck="true" autocomplete="off" autocapitalize="sentences"
-                          class="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-100 font-mono leading-relaxed placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 resize-y"
-                          placeholder="Paste or type full song lyrics here..."></textarea>
+
+                <!-- Play / Pause -->
+                <div class="flex items-center gap-2">
+                    <button type="button" id="studioPlayBtn"
+                            class="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current" id="studioPlayIcon"></i>
+                        <span id="studioPlayLabel">Play</span>
+                    </button>
+                    <button type="button" id="studioStopBtn"
+                            class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/60 transition-colors">
+                        ■
+                    </button>
+                </div>
+
+                <!-- Song info -->
+                <div class="pt-1 border-t border-zinc-800 space-y-0.5">
+                    <p class="text-[11px] font-bold text-white truncate" id="studioSongTitle">—</p>
+                    <p class="text-[10px] text-zinc-500 truncate" id="studioArtistName">—</p>
+                </div>
+
+                <!-- Add line button -->
+                <button type="button" id="studioAddLineBtn"
+                        class="w-full py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 text-zinc-300 text-[10px] font-semibold transition-colors">
+                    + Add Line at End
+                </button>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="px-6 py-3.5 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between">
-            <button type="button" id="cancelFullSpellEditorBtn" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/60 transition-colors">
-                Cancel
-            </button>
-            <button type="button" id="saveFullSpellEditorBtn" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-950/40">
-                <span>Apply Lyrics & Sync</span>
-            </button>
+        <!-- RIGHT: Per-line timeline list -->
+        <div class="flex-1 flex flex-col min-w-0 min-h-0">
+
+            <!-- Column headers -->
+            <div class="flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800 bg-zinc-900/80 text-[9px] font-bold uppercase tracking-widest text-zinc-500 shrink-0">
+                <span class="w-6 text-center">#</span>
+                <span class="flex-1">Lyric Text</span>
+                <span class="w-[80px] text-center">Start</span>
+                <span class="w-[80px] text-center">End</span>
+                <span class="w-[56px] text-center">Actions</span>
+            </div>
+
+            <!-- Scrollable rows -->
+            <div id="studioTimelineRows" class="flex-1 overflow-y-auto divide-y divide-zinc-800/60"></div>
         </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="px-5 py-3 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between shrink-0">
+        <button type="button" id="cancelFullSpellEditorBtn"
+                class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/60 transition-colors">
+            Cancel
+        </button>
+        <button type="button" id="saveFullSpellEditorBtn"
+                class="px-6 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-950/40">
+            Apply & Close
+        </button>
     </div>
 </div>
 
@@ -850,6 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const coverSaturationDisplay = document.getElementById('coverSaturationDisplay');
     const coverVignetteSlider = document.getElementById('coverVignetteSlider');
     const coverVignetteDisplay = document.getElementById('coverVignetteDisplay');
+    const coverLayoutSelect = document.getElementById('coverLayoutSelect');
 
     const songTitleInput = document.getElementById('songTitleInput');
     const artistNameInput = document.getElementById('artistNameInput');
@@ -916,7 +986,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 cover_brightness: coverBrightnessSlider?.value || 100,
                 cover_contrast: coverContrastSlider?.value || 100,
                 cover_saturation: coverSaturationSlider?.value || 100,
-                cover_vignette: coverVignetteSlider?.value || 0
+                cover_vignette: coverVignetteSlider?.value || 0,
+                cover_layout: coverLayoutSelect?.value || 'AMBIENT'
             };
             localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
             if (draftStatusBanner) {
@@ -993,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (draft.cover_contrast) { coverContrastSlider.value = draft.cover_contrast; coverContrastDisplay.textContent = `${draft.cover_contrast}%`; }
             if (draft.cover_saturation) { coverSaturationSlider.value = draft.cover_saturation; coverSaturationDisplay.textContent = `${draft.cover_saturation}%`; }
             if (draft.cover_vignette !== undefined) { coverVignetteSlider.value = draft.cover_vignette; coverVignetteDisplay.textContent = `${draft.cover_vignette}%`; }
+            if (draft.cover_layout) { coverLayoutSelect.value = draft.cover_layout; }
 
             if (draftStatusBanner) {
                 draftStatusBanner.classList.remove('hidden');
@@ -1058,8 +1130,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Auto-save listeners
-    [songTitleInput, artistNameInput, rawLyricsTextarea, fontFamilySelect, positionModeSelect, highlightColorPicker, textColorPicker, fontWeightSelect, textTransformSelect, fontItalicCheck].forEach(el => {
+    [songTitleInput, artistNameInput, rawLyricsTextarea, fontFamilySelect, positionModeSelect, highlightColorPicker, textColorPicker, fontWeightSelect, textTransformSelect, fontItalicCheck, coverLayoutSelect].forEach(el => {
         if (el) el.addEventListener('input', () => { drawLiveCanvas(); saveDraft(); });
+        if (el) el.addEventListener('change', () => { drawLiveCanvas(); saveDraft(); });
     });
 
     // 0. Mode Switcher (Audio vs Video)
@@ -1369,6 +1442,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function togglePlay() {
+        nudgePlaying = false;  // main play/pause always clears nudge state
         const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
         if (isPlaying) {
             if (currentMode === 'VIDEO') previewVideo.pause();
@@ -1710,7 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawLiveCanvas();
     }
 
-    autoDistributeBtn.addEventListener('click', autoDistributeTimings);
+    if (autoDistributeBtn) autoDistributeBtn.addEventListener('click', autoDistributeTimings);
 
     function getCurrentAudioTime() {
         if (audioPlayer && typeof audioPlayer.currentTime === 'number' && !Number.isNaN(audioPlayer.currentTime)) {
@@ -1724,12 +1798,31 @@ document.addEventListener('DOMContentLoaded', () => {
         syncedCount.textContent = lyricsArray.length;
     }
 
-    function selectLyricLine(idx) {
+    window.selectLyricLine = function selectLyricLine(idx) {
+        // Just update the selection state — do NOT re-render the full list.
+        // Re-rendering destroys the focused input, making editing impossible.
         selectedLyricIndex = idx;
-        renderTimelineList();
-    }
+
+        // Visually update row highlight classes without touching the DOM structure
+        lyricsTimelineList.querySelectorAll('[data-index]').forEach(row => {
+            const rowIdx = parseInt(row.getAttribute('data-index'), 10);
+            const sel = rowIdx === idx;
+            row.className = `group flex items-center gap-1.5 p-1.5 rounded-lg border transition-all text-[10px] cursor-pointer ${
+                sel
+                    ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.2)]'
+                    : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700'
+            }`;
+            const numBadge = row.querySelector('.line-num-badge');
+            if (numBadge) {
+                numBadge.className = `line-num-badge w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center shrink-0 ${
+                    sel ? 'bg-emerald-500/20 text-emerald-300' : 'bg-zinc-800 text-zinc-400'
+                }`;
+            }
+        });
+    };
 
     let lyricPreviewTimer = null;
+    let nudgePlaying = false;   // true while ◀/▶ nudge-triggered playback is live
 
     function previewLyricLineSegment(idx) {
         if (!lyricsArray[idx]) return;
@@ -1788,11 +1881,38 @@ document.addEventListener('DOMContentLoaded', () => {
             lyricsArray[idx].start = Number(Math.max(0, nextValue - 0.25).toFixed(2));
         }
 
-        renderTimelineList();
+        // Update only the timestamp span in the existing DOM row — no full
+        // re-render, so the input stays focused and buttons stay attached.
+        const row = lyricsTimelineList.querySelector(`[data-index="${idx}"]`);
+        if (row) {
+            const timeSpan = row.querySelector('.line-time-display');
+            if (timeSpan) timeSpan.textContent = `${Number(lyricsArray[idx].start).toFixed(2)}s`;
+        }
+
         updateHiddenJson();
         saveDraft();
         drawLiveCanvas();
-        previewLyricLineSegment(idx);
+
+        // Nudge playback: if already playing from a previous nudge, just seek to
+        // the new start time and keep going. If not playing, start from here.
+        const newStart = Number(lyricsArray[idx].start || 0);
+        if (nudgePlaying) {
+            // Already playing — just re-seek to the updated position
+            setActiveTime(newStart);
+            loopRenderCanvas();
+        } else {
+            // Start continuous playback from this line's new start time
+            nudgePlaying = true;
+            setActiveTime(newStart);
+            if (currentMode === 'VIDEO' && !hasReplacementAudio()) {
+                previewVideo.play();
+            } else {
+                audioPlayer.play();
+            }
+            playIcon.setAttribute('data-lucide', 'pause');
+            if (window.lucide) lucide.createIcons();
+            loopRenderCanvas();
+        }
     }
 
     function snapLineToPlayhead(idx, field) {
@@ -1826,32 +1946,97 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Auto-open the panel the moment lyrics exist — the user shouldn't have
+        // to click "Edit Lyrics" to see that anything loaded.
+        setManualLyricsVisible(true);
+
         lyricsTimelineList.innerHTML = '';
         lyricsArray.forEach((item, idx) => {
             const isSelected = selectedLyricIndex === idx;
             const row = document.createElement('div');
-            row.className = `group flex items-center gap-1.5 p-1.5 rounded-lg border transition-all text-[10px] ${isSelected ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.2)]' : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700'}`;
+            row.className = `group flex items-center gap-1.5 p-1.5 rounded-lg border transition-all text-[10px] cursor-pointer ${isSelected ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.2)]' : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700'}`;
             row.setAttribute('data-index', String(idx));
-            row.onclick = () => selectLyricLine(idx);
-            row.innerHTML = `
-                <span class="w-4 h-4 rounded bg-zinc-800 text-zinc-400 text-[9px] font-bold flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500/20 text-emerald-300' : ''}">${idx + 1}</span>
-                <div class="flex items-center gap-1 overflow-hidden flex-1 min-w-0">
-                    <input type="text" 
-                           value="${item.line ? item.line.replace(/"/g, '&quot;') : ''}" 
-                           spellcheck="true" 
-                           autocomplete="off" 
-                           autocapitalize="sentences"
-                           oninput="updateLineText(${idx}, this.value)" 
-                           placeholder="Type lyric line..." 
-                           class="bg-transparent border-0 text-white text-[10px] font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/50 rounded px-1 py-0.5 w-full min-w-0">
-                </div>
-                <div class="flex items-center gap-1 shrink-0 font-mono text-[9px] justify-end">
-                    <button type="button" onclick="event.stopPropagation(); nudgeLineTime(${idx}, 'start', -0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300" title="Move earlier, then preview this lyric">Earlier</button>
-                    <span class="min-w-[42px] text-center text-emerald-400 font-semibold">${Number(item.start || 0).toFixed(2)}s</span>
-                    <button type="button" onclick="event.stopPropagation(); nudgeLineTime(${idx}, 'start', 0.2)" class="px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300" title="Move later, then preview this lyric">Later</button>
-                    <button type="button" onclick="event.stopPropagation(); previewLineAtCurrentTiming(${idx})" class="px-1 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300" title="Preview this lyric segment">Play</button>
-                </div>
-            `;
+
+            // Number badge
+            const numBadge = document.createElement('span');
+            numBadge.className = `line-num-badge w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-zinc-800 text-zinc-400'}`;
+            numBadge.textContent = String(idx + 1);
+            row.appendChild(numBadge);
+
+            // Text input wrapper
+            const inputWrap = document.createElement('div');
+            inputWrap.className = 'flex items-center gap-1 overflow-hidden flex-1 min-w-0';
+            const textInput = document.createElement('input');
+            textInput.type = 'text';
+            textInput.value = item.line || '';
+            textInput.spellcheck = true;
+            textInput.autocomplete = 'off';
+            textInput.setAttribute('autocapitalize', 'sentences');
+            textInput.placeholder = 'Type lyric line...';
+            textInput.className = 'bg-zinc-950 border border-zinc-700 text-white text-[10px] font-semibold focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 rounded px-2 py-1 w-full min-w-0 cursor-text';
+            textInput.addEventListener('input', () => updateLineText(idx, textInput.value));
+            textInput.addEventListener('mousedown', (e) => e.stopPropagation());
+            textInput.addEventListener('click', (e) => { e.stopPropagation(); selectLyricLine(idx); });
+            inputWrap.appendChild(textInput);
+            row.appendChild(inputWrap);
+
+            // Controls wrapper
+            const controls = document.createElement('div');
+            controls.className = 'flex items-center gap-1 shrink-0 font-mono text-[9px] justify-end';
+
+            const btnEarlier = document.createElement('button');
+            btnEarlier.type = 'button';
+            btnEarlier.className = 'px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300';
+            btnEarlier.title = 'Move start earlier';
+            btnEarlier.textContent = '◀';
+            btnEarlier.addEventListener('click', (e) => { e.stopPropagation(); nudgeLineTime(idx, 'start', -0.2); });
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'line-time-display min-w-[38px] text-center text-emerald-400 font-semibold';
+            timeSpan.textContent = `${Number(item.start || 0).toFixed(2)}s`;
+
+            const btnLater = document.createElement('button');
+            btnLater.type = 'button';
+            btnLater.className = 'px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300';
+            btnLater.title = 'Move start later';
+            btnLater.textContent = '▶';
+            btnLater.addEventListener('click', (e) => { e.stopPropagation(); nudgeLineTime(idx, 'start', 0.2); });
+
+            const btnPreview = document.createElement('button');
+            btnPreview.type = 'button';
+            btnPreview.className = 'px-1.5 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300';
+            btnPreview.title = 'Preview';
+            btnPreview.textContent = '▷';
+            btnPreview.addEventListener('click', (e) => { e.stopPropagation(); previewLyricLineSegment(idx); });
+
+            const btnAdd = document.createElement('button');
+            btnAdd.type = 'button';
+            btnAdd.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-emerald-400 font-bold';
+            btnAdd.title = 'Add new line below';
+            btnAdd.textContent = '+';
+            btnAdd.addEventListener('click', (e) => { e.stopPropagation(); insertLineBelow(idx); });
+
+            const btnDelete = document.createElement('button');
+            btnDelete.type = 'button';
+            btnDelete.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-rose-500/20 text-zinc-500 hover:text-rose-400';
+            btnDelete.title = 'Delete line';
+            btnDelete.textContent = '✕';
+            btnDelete.addEventListener('click', (e) => { e.stopPropagation(); deleteLine(idx); });
+
+            controls.appendChild(btnEarlier);
+            controls.appendChild(timeSpan);
+            controls.appendChild(btnLater);
+            controls.appendChild(btnPreview);
+            controls.appendChild(btnAdd);
+            controls.appendChild(btnDelete);
+            row.appendChild(controls);
+
+            // Select row on click on non-interactive areas
+            row.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                selectLyricLine(idx);
+            });
+
             lyricsTimelineList.appendChild(row);
         });
         if (window.lucide) lucide.createIcons();
@@ -1883,10 +2068,27 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.nudgeLineTime = function(idx, field, delta) {
-        if (lyricsArray[idx]) {
-            selectedLyricIndex = idx;
+        if (!lyricsArray[idx]) return;
+        selectedLyricIndex = idx;
+
+        // If nudge playback is already running for this same line, a second
+        // click on either ◀ or ▶ stops playback (toggle off).
+        const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio())
+            ? !previewVideo.paused
+            : !audioPlayer.paused;
+
+        if (nudgePlaying && isPlaying) {
+            nudgePlaying = false;
+            if (currentMode === 'VIDEO') previewVideo.pause();
+            audioPlayer.pause();
+            playIcon.setAttribute('data-lucide', 'play');
+            if (window.lucide) lucide.createIcons();
+            // Still apply the time adjustment so the timestamp updates
             applyLineTimeAdjustment(idx, field, delta);
+            return;
         }
+
+        applyLineTimeAdjustment(idx, field, delta);
     };
 
     window.previewLineAtCurrentTiming = function(idx) {
@@ -1963,11 +2165,22 @@ document.addEventListener('DOMContentLoaded', () => {
             lyricsArray.splice(idx + 1, 0, newLine);
         }
 
-        renderTimelineList();
+        renderTimelineList();  // also calls setManualLyricsVisible(true)
         updateHiddenJson();
         saveDraft();
         drawLiveCanvas();
         AppToast.success('New line added to timeline!');
+
+        // Scroll the new line into view and focus its text input
+        setTimeout(() => {
+            const targetIdx = idx < 0 ? 0 : idx + 1;
+            const rows = lyricsTimelineList.querySelectorAll('[data-index]');
+            if (rows[targetIdx]) {
+                rows[targetIdx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                const input = rows[targetIdx].querySelector('input[type="text"]');
+                if (input) { input.focus(); input.select(); }
+            }
+        }, 50);
     };
 
     window.deleteLine = async function(idx) {
@@ -2100,124 +2313,410 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Full Lyrics & Spellcheck Editor Modal Handlers
-    const openFullSpellEditorBtn = document.getElementById('openFullSpellEditorBtn');
-    const fullSpellEditorModal = document.getElementById('fullSpellEditorModal');
-    const closeFullSpellEditorBtn = document.getElementById('closeFullSpellEditorBtn');
+    // ---------------------------------------------------------------
+    // LYRICS STUDIO FULL-SCREEN EDITOR
+    // ---------------------------------------------------------------
+    const openFullSpellEditorBtn   = document.getElementById('openFullSpellEditorBtn');
+    const fullSpellEditorModal     = document.getElementById('fullSpellEditorModal');
+    const closeFullSpellEditorBtn  = document.getElementById('closeFullSpellEditorBtn');
     const cancelFullSpellEditorBtn = document.getElementById('cancelFullSpellEditorBtn');
-    const saveFullSpellEditorBtn = document.getElementById('saveFullSpellEditorBtn');
-    const modalLyricsTextarea = document.getElementById('modalLyricsTextarea');
-    const modalLineCount = document.getElementById('modalLineCount');
+    const saveFullSpellEditorBtn   = document.getElementById('saveFullSpellEditorBtn');
+    const modalLineCount           = document.getElementById('modalLineCount');
+    const studioEditorCanvas       = document.getElementById('studioEditorCanvas');
+    const studioEditorCtx          = studioEditorCanvas ? studioEditorCanvas.getContext('2d') : null;
+    const studioActiveLyricPill    = document.getElementById('studioActiveLyricPill');
+    const studioCurrentTime        = document.getElementById('studioCurrentTime');
+    const studioDuration           = document.getElementById('studioDuration');
+    const studioScrubber           = document.getElementById('studioScrubber');
+    const studioPlayBtn            = document.getElementById('studioPlayBtn');
+    const studioPlayIcon           = document.getElementById('studioPlayIcon');
+    const studioPlayLabel          = document.getElementById('studioPlayLabel');
+    const studioStopBtn            = document.getElementById('studioStopBtn');
+    const studioAddLineBtn         = document.getElementById('studioAddLineBtn');
+    const studioTimelineRows       = document.getElementById('studioTimelineRows');
+    const studioSongTitle          = document.getElementById('studioSongTitle');
+    const studioArtistName         = document.getElementById('studioArtistName');
 
-    function updateModalLineCount() {
-        if (!modalLyricsTextarea || !modalLineCount) return;
-        const lines = modalLyricsTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        modalLineCount.textContent = `${lines.length} lines`;
+    let studioRafId = null;
+
+    // --- mini canvas draw (mirrors main canvas but compact) ---
+    function drawStudioCanvas() {
+        if (!studioEditorCtx || !studioEditorCanvas) return;
+        const sw = studioEditorCanvas.width;
+        const sh = studioEditorCanvas.height;
+        studioEditorCtx.clearRect(0, 0, sw, sh);
+
+        // Background
+        const isVideoReady = currentMode === 'VIDEO' && previewVideo && previewVideo.src && (previewVideo.readyState >= 1 || previewVideo.videoWidth > 0);
+        if (isVideoReady) {
+            const vW = previewVideo.videoWidth || 1920;
+            const vH = previewVideo.videoHeight || 1080;
+            const ca = sw / sh, va = vW / vH;
+            let sx = 0, sy = 0, svw = vW, svh = vH;
+            if (va > ca) { svw = vH * ca; sx = (vW - svw) / 2; }
+            else         { svh = vW / ca; sy = (vH - svh) / 2; }
+            try { studioEditorCtx.drawImage(previewVideo, sx, sy, svw, svh, 0, 0, sw, sh); } catch(e) { studioEditorCtx.drawImage(previewVideo, 0, 0, sw, sh); }
+            studioEditorCtx.fillStyle = 'rgba(0,0,0,0.35)';
+            studioEditorCtx.fillRect(0, 0, sw, sh);
+        } else if (loadedCoverImage && currentMode === 'AUDIO') {
+            const blur = parseFloat(coverBlurSlider?.value || 8);
+            studioEditorCtx.save();
+            studioEditorCtx.filter = `blur(${blur}px) brightness(0.4)`;
+            studioEditorCtx.drawImage(loadedCoverImage, 0, 0, sw, sh);
+            studioEditorCtx.restore();
+            // Centred art
+            const artH = sh * 0.72;
+            const artW = artH;
+            studioEditorCtx.save();
+            studioEditorCtx.shadowColor = 'rgba(0,0,0,0.7)';
+            studioEditorCtx.shadowBlur = 18;
+            studioEditorCtx.drawImage(loadedCoverImage, (sw - artW) / 2, (sh - artH) / 2, artW, artH);
+            studioEditorCtx.restore();
+        } else {
+            studioEditorCtx.fillStyle = '#090d16';
+            studioEditorCtx.fillRect(0, 0, sw, sh);
+        }
+
+        // Active lyric pill text
+        const ct = getActiveTime();
+        let activeLine = null;
+        for (let i = 0; i < lyricsArray.length; i++) {
+            if (ct >= lyricsArray[i].start && ct <= lyricsArray[i].end) {
+                activeLine = lyricsArray[i].line;
+                break;
+            }
+        }
+        if (studioActiveLyricPill) {
+            if (activeLine) {
+                studioActiveLyricPill.textContent = activeLine;
+                studioActiveLyricPill.classList.remove('hidden');
+            } else {
+                studioActiveLyricPill.classList.add('hidden');
+            }
+        }
     }
 
-    document.addEventListener('keydown', (event) => {
-        const tagName = document.activeElement && document.activeElement.tagName;
-        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+    function studioLoop() {
+        const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+        if (!isPlaying) { studioRafId = null; return; }
+        updateStudioTimeDisplay();
+        drawStudioCanvas();
+        highlightActiveStudioRow();
+        studioRafId = requestAnimationFrame(studioLoop);
+    }
+
+    function updateStudioTimeDisplay() {
+        const t = getActiveTime();
+        if (studioCurrentTime) studioCurrentTime.textContent = formatTime(t);
+        if (studioScrubber) studioScrubber.value = t;
+    }
+
+    function highlightActiveStudioRow() {
+        if (!studioTimelineRows) return;
+        const ct = getActiveTime();
+        studioTimelineRows.querySelectorAll('[data-studio-index]').forEach(row => {
+            const idx = parseInt(row.getAttribute('data-studio-index'), 10);
+            const item = lyricsArray[idx];
+            if (!item) return;
+            const active = ct >= item.start && ct <= item.end;
+            row.classList.toggle('bg-emerald-500/10', active);
+            row.classList.toggle('border-l-2', active);
+            row.classList.toggle('border-emerald-400', active);
+            row.classList.toggle('bg-zinc-900/40', !active);
+            // Auto-scroll active row into view
+            if (active) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+    }
+
+    function renderStudioRows() {
+        if (!studioTimelineRows) return;
+        studioTimelineRows.innerHTML = '';
+        if (lyricsArray.length === 0) {
+            studioTimelineRows.innerHTML = '<div class="py-10 text-center text-zinc-600 text-xs">No lyrics yet — transcribe audio or paste lyrics first.</div>';
             return;
         }
-        if (selectedLyricIndex === null || !lyricsArray[selectedLyricIndex]) return;
+        if (modalLineCount) modalLineCount.textContent = `${lyricsArray.length} lines`;
 
-        const step = event.shiftKey ? 0.2 : 0.05;
-        if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            applyLineTimeAdjustment(selectedLyricIndex, 'start', -step);
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            applyLineTimeAdjustment(selectedLyricIndex, 'start', step);
-        } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            applyLineTimeAdjustment(selectedLyricIndex, 'end', -step);
-        } else if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            applyLineTimeAdjustment(selectedLyricIndex, 'end', step);
-        }
-    });
+        lyricsArray.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.setAttribute('data-studio-index', String(idx));
+            row.className = 'flex items-center gap-2 px-3 py-1.5 bg-zinc-900/40 transition-colors group';
 
-    if (modalLyricsTextarea) {
-        modalLyricsTextarea.addEventListener('input', updateModalLineCount);
+            // Line number
+            const num = document.createElement('span');
+            num.className = 'w-6 text-center text-[9px] font-bold text-zinc-600 shrink-0';
+            num.textContent = String(idx + 1);
+            row.appendChild(num);
+
+            // Text input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = item.line || '';
+            input.spellcheck = true;
+            input.autocomplete = 'off';
+            input.setAttribute('autocapitalize', 'sentences');
+            input.placeholder = 'Lyric line...';
+            input.className = 'flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20';
+            input.addEventListener('input', () => {
+                lyricsArray[idx].line = input.value;
+                updateHiddenJson(); saveDraft();
+            });
+            input.addEventListener('mousedown', e => e.stopPropagation());
+            row.appendChild(input);
+
+            // Start time input
+            const startWrap = document.createElement('div');
+            startWrap.className = 'w-[80px] flex items-center gap-0.5 shrink-0';
+            const btnS0 = document.createElement('button');
+            btnS0.type = 'button'; btnS0.textContent = '◀';
+            btnS0.className = 'px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]';
+            btnS0.title = 'Start earlier';
+            btnS0.addEventListener('click', (e) => { e.stopPropagation(); window.nudgeLineTime(idx, 'start', -0.2); syncStudioRowTimes(idx); });
+            const startInput = document.createElement('input');
+            startInput.type = 'number'; startInput.step = '0.01'; startInput.min = '0';
+            startInput.value = Number(item.start || 0).toFixed(2);
+            startInput.className = 'w-[46px] bg-zinc-950 border border-zinc-800 rounded px-1 py-0.5 text-[10px] text-emerald-400 font-mono text-center focus:outline-none focus:border-emerald-500/60';
+            startInput.addEventListener('change', () => {
+                const v = parseFloat(startInput.value) || 0;
+                lyricsArray[idx].start = v;
+                updateHiddenJson(); saveDraft(); drawLiveCanvas(); drawStudioCanvas();
+            });
+            startInput.addEventListener('focus', () => { setActiveTime(lyricsArray[idx].start || 0); drawStudioCanvas(); });
+            const btnS1 = document.createElement('button');
+            btnS1.type = 'button'; btnS1.textContent = '▶';
+            btnS1.className = 'px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]';
+            btnS1.title = 'Start later';
+            btnS1.addEventListener('click', (e) => { e.stopPropagation(); window.nudgeLineTime(idx, 'start', 0.2); syncStudioRowTimes(idx); });
+            startWrap.appendChild(btnS0); startWrap.appendChild(startInput); startWrap.appendChild(btnS1);
+            row.appendChild(startWrap);
+
+            // End time input
+            const endWrap = document.createElement('div');
+            endWrap.className = 'w-[80px] flex items-center gap-0.5 shrink-0';
+            const btnE0 = document.createElement('button');
+            btnE0.type = 'button'; btnE0.textContent = '◀';
+            btnE0.className = 'px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]';
+            btnE0.title = 'End earlier';
+            btnE0.addEventListener('click', (e) => { e.stopPropagation(); window.nudgeLineTime(idx, 'end', -0.2); syncStudioRowTimes(idx); });
+            const endInput = document.createElement('input');
+            endInput.type = 'number'; endInput.step = '0.01'; endInput.min = '0';
+            endInput.value = Number(item.end || 0).toFixed(2);
+            endInput.className = 'w-[46px] bg-zinc-950 border border-zinc-800 rounded px-1 py-0.5 text-[10px] text-zinc-400 font-mono text-center focus:outline-none focus:border-zinc-600';
+            endInput.addEventListener('change', () => {
+                const v = parseFloat(endInput.value) || 0;
+                lyricsArray[idx].end = v;
+                updateHiddenJson(); saveDraft(); drawLiveCanvas(); drawStudioCanvas();
+            });
+            const btnE1 = document.createElement('button');
+            btnE1.type = 'button'; btnE1.textContent = '▶';
+            btnE1.className = 'px-1 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px]';
+            btnE1.title = 'End later';
+            btnE1.addEventListener('click', (e) => { e.stopPropagation(); window.nudgeLineTime(idx, 'end', 0.2); syncStudioRowTimes(idx); });
+            endWrap.appendChild(btnE0); endWrap.appendChild(endInput); endWrap.appendChild(btnE1);
+            row.appendChild(endWrap);
+
+            // Action buttons: snap-to-playhead + delete
+            const acts = document.createElement('div');
+            acts.className = 'w-[56px] flex items-center gap-1 shrink-0 justify-center';
+
+            const btnSnap = document.createElement('button');
+            btnSnap.type = 'button'; btnSnap.title = 'Snap start to playhead';
+            btnSnap.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-emerald-500/20 text-zinc-400 hover:text-emerald-300 text-[10px]';
+            btnSnap.textContent = '⊙';
+            btnSnap.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const t = Number(getActiveTime().toFixed(2));
+                lyricsArray[idx].start = t;
+                if (lyricsArray[idx].end <= t) lyricsArray[idx].end = Number((t + 2).toFixed(2));
+                syncStudioRowTimes(idx);
+                updateHiddenJson(); saveDraft();
+            });
+
+            const btnDel = document.createElement('button');
+            btnDel.type = 'button'; btnDel.title = 'Delete line';
+            btnDel.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-rose-500/20 text-zinc-500 hover:text-rose-400 text-[10px]';
+            btnDel.textContent = '✕';
+            btnDel.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await window.deleteLine(idx);
+                renderStudioRows();
+            });
+
+            acts.appendChild(btnSnap);
+            acts.appendChild(btnDel);
+            row.appendChild(acts);
+
+            // Click row to seek
+            row.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                setActiveTime(lyricsArray[idx].start || 0);
+                updateStudioTimeDisplay();
+                drawStudioCanvas();
+            });
+
+            studioTimelineRows.appendChild(row);
+        });
+
+        if (window.lucide) lucide.createIcons();
     }
 
-    if (openFullSpellEditorBtn && fullSpellEditorModal) {
-        openFullSpellEditorBtn.addEventListener('click', () => {
-            if (lyricsArray.length > 0) {
-                modalLyricsTextarea.value = lyricsArray.map(item => item.line || '').join('\n');
-            } else if (rawLyricsTextarea && rawLyricsTextarea.value) {
-                modalLyricsTextarea.value = rawLyricsTextarea.value;
-            } else {
-                modalLyricsTextarea.value = '';
-            }
-            updateModalLineCount();
-            fullSpellEditorModal.classList.remove('hidden');
-            fullSpellEditorModal.classList.add('flex');
-            modalLyricsTextarea.focus();
+    // Update just the time inputs of a single row without full re-render
+    function syncStudioRowTimes(idx) {
+        if (!studioTimelineRows) return;
+        const row = studioTimelineRows.querySelector(`[data-studio-index="${idx}"]`);
+        if (!row || !lyricsArray[idx]) return;
+        const inputs = row.querySelectorAll('input[type="number"]');
+        if (inputs[0]) inputs[0].value = Number(lyricsArray[idx].start || 0).toFixed(2);
+        if (inputs[1]) inputs[1].value = Number(lyricsArray[idx].end   || 0).toFixed(2);
+    }
+
+    // Studio play/pause
+    function studioTogglePlay() {
+        const isPlaying = (currentMode === 'VIDEO' && !hasReplacementAudio()) ? !previewVideo.paused : !audioPlayer.paused;
+        if (isPlaying) {
+            if (currentMode === 'VIDEO') previewVideo.pause();
+            audioPlayer.pause();
+            studioPlayIcon.setAttribute('data-lucide', 'play');
+            studioPlayLabel.textContent = 'Play';
+            // mirror main play icon
+            playIcon.setAttribute('data-lucide', 'play');
+        } else {
+            if (currentMode === 'VIDEO') previewVideo.play();
+            if (currentMode === 'AUDIO' || hasReplacementAudio()) audioPlayer.play();
+            studioPlayIcon.setAttribute('data-lucide', 'pause');
+            studioPlayLabel.textContent = 'Pause';
+            playIcon.setAttribute('data-lucide', 'pause');
+            studioRafId = requestAnimationFrame(studioLoop);
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    if (studioPlayBtn)  studioPlayBtn.addEventListener('click', studioTogglePlay);
+    if (studioStopBtn) {
+        studioStopBtn.addEventListener('click', () => {
+            if (currentMode === 'VIDEO') previewVideo.pause();
+            audioPlayer.pause();
+            setActiveTime(0);
+            studioPlayIcon.setAttribute('data-lucide', 'play');
+            studioPlayLabel.textContent = 'Play';
+            playIcon.setAttribute('data-lucide', 'play');
+            updateStudioTimeDisplay();
+            drawStudioCanvas();
             if (window.lucide) lucide.createIcons();
         });
     }
 
-    function hideFullSpellModal() {
-        if (fullSpellEditorModal) {
-            fullSpellEditorModal.classList.add('hidden');
-            fullSpellEditorModal.classList.remove('flex');
-        }
+    if (studioScrubber) {
+        studioScrubber.addEventListener('input', () => {
+            setActiveTime(parseFloat(studioScrubber.value));
+            updateStudioTimeDisplay();
+            drawStudioCanvas();
+            highlightActiveStudioRow();
+        });
     }
 
-    if (closeFullSpellEditorBtn) closeFullSpellEditorBtn.addEventListener('click', hideFullSpellModal);
+    // Keep studio scrubber in sync when main audio progresses
+    audioPlayer.addEventListener('timeupdate', () => {
+        if (!fullSpellEditorModal || fullSpellEditorModal.classList.contains('hidden')) return;
+        updateStudioTimeDisplay();
+        drawStudioCanvas();
+        highlightActiveStudioRow();
+    });
+    previewVideo.addEventListener('timeupdate', () => {
+        if (!fullSpellEditorModal || fullSpellEditorModal.classList.contains('hidden')) return;
+        updateStudioTimeDisplay();
+        drawStudioCanvas();
+        highlightActiveStudioRow();
+    });
+
+    if (studioAddLineBtn) {
+        studioAddLineBtn.addEventListener('click', () => {
+            window.insertLineBelow(lyricsArray.length - 1);
+            renderStudioRows();
+            if (modalLineCount) modalLineCount.textContent = `${lyricsArray.length} lines`;
+            setTimeout(() => {
+                const rows = studioTimelineRows.querySelectorAll('[data-studio-index]');
+                const last = rows[rows.length - 1];
+                if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); const inp = last.querySelector('input[type="text"]'); if (inp) { inp.focus(); inp.select(); } }
+            }, 50);
+        });
+    }
+
+    function openStudioEditor() {
+        if (!fullSpellEditorModal) return;
+        // Populate info labels
+        if (studioSongTitle)  studioSongTitle.textContent  = songTitleInput?.value  || '—';
+        if (studioArtistName) studioArtistName.textContent = artistNameInput?.value || '—';
+        // Scrubber max
+        if (studioScrubber) { studioScrubber.max = audioDuration || 100; studioScrubber.value = getActiveTime(); }
+        if (studioDuration) studioDuration.textContent = formatTime(audioDuration || 0);
+        updateStudioTimeDisplay();
+
+        fullSpellEditorModal.classList.remove('hidden');
+        fullSpellEditorModal.classList.add('flex');
+        renderStudioRows();
+        drawStudioCanvas();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function hideFullSpellModal() {
+        if (!fullSpellEditorModal) return;
+        // Pause studio playback when closing
+        if (currentMode === 'VIDEO') previewVideo.pause();
+        audioPlayer.pause();
+        studioPlayIcon && studioPlayIcon.setAttribute('data-lucide', 'play');
+        studioPlayLabel && (studioPlayLabel.textContent = 'Play');
+        playIcon.setAttribute('data-lucide', 'play');
+        if (window.lucide) lucide.createIcons();
+        fullSpellEditorModal.classList.add('hidden');
+        fullSpellEditorModal.classList.remove('flex');
+        // Sync back to main timeline
+        renderTimelineList();
+        updateHiddenJson();
+        drawLiveCanvas();
+    }
+
+    if (openFullSpellEditorBtn) openFullSpellEditorBtn.addEventListener('click', openStudioEditor);
+    if (closeFullSpellEditorBtn)  closeFullSpellEditorBtn.addEventListener('click',  hideFullSpellModal);
     if (cancelFullSpellEditorBtn) cancelFullSpellEditorBtn.addEventListener('click', hideFullSpellModal);
 
     window.formatModalCase = function(mode) {
-        if (!modalLyricsTextarea) return;
-        const lines = modalLyricsTextarea.value.split('\n');
-        const formatted = lines.map(line => {
-            let str = line;
-            if (mode === 'sentence') {
-                str = str.trim();
-                if (str.length > 0) str = str.charAt(0).toUpperCase() + str.slice(1);
-            } else if (mode === 'title') {
-                str = str.replace(/\b\w+/g, txt => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
-            } else if (mode === 'upper') {
-                str = str.toUpperCase();
-            } else if (mode === 'lower') {
-                str = str.toLowerCase();
-            } else if (mode === 'clean_quotes') {
-                str = str.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-');
-            }
-            return str;
+        lyricsArray.forEach(item => {
+            let str = item.line || '';
+            if (mode === 'sentence') { str = str.trim(); if (str.length > 0) str = str.charAt(0).toUpperCase() + str.slice(1); }
+            else if (mode === 'title') { str = str.replace(/\b\w+/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()); }
+            else if (mode === 'upper') { str = str.toUpperCase(); }
+            else if (mode === 'lower') { str = str.toLowerCase(); }
+            else if (mode === 'clean_quotes') { str = str.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-'); }
+            item.line = str;
         });
-        modalLyricsTextarea.value = formatted.join('\n');
-        updateModalLineCount();
-        AppToast.success(`Formatted modal lyrics to ${mode}!`);
+        renderStudioRows();
+        updateHiddenJson(); saveDraft();
+        AppToast.success(`Formatted all lines to ${mode}!`);
     };
 
     if (saveFullSpellEditorBtn) {
         saveFullSpellEditorBtn.addEventListener('click', () => {
-            const rawText = modalLyricsTextarea.value;
-            const newLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-            rawLyricsTextarea.value = rawText;
-
-            if (lyricsArray.length === newLines.length && lyricsArray.length > 0) {
-                // Perfect 1:1 line count match - update text while preserving exact timestamps & tokens
-                newLines.forEach((text, i) => {
-                    updateLineText(i, text);
-                });
-            } else {
-                // Line count changed - re-parse
-                parseRawLyrics();
-            }
-
+            // Everything already mutated in-place — just close and sync
             saveDraft();
             renderTimelineList();
             updateHiddenJson();
             drawLiveCanvas();
             hideFullSpellModal();
-            AppToast.success('Applied corrected lyrics and updated live preview!');
+            AppToast.success('Lyrics saved!');
         });
     }
+
+    document.addEventListener('keydown', (event) => {
+        const tagName = document.activeElement && document.activeElement.tagName;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return;
+        if (selectedLyricIndex === null || !lyricsArray[selectedLyricIndex]) return;
+        const step = event.shiftKey ? 0.2 : 0.05;
+        if (event.key === 'ArrowLeft')  { event.preventDefault(); applyLineTimeAdjustment(selectedLyricIndex, 'start', -step); }
+        else if (event.key === 'ArrowRight') { event.preventDefault(); applyLineTimeAdjustment(selectedLyricIndex, 'start', step); }
+        else if (event.key === 'ArrowUp')    { event.preventDefault(); applyLineTimeAdjustment(selectedLyricIndex, 'end', -step); }
+        else if (event.key === 'ArrowDown')  { event.preventDefault(); applyLineTimeAdjustment(selectedLyricIndex, 'end', step); }
+    });
 
     window.updateLineTime = function(idx, field, val) {
         if (lyricsArray[idx]) {
@@ -2281,8 +2780,40 @@ document.addEventListener('DOMContentLoaded', () => {
             const coverContrast = parseFloat(coverContrastSlider?.value || 100) / 100;
             const coverSaturation = parseFloat(coverSaturationSlider?.value || 100) / 100;
             const coverVignette = parseFloat(coverVignetteSlider?.value || 0) / 100;
+            const coverLayout = coverLayoutSelect?.value || 'AMBIENT';
 
-            if (coverBlur <= 0) {
+            if (coverLayout === 'FULL') {
+                const imgRatio = loadedCoverImage.width / Math.max(loadedCoverImage.height, 1);
+                const canvasRatio = w / Math.max(h, 1);
+                let drawW = w;
+                let drawH = h;
+                let offsetX = 0;
+                let offsetY = 0;
+
+                if (imgRatio > canvasRatio) {
+                    drawH = h;
+                    drawW = h * imgRatio;
+                    offsetX = (w - drawW) / 2;
+                } else {
+                    drawW = w;
+                    drawH = w / imgRatio;
+                    offsetY = (h - drawH) / 2;
+                }
+
+                canvasCtx.save();
+                canvasCtx.filter = `brightness(${coverBrightness}) contrast(${coverContrast}) saturate(${coverSaturation})`;
+                canvasCtx.globalAlpha = coverOpacity;
+                canvasCtx.drawImage(loadedCoverImage, offsetX, offsetY, drawW, drawH);
+                canvasCtx.restore();
+
+                if (coverVignette > 0) {
+                    const vignette = canvasCtx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.8);
+                    vignette.addColorStop(0, `rgba(0,0,0,0)`);
+                    vignette.addColorStop(1, `rgba(0,0,0,${0.2 + coverVignette})`);
+                    canvasCtx.fillStyle = vignette;
+                    canvasCtx.fillRect(0, 0, w, h);
+                }
+            } else if (coverBlur <= 0) {
                 const fullCoverSize = Math.min(w, h) * (isVertical ? 0.72 : 0.68) * coverScale;
                 const fullCoverX = (w - fullCoverSize) / 2 + coverOffset;
                 const fullCoverY = (h - fullCoverSize) / 2 + coverOffset * 0.35;

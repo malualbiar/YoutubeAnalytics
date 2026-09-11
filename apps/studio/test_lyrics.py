@@ -1,5 +1,7 @@
 import io
 import json
+import os
+import tempfile
 import wave
 import struct
 from unittest.mock import patch
@@ -233,6 +235,91 @@ class LyricsStudioTestCase(TestCase):
         self.assertEqual(project.render_status, LyricVideoProject.Status.COMPLETED)
         self.assertEqual(len(project.lyrics_data), 2)
         mock_render.assert_called_once()
+
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.render_lyrics_video')
+    def test_lyrics_render_view_full_cover_layout(self, mock_render):
+        mock_render.return_value = {'success': True, 'duration': 60.0, 'output_video': 'out.mp4'}
+
+        audio_file = self.create_mock_audio_file("test.wav")
+        cover_file = self.create_mock_image_file("test.png")
+        lyrics_json = json.dumps([
+            {"line": "Full cover mode", "start": 0.0, "end": 4.0}
+        ])
+
+        response = self.client.post(reverse('lyrics_render'), {
+            'title': 'Full Cover Test',
+            'artist_name': 'Cover Artist',
+            'audio_file': audio_file,
+            'background_image': cover_file,
+            'lyrics_data': lyrics_json,
+            'animation_style': 'KARAOKE_WIPE',
+            'aspect_ratio': '16:9',
+            'cover_layout': 'FULL'
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        project = LyricVideoProject.objects.get(title='Full Cover Test')
+        self.assertEqual(project.cover_layout, 'FULL')
+
+    @patch('apps.studio.services.lyrics_engine.LyricsEngineService.generate_ambient_background_frame')
+    @patch('apps.studio.services.lyrics_engine.subprocess.run')
+    def test_full_cover_render_applies_effects(self, mock_run, mock_bg_frame):
+        mock_run.return_value = type('Result', (), {'returncode': 0, 'stdout': '', 'stderr': ''})()
+
+        def fake_generate_bg(background_image_path, width, height, output_frame_path, **kwargs):
+            os.makedirs(os.path.dirname(output_frame_path), exist_ok=True)
+            with Image.new('RGB', (width, height), color=(12, 12, 18)) as img:
+                img.save(output_frame_path, 'JPEG', quality=85)
+            return output_frame_path
+
+        mock_bg_frame.side_effect = fake_generate_bg
+
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+            audio_path = audio_file.name
+            with wave.open(audio_file.name, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(8000)
+                frames = b'\x00\x00' * 8000
+                wf.writeframes(frames)
+
+        output_path = os.path.join(tempfile.gettempdir(), 'full_cover_output.mp4')
+        try:
+            LyricsEngineService.render_lyrics_video(
+                audio_path=audio_path,
+                background_image_path='cover.png',
+                lyrics_data=[{'line': 'Test line', 'start': 0.0, 'end': 3.0}],
+                output_video_path=output_path,
+                aspect_ratio='16:9',
+                cover_layout='FULL',
+                cover_size=1.2,
+                cover_blur=12,
+                cover_opacity=0.8,
+                cover_offset=10,
+                cover_brightness=1.3,
+                cover_contrast=1.4,
+                cover_saturation=1.5,
+                cover_vignette=0.35,
+                project_id=77
+            )
+        finally:
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
+            for stale in [output_path, output_path + '.part']:
+                if os.path.exists(stale):
+                    os.remove(stale)
+
+        mock_bg_frame.assert_called_once()
+        kwargs = mock_bg_frame.call_args.kwargs
+        self.assertEqual(kwargs['cover_layout'], 'FULL')
+        self.assertEqual(kwargs['cover_size'], 1.2)
+        self.assertEqual(kwargs['cover_blur'], 12)
+        self.assertEqual(kwargs['cover_opacity'], 0.8)
+        self.assertEqual(kwargs['cover_offset'], 10)
+        self.assertEqual(kwargs['cover_brightness'], 1.3)
+        self.assertEqual(kwargs['cover_contrast'], 1.4)
+        self.assertEqual(kwargs['cover_saturation'], 1.5)
+        self.assertEqual(kwargs['cover_vignette'], 0.35)
 
     def test_lyrics_parse_api_plain_text(self):
         response = self.client.post(reverse('lyrics_parse_api'), {
