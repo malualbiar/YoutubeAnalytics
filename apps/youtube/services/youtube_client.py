@@ -52,7 +52,7 @@ class YouTubeClient:
 
             if response.status_code == 403:
                 if 'quotaExceeded' in reason or 'quota' in message.lower():
-                    raise YouTubeAPIError("YouTube API quota exceeded for today (10,000 units limit reached).")
+                    raise YouTubeAPIError("YouTube API quota exceeded for today (100,000 units limit reached).")
                 raise YouTubeAPIError(f"YouTube API permission denied: {message}")
             elif response.status_code == 404:
                 raise YouTubeAPIError(f"YouTube resource not found: {message}")

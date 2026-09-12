@@ -28,6 +28,7 @@ def radar_feed_view(request):
     sort_by = request.GET.get('sort', 'velocity')
     detection_mode = request.GET.get('mode', 'all')
     force_refresh = bool(request.GET.get('refresh'))
+    show_sections = request.GET.get('view', 'grid') == 'sections'
 
     tracks = AIRadarService.get_recent_ai_music(
         query=query,
@@ -41,20 +42,38 @@ def radar_feed_view(request):
         force_refresh=force_refresh
     )
 
+    # Genre-sectioned top tracks panel (lazy — only fetched when sections view active
+    # OR when on the default landing with no active filters)
+    genre_sections = []
+    if show_sections or (not query and genre == 'all' and detection_mode == 'all'):
+        genre_sections = AIRadarService.get_genre_top_tracks(
+            time_window=time_window,
+            top_n=5,
+            force_refresh=force_refresh,
+        )
+
     genres = [
-        {'id': 'all', 'label': 'All AI Music'},
-        {'id': 'suno', 'label': 'Suno AI'},
-        {'id': 'udio', 'label': 'Udio AI'},
-        {'id': 'lofi', 'label': 'Lofi & Chill'},
-        {'id': 'synthwave', 'label': 'Synthwave'},
-        {'id': 'pop', 'label': 'Pop & EDM'},
-        {'id': 'rock', 'label': 'Rock & Metal'},
-        {'id': 'rap', 'label': 'Phonk & Hip-Hop'},
+        {'id': 'all',          'label': 'All AI Music'},
+        {'id': 'most_searched','label': '🔥 Most Searched'},
+        {'id': 'trending',     'label': '📈 Trending Now'},
+        {'id': 'ai_unlabeled', 'label': '🕵️ AI Untagged'},
+        {'id': 'suno',         'label': 'Suno AI'},
+        {'id': 'udio',         'label': 'Udio AI'},
+        {'id': 'pop',          'label': 'Pop & EDM'},
+        {'id': 'rap',          'label': 'Phonk & Hip-Hop'},
+        {'id': 'rnb',          'label': 'R&B & Soul'},
+        {'id': 'rock',         'label': 'Rock & Metal'},
+        {'id': 'country',      'label': 'Country'},
+        {'id': 'gospel',       'label': 'Gospel'},
+        {'id': 'reggae',       'label': 'Reggae'},
+        {'id': 'lofi',         'label': 'Lofi & Chill'},
+        {'id': 'synthwave',    'label': 'Synthwave'},
     ]
 
     detection_modes = [
-        {'id': 'all', 'label': 'All AI Music Tracks'},
-        {'id': 'yt_flagged', 'label': '🛡️ YouTube-Flagged AI Only'},
+        {'id': 'all',         'label': 'All AI Music'},
+        {'id': 'yt_flagged',  'label': '🛡️ YT-Flagged AI'},
+        {'id': 'ai_unlabeled','label': '🕵️ AI Untagged'},
     ]
 
     time_windows = [
@@ -99,6 +118,8 @@ def radar_feed_view(request):
         'current_popularity': popularity,
         'current_sort': sort_by,
         'current_mode': detection_mode,
+        'show_sections': show_sections,
+        'genre_sections': genre_sections,
         'genres': genres,
         'detection_modes': detection_modes,
         'time_windows': time_windows,

@@ -462,7 +462,7 @@
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
         <div>
             <h3 class="text-base font-bold text-white" id="progressTitle">Rendering Vertical Shorts...</h3>
-            <p class="text-xs text-zinc-400 mt-1" id="progressSubtitle">Chopping video & applying 9:16 vertical styling with FFmpeg.</p>
+            <p class="text-xs text-zinc-400 mt-1" id="progressSubtitle">Chopping video & applying 9:16 vertical styling.</p>
         </div>
 
         <!-- Progress Bar -->
@@ -478,7 +478,7 @@
 
         <div class="flex items-center justify-between pt-2 border-t border-zinc-800 text-[11px] text-zinc-400">
             <span id="elapsedTimer" class="font-mono">00:00</span>
-            <span class="text-emerald-400 font-medium">FFmpeg Local Processing</span>
+            <span class="text-emerald-400 font-medium">Local Processing</span>
         </div>
 
         <div class="pt-2">
@@ -1304,7 +1304,7 @@
             type: 'danger'
         });
         if (confirmed) {
-            progressStep.textContent = "Cancelling rendering and terminating FFmpeg processes...";
+            progressStep.textContent = "Cancelling rendering...";
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
             fetch(`/studio/cancel/shorts/${activeRenderProjectId}/`, {
                 method: 'POST',

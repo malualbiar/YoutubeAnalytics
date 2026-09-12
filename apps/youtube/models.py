@@ -4,7 +4,7 @@ from django.utils import timezone
 
 class YouTubeApiUsage(models.Model):
     date = models.DateField(unique=True, default=timezone.now, db_index=True)
-    quota_used = models.IntegerField(default=0, help_text="Total estimated quota units consumed today (standard daily limit is 10,000)")
+    quota_used = models.IntegerField(default=0, help_text="Total estimated quota units consumed today (standard daily limit is 100,000)")
     request_count = models.IntegerField(default=0, help_text="Number of API requests executed")
     last_request_at = models.DateTimeField(auto_now=True)
 
@@ -14,7 +14,7 @@ class YouTubeApiUsage(models.Model):
         verbose_name_plural = 'YouTube API Usages'
 
     def __str__(self):
-        return f"{self.date}: {self.quota_used:,} / 10,000 quota units ({self.request_count} calls)"
+        return f"{self.date}: {self.quota_used:,} / 100,000 quota units ({self.request_count} calls)"
 
     @classmethod
     def record_usage(cls, units=1):

@@ -37,6 +37,13 @@ urlpatterns = [
     # Global Cancel Render and Progress routes
     path('studio/cancel/<str:project_type>/<int:pk>/', views.studio_cancel_render_view, name='studio_cancel_render'),
     path('studio/api/progress/<str:project_type>/<int:pk>/', views.studio_render_progress_view, name='studio_render_progress'),
+
+    # Automation Pipeline routes
+    path('studio/automation/', views.automation_dashboard_view, name='automation_dashboard'),
+    path('studio/automation/create/', views.automation_create_view, name='automation_create'),
+    path('studio/automation/<int:pk>/run/', views.automation_run_view, name='automation_run'),
+    path('studio/automation/<int:pk>/status/', views.automation_status_api, name='automation_status_api'),
+    path('studio/automation/<int:pk>/delete/', views.automation_delete_view, name='automation_delete'),
 ]
 
 

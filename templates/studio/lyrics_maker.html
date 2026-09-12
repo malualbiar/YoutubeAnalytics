@@ -3,6 +3,12 @@
 
 {% block title %}Synced Lyric Video Generator - YT Quid Studio{% endblock %}
 
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400;700&family=Ranchers&family=Slackey&family=Rubik+80s+Fade&family=Rubik+Iso&family=Press+Start+2P&family=Limelight&family=Monoton&family=Nosifer&family=Creepster&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="space-y-6 max-w-7xl mx-auto pb-20">
     <!-- Header -->
@@ -217,7 +223,7 @@
                         <div class="flex items-center justify-between text-xs">
                             <span id="aiProgressStatus" class="text-zinc-200 font-semibold flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                Transcribing song audio with Whisper AI...
+                                Transcribing song audio...
                             </span>
                             <span id="aiProgressPercent" class="text-emerald-400 font-mono font-bold">0%</span>
                         </div>
@@ -233,9 +239,27 @@
                         <div class="md:col-span-12 h-full">
                             <div class="h-full flex flex-col space-y-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
                                 <!-- Primary AI Transcribe Action -->
-                                <button type="button" id="aiTranscribeBtn" class="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-bold rounded-xl border border-emerald-500/40 transition-colors shadow-lg shadow-emerald-950/40">
-                                    <span>AI Transcribe & Sync Audio</span>
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="aiTranscribeBtn" class="flex-1 py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-bold rounded-xl border border-emerald-500/40 transition-colors shadow-lg shadow-emerald-950/40">
+                                        <span id="aiTranscribeBtnLabel">AI Transcribe & Sync Audio</span>
+                                    </button>
+                                    <!-- Demucs vocal separation toggle -->
+                                    <label id="demucsToggleLabel" class="flex items-center gap-1.5 shrink-0 cursor-pointer group" title="Use Demucs AI to strip instruments before transcribing — slower but much more accurate on dense mixes">
+                                        <div class="relative">
+                                            <input type="checkbox" id="demucsToggle" class="sr-only peer">
+                                            <div class="w-8 h-4 bg-zinc-700 peer-checked:bg-violet-500 rounded-full transition-colors"></div>
+                                            <div class="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                                        </div>
+                                        <span class="text-[10px] font-bold text-zinc-500 group-has-[:checked]:text-violet-400 transition-colors whitespace-nowrap">Demucs</span>
+                                    </label>
+                                </div>
+                                <!-- Demucs info strip — visible only when toggle is on -->
+                                <div id="demucsInfoStrip" class="hidden flex-col gap-1.5 px-2.5 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[10px] text-violet-300">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0"></span>
+                                        <span>Demucs isolates vocals before transcription — removes drums, bass &amp; reverb for cleaner lyrics.</span>
+                                    </div>
+                                </div>
 
                                 <!-- Player Controls -->
                                 <div class="space-y-1.5">
@@ -449,25 +473,60 @@
                                     <div class="space-y-1">
                                         <label class="text-[10px] font-bold text-zinc-400">Font</label>
                                         <select name="font_family" id="fontFamilySelect" class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white">
-                                            <option value="Segoe Print" selected>My Happy Ending</option>
-                                            <option value="Impact">Losing Grip</option>
-                                            <option value="Georgia">Opera-Lyrics Smooth</option>
-                                            <option value="Segoe Script">Ready For It</option>
-                                            <option value="Arial">Arial</option>
-                                            <option value="Montserrat">Montserrat</option>
-                                            <option value="Verdana">Verdana</option>
-                                            <option value="Courier New">Courier New</option>
-                                            <option value="Tahoma">Tahoma</option>
-                                            <option value="Trebuchet MS">Trebuchet MS</option>
-                                            <option value="Comic Sans MS">Comic Sans MS</option>
-                                            <option value="Segoe UI">Segoe UI</option>
-                                            <option value="Consolas">Consolas</option>
-                                            <option value="Times New Roman">Times New Roman</option>
+                                            <optgroup label="── System Fonts ──">
+                                                <option value="Segoe Print" selected>My Happy Ending</option>
+                                                <option value="Impact">Losing Grip</option>
+                                                <option value="Georgia">Opera-Lyrics Smooth</option>
+                                                <option value="Segoe Script">Ready For It</option>
+                                                <option value="Arial">Arial</option>
+                                                <option value="Verdana">Verdana</option>
+                                                <option value="Times New Roman">Times New Roman</option>
+                                                <option value="Courier New">Courier New</option>
+                                            </optgroup>
+                                            <optgroup label="── Google Fonts ──">
+                                                <option value="DynaPuff">DynaPuff</option>
+                                                <option value="Ranchers">Ranchers</option>
+                                                <option value="Slackey">Slackey</option>
+                                                <option value="Rubik 80s Fade">Rubik 80s Fade</option>
+                                                <option value="Rubik Iso">Rubik Iso</option>
+                                                <option value="Press Start 2P">Press Start 2P</option>
+                                                <option value="Limelight">Limelight</option>
+                                                <option value="Monoton">Monoton</option>
+                                                <option value="Nosifer">Nosifer</option>
+                                                <option value="Creepster">Creepster</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                     <div class="space-y-1">
-                                        <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Size</label><span id="fontSizeDisplay" class="text-[9px] text-zinc-500">48px</span></div>
-                                        <input type="range" name="font_size" id="fontSizeSlider" min="20" max="96" value="48" class="w-full accent-emerald-500">
+                                        <label class="text-[10px] font-bold text-zinc-400">Size <span class="text-zinc-600 font-normal">(dbl-click to type)</span></label>
+                                        <div class="relative">
+                                            <!-- Preset dropdown — acts as fontSizeSlider for all existing JS -->
+                                            <select name="font_size" id="fontSizeSlider"
+                                                    class="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white appearance-none cursor-pointer">
+                                                <option value="16">16px</option>
+                                                <option value="20">20px</option>
+                                                <option value="24">24px</option>
+                                                <option value="28">28px</option>
+                                                <option value="32">32px</option>
+                                                <option value="36">36px</option>
+                                                <option value="40">40px</option>
+                                                <option value="44">44px</option>
+                                                <option value="48" selected>48px</option>
+                                                <option value="52">52px</option>
+                                                <option value="56">56px</option>
+                                                <option value="60">60px</option>
+                                                <option value="64">64px</option>
+                                                <option value="72">72px</option>
+                                                <option value="80">80px</option>
+                                                <option value="96">96px</option>
+                                                <option value="112">112px</option>
+                                                <option value="128">128px</option>
+                                            </select>
+                                            <!-- Custom size input — shown on double-click -->
+                                            <input type="number" id="fontSizeCustomInput" min="8" max="256" placeholder="px"
+                                                   class="hidden absolute inset-0 w-full px-2 py-1.5 bg-zinc-900 border border-emerald-500/60 rounded-lg text-xs text-white focus:outline-none">
+                                        </div>
+                                        <span id="fontSizeDisplay" class="hidden"></span>
                                     </div>
                                     <div class="space-y-1">
                                         <label class="text-[10px] font-bold text-zinc-400">Position</label>
@@ -558,7 +617,7 @@
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Blur</label><span id="coverBlurDisplay" class="text-[9px] text-zinc-500">0px</span></div>
-                                        <input type="range" id="coverBlurSlider" name="cover_blur" min="0" max="30" step="1" value="8" class="w-full h-1 accent-emerald-500">
+                                        <input type="range" id="coverBlurSlider" name="cover_blur" min="0" max="30" step="1" value="0" class="w-full h-1 accent-emerald-500">
                                     </div>
                                     <div class="space-y-1">
                                         <div class="flex justify-between"><label class="text-[10px] font-bold text-zinc-400">Opacity</label><span id="coverOpacityDisplay" class="text-[9px] text-zinc-500">100%</span></div>
@@ -670,7 +729,7 @@
             <span id="elapsedTimer" class="font-mono">00:00</span>
             <span class="text-emerald-400 font-medium flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                FFmpeg Local Processing
+                Local Processing
             </span>
         </div>
 
@@ -774,7 +833,7 @@
                 <span class="flex-1">Lyric Text</span>
                 <span class="w-[80px] text-center">Start</span>
                 <span class="w-[80px] text-center">End</span>
-                <span class="w-[56px] text-center">Actions</span>
+                <span class="w-[88px] text-center">Actions</span>
             </div>
 
             <!-- Scrollable rows -->
@@ -1041,8 +1100,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (draft.font_family) fontFamilySelect.value = draft.font_family;
             if (draft.font_size) {
-                fontSizeSlider.value = draft.font_size;
-                fontSizeDisplay.textContent = `${draft.font_size}px`;
+                const _sv = String(draft.font_size);
+                if (!fontSizeSlider.querySelector(`option[value="${_sv}"]`)) {
+                    const _o = document.createElement('option');
+                    _o.value = _sv; _o.textContent = `${_sv}px`; _o.setAttribute('data-custom','1');
+                    const _after = Array.from(fontSizeSlider.options).find(o => parseInt(o.value) > parseInt(_sv));
+                    if (_after) fontSizeSlider.insertBefore(_o, _after); else fontSizeSlider.appendChild(_o);
+                }
+                fontSizeSlider.value = _sv;
             }
             if (draft.position_mode) positionModeSelect.value = draft.position_mode;
             if (draft.highlight_color) {
@@ -1399,11 +1464,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sync Input Controls to Canvas
     fontFamilySelect.addEventListener('change', () => { saveDraft(); drawLiveCanvas(); });
-    fontSizeSlider.addEventListener('input', () => {
-        fontSizeDisplay.textContent = `${fontSizeSlider.value}px`;
-        saveDraft();
-        drawLiveCanvas();
+    fontSizeSlider.addEventListener('change', () => { saveDraft(); drawLiveCanvas(); });
+
+    // Double-click the dropdown → swap in the free-text input for a custom size
+    const fontSizeCustomInput = document.getElementById('fontSizeCustomInput');
+    fontSizeSlider.addEventListener('dblclick', () => {
+        fontSizeCustomInput.value = fontSizeSlider.value;
+        fontSizeCustomInput.classList.remove('hidden');
+        fontSizeSlider.classList.add('invisible');
+        fontSizeCustomInput.focus();
+        fontSizeCustomInput.select();
     });
+    function commitCustomSize() {
+        const v = parseInt(fontSizeCustomInput.value, 10);
+        if (v >= 8 && v <= 256) {
+            // Inject a matching option if it doesn't exist, then select it
+            let opt = fontSizeSlider.querySelector(`option[value="${v}"]`);
+            if (!opt) {
+                opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = `${v}px`;
+                opt.setAttribute('data-custom', '1');
+                // Insert before the last option so list stays roughly sorted
+                const opts = Array.from(fontSizeSlider.options);
+                const after = opts.find(o => parseInt(o.value) > v);
+                if (after) fontSizeSlider.insertBefore(opt, after);
+                else fontSizeSlider.appendChild(opt);
+            }
+            fontSizeSlider.value = v;
+            saveDraft();
+            drawLiveCanvas();
+        }
+        fontSizeCustomInput.classList.add('hidden');
+        fontSizeSlider.classList.remove('invisible');
+    }
+    fontSizeCustomInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commitCustomSize(); }
+        if (e.key === 'Escape') {
+            fontSizeCustomInput.classList.add('hidden');
+            fontSizeSlider.classList.remove('invisible');
+        }
+    });
+    fontSizeCustomInput.addEventListener('blur', commitCustomSize);
     positionModeSelect.addEventListener('change', () => { saveDraft(); drawLiveCanvas(); });
     
     highlightColorPicker.addEventListener('input', () => {
@@ -1518,6 +1620,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
+    // DEMUCS TOGGLE
+    // -------------------------------------------------------------
+    const demucsToggle     = document.getElementById('demucsToggle');
+    const demucsInfoStrip  = document.getElementById('demucsInfoStrip');
+    const aiTranscribeBtnLabel = document.getElementById('aiTranscribeBtnLabel');
+
+    if (demucsToggle) {
+        demucsToggle.addEventListener('change', () => {
+            const on = demucsToggle.checked;
+            if (demucsInfoStrip) {
+                demucsInfoStrip.classList.toggle('hidden', !on);
+                demucsInfoStrip.classList.toggle('flex', on);
+            }
+            if (aiTranscribeBtnLabel) {
+                aiTranscribeBtnLabel.textContent = on
+                    ? 'AI Transcribe'
+                    : 'AI Transcribe & Sync Audio';
+            }
+        });
+    }
+
+    // -------------------------------------------------------------
     // FEATURE: AI WHISPER TRANSCRIPTION & SYNC HANDLER
     // -------------------------------------------------------------
     if (aiTranscribeBtn) {
@@ -1529,25 +1653,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const useDemucs = demucsToggle && demucsToggle.checked;
+
             aiProgressBarContainer.classList.remove('hidden');
-            aiProgressBarFill.style.width = '15%';
-            aiProgressPercent.textContent = '15%';
-            aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Transcribing song audio with Whisper AI...`;
+            aiProgressBarFill.style.width = '5%';
+            aiProgressPercent.textContent = '5%';
+
+            if (useDemucs) {
+                aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span> Demucs separating vocals from instruments…`;
+            } else {
+                aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Transcribing song audio...`;
+            }
             aiTranscribeBtn.disabled = true;
 
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
             const formData = new FormData();
             formData.append('audio_file', mediaFile);
             formData.append('model_size', 'base');
+            if (useDemucs) formData.append('use_demucs', '1');
 
-            let pct = 20;
+            // Demucs takes 1–3 min on CPU — use a slower progress tick so the bar
+            // doesn't stall visually for long periods.
+            const tickInterval = useDemucs ? 3000 : 1000;
+            const tickStep     = useDemucs ? 2 : 5;
+            let pct = useDemucs ? 5 : 20;
             const progressTimer = setInterval(() => {
-                if (pct < 90) {
-                    pct += 5;
+                if (pct < (useDemucs ? 80 : 90)) {
+                    pct += tickStep;
                     aiProgressBarFill.style.width = pct + '%';
                     aiProgressPercent.textContent = pct + '%';
                 }
-            }, 1000);
+                // Switch status label mid-way when Demucs is running so the user
+                // knows it has moved into the Whisper phase.
+                if (useDemucs && pct >= 50 && pct < 52) {
+                    aiProgressStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Transcribing isolated vocals…`;
+                }
+            }, tickInterval);
 
             try {
                 const resp = await fetch('/studio/lyrics/api/ai-transcribe/', {
@@ -1569,7 +1710,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 aiProgressBarFill.style.width = '100%';
                 aiProgressPercent.textContent = '100%';
                 aiProgressStatus.textContent = data.message || 'AI Transcription complete!';
-                AppToast.success(data.message || 'AI Transcription complete! Lyrics synced.');
+
+                // Show a warning toast if Demucs was requested but failed,
+                // so the user knows they got a full-mix transcription instead.
+                if (data.demucs_failed) {
+                    AppToast.warning(
+                        'Demucs vocal separation failed — transcribed from full mix instead. ' +
+                        (data.demucs_error ? data.demucs_error.slice(0, 120) : '')
+                    );
+                } else if (data.demucs_applied) {
+                    AppToast.success(data.message || 'AI transcription complete!');
+                } else {
+                    AppToast.success(data.message || 'AI Transcription complete! Lyrics synced.');
+                }
 
                 if (data.lyrics_data && data.lyrics_data.length > 0) {
                     lyricsArray = data.lyrics_data;
@@ -2042,6 +2195,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btnPreview.textContent = '▷';
             btnPreview.addEventListener('click', (e) => { e.stopPropagation(); previewLyricLineSegment(idx); });
 
+            const btnUp = document.createElement('button');
+            btnUp.type = 'button';
+            btnUp.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed';
+            btnUp.title = 'Move line up';
+            btnUp.textContent = '↑';
+            btnUp.disabled = idx === 0;
+            btnUp.addEventListener('click', (e) => { e.stopPropagation(); moveLine(idx, -1); });
+
+            const btnDown = document.createElement('button');
+            btnDown.type = 'button';
+            btnDown.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed';
+            btnDown.title = 'Move line down';
+            btnDown.textContent = '↓';
+            btnDown.disabled = idx === lyricsArray.length - 1;
+            btnDown.addEventListener('click', (e) => { e.stopPropagation(); moveLine(idx, 1); });
+
             const btnAdd = document.createElement('button');
             btnAdd.type = 'button';
             btnAdd.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-emerald-400 font-bold';
@@ -2060,6 +2229,8 @@ document.addEventListener('DOMContentLoaded', () => {
             controls.appendChild(timeSpan);
             controls.appendChild(btnLater);
             controls.appendChild(btnPreview);
+            controls.appendChild(btnUp);
+            controls.appendChild(btnDown);
             controls.appendChild(btnAdd);
             controls.appendChild(btnDelete);
             row.appendChild(controls);
@@ -2234,6 +2405,25 @@ document.addEventListener('DOMContentLoaded', () => {
             drawLiveCanvas();
             AppToast.info('Line deleted.');
         }
+    };
+
+    window.moveLine = function(idx, direction) {
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= lyricsArray.length) return;
+        // Swap the two entries
+        const tmp = lyricsArray[idx];
+        lyricsArray[idx] = lyricsArray[newIdx];
+        lyricsArray[newIdx] = tmp;
+        selectedLyricIndex = newIdx;
+        renderTimelineList();
+        updateHiddenJson();
+        saveDraft();
+        drawLiveCanvas();
+        // Scroll the moved row into view
+        setTimeout(() => {
+            const rows = lyricsTimelineList.querySelectorAll('[data-index]');
+            if (rows[newIdx]) rows[newIdx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
     };
 
     window.formatLyricsCase = function(mode) {
@@ -2548,9 +2738,23 @@ document.addEventListener('DOMContentLoaded', () => {
             endWrap.appendChild(btnE0); endWrap.appendChild(endInput); endWrap.appendChild(btnE1);
             row.appendChild(endWrap);
 
-            // Action buttons: snap-to-playhead + delete
+            // Action buttons: move up/down + snap-to-playhead + delete
             const acts = document.createElement('div');
-            acts.className = 'w-[56px] flex items-center gap-1 shrink-0 justify-center';
+            acts.className = 'w-[88px] flex items-center gap-1 shrink-0 justify-center';
+
+            const btnStudioUp = document.createElement('button');
+            btnStudioUp.type = 'button'; btnStudioUp.title = 'Move line up';
+            btnStudioUp.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white text-[10px] disabled:opacity-25 disabled:cursor-not-allowed';
+            btnStudioUp.textContent = '↑';
+            btnStudioUp.disabled = idx === 0;
+            btnStudioUp.addEventListener('click', (e) => { e.stopPropagation(); window.moveLine(idx, -1); renderStudioRows(); });
+
+            const btnStudioDown = document.createElement('button');
+            btnStudioDown.type = 'button'; btnStudioDown.title = 'Move line down';
+            btnStudioDown.className = 'px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white text-[10px] disabled:opacity-25 disabled:cursor-not-allowed';
+            btnStudioDown.textContent = '↓';
+            btnStudioDown.disabled = idx === lyricsArray.length - 1;
+            btnStudioDown.addEventListener('click', (e) => { e.stopPropagation(); window.moveLine(idx, 1); renderStudioRows(); });
 
             const btnSnap = document.createElement('button');
             btnSnap.type = 'button'; btnSnap.title = 'Snap start to playhead';
@@ -2575,6 +2779,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderStudioRows();
             });
 
+            acts.appendChild(btnStudioUp);
+            acts.appendChild(btnStudioDown);
             acts.appendChild(btnSnap);
             acts.appendChild(btnDel);
             row.appendChild(acts);
@@ -2901,9 +3107,138 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } else {
-            // Solid dark background
-            canvasCtx.fillStyle = '#090d16';
+            // Solid dark background — colour varies per style so each preset
+            // feels distinctly different even without cover art.
+            const _bgColors = {
+                NEON_GLOW:       '#05001a',
+                CYBER_NEON:      '#000a0f',
+                RETRO_VHS:       '#0a0008',
+                DREAMY_DRIFT:    '#06030f',
+                BUBBLE_BOUNCE:   '#030814',
+                SPARKLE_SWEEP:   '#070510',
+                VINTAGE_COUNTRY: '#120a02',
+                HANDWRITTEN_INK: '#060608',
+                CINEMATIC:       '#000000',
+                CLASSIC_LIFT:    '#040408',
+                PLAYFUL_POP:     '#050010',
+                BOUNCE_IN:       '#030c06',
+            };
+            canvasCtx.fillStyle = _bgColors[activeAnimationStyle] || '#090d16';
             canvasCtx.fillRect(0, 0, w, h);
+
+            // Per-style ambient background layer — drawn before text so the
+            // preview canvas is visually distinctive for every preset.
+            const _t = previewAnimClock; // 0→1 cycle
+            const _cx = w / 2, _cy = h / 2;
+
+            if (activeAnimationStyle === 'NEON_GLOW' || activeAnimationStyle === 'CYBER_NEON') {
+                // Pulsing radial glow behind text
+                const glowColor = highlightColorPicker ? highlightColorPicker.value || '#00E5FF' : '#00E5FF';
+                const gPulse = 0.18 + 0.10 * Math.sin(_t * Math.PI * 2);
+                const grad = canvasCtx.createRadialGradient(_cx, _cy, 0, _cx, _cy, Math.min(w, h) * 0.55);
+                grad.addColorStop(0, glowColor + Math.round(gPulse * 255).toString(16).padStart(2,'0'));
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                canvasCtx.fillStyle = grad;
+                canvasCtx.fillRect(0, 0, w, h);
+                // Horizontal grid lines (cyber)
+                if (activeAnimationStyle === 'CYBER_NEON') {
+                    canvasCtx.save();
+                    canvasCtx.strokeStyle = `rgba(0,255,200,0.07)`;
+                    canvasCtx.lineWidth = 1;
+                    for (let gy = 0; gy < h; gy += 28) {
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(0, gy); canvasCtx.lineTo(w, gy);
+                        canvasCtx.stroke();
+                    }
+                    canvasCtx.restore();
+                }
+
+            } else if (activeAnimationStyle === 'RETRO_VHS') {
+                // Subtle scan lines + chromatic noise
+                canvasCtx.save();
+                canvasCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+                canvasCtx.lineWidth = 1;
+                for (let sl = 0; sl < h; sl += 4) {
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(0, sl); canvasCtx.lineTo(w, sl);
+                    canvasCtx.stroke();
+                }
+                // Moving glitch band
+                const bandY = (((_t + 0.3) % 1.0) * h * 1.4) - h * 0.2;
+                canvasCtx.fillStyle = 'rgba(255,0,80,0.06)';
+                canvasCtx.fillRect(0, bandY, w, 6);
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'DREAMY_DRIFT') {
+                // Soft floating star particles
+                canvasCtx.save();
+                for (let si = 0; si < 28; si++) {
+                    const sx = (si * 137.5 % w);
+                    const sy = ((si * 97.3 + _t * h * 0.18) % h);
+                    const sAlpha = 0.1 + 0.15 * Math.abs(Math.sin(_t * Math.PI * 2 + si));
+                    canvasCtx.fillStyle = `rgba(200,180,255,${sAlpha.toFixed(2)})`;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(sx, sy, 1.5 + (si % 3) * 0.8, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'SPARKLE_SWEEP') {
+                // Diagonal shimmer streaks
+                canvasCtx.save();
+                const shimX = _t * (w + 200) - 100;
+                const shimGrad = canvasCtx.createLinearGradient(shimX - 60, 0, shimX + 60, h);
+                shimGrad.addColorStop(0, 'rgba(255,255,255,0)');
+                shimGrad.addColorStop(0.5, 'rgba(255,255,255,0.07)');
+                shimGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                canvasCtx.fillStyle = shimGrad;
+                canvasCtx.fillRect(0, 0, w, h);
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'VINTAGE_COUNTRY') {
+                // Warm vignette + subtle grain
+                const vig = canvasCtx.createRadialGradient(_cx, _cy, Math.min(w,h)*0.15, _cx, _cy, Math.max(w,h)*0.75);
+                vig.addColorStop(0, 'rgba(0,0,0,0)');
+                vig.addColorStop(1, 'rgba(40,18,4,0.72)');
+                canvasCtx.fillStyle = vig;
+                canvasCtx.fillRect(0, 0, w, h);
+
+            } else if (activeAnimationStyle === 'BUBBLE_BOUNCE') {
+                // Floating bubbles in background
+                canvasCtx.save();
+                for (let bi = 0; bi < 18; bi++) {
+                    const bx = (bi * 89.3) % w;
+                    const by = ((bi * 61.7 + _t * h * 0.25) % (h + 40)) - 20;
+                    const bAlpha = 0.05 + 0.06 * Math.abs(Math.sin(_t * Math.PI * 3 + bi));
+                    canvasCtx.strokeStyle = `rgba(120,220,255,${bAlpha.toFixed(2)})`;
+                    canvasCtx.lineWidth = 1;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(bx, by, 8 + (bi % 5) * 6, 0, Math.PI * 2);
+                    canvasCtx.stroke();
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'PLAYFUL_POP') {
+                // Confetti dots
+                canvasCtx.save();
+                const popColors = ['rgba(255,100,200,0.18)','rgba(100,220,255,0.15)','rgba(255,220,80,0.15)','rgba(180,255,100,0.14)'];
+                for (let pi = 0; pi < 22; pi++) {
+                    const px = (pi * 113.7 + _t * w * 0.12) % w;
+                    const py = (pi * 79.1 + _t * h * 0.08) % h;
+                    canvasCtx.fillStyle = popColors[pi % popColors.length];
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(px, py, 4 + (pi % 4) * 3, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                }
+                canvasCtx.restore();
+
+            } else if (activeAnimationStyle === 'CINEMATIC') {
+                // Letterbox bars top and bottom
+                const barH = h * 0.10;
+                canvasCtx.fillStyle = 'rgba(0,0,0,0.85)';
+                canvasCtx.fillRect(0, 0, w, barH);
+                canvasCtx.fillRect(0, h - barH, w, barH);
+            }
         }
 
         // 2. Active Lyric Line detection
@@ -3379,7 +3714,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'danger'
         });
         if (confirmed) {
-            progressStep.textContent = "Cancelling rendering and stopping FFmpeg...";
+            progressStep.textContent = "Cancelling rendering...";
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
             fetch(`/studio/cancel/lyrics/${activeRenderProjectId}/`, {
                 method: 'POST',

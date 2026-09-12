@@ -1,0 +1,887 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Automation Pipeline — Creator Studio{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto pb-24">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
+        Automation Pipeline
+      </h2>
+    </div>
+    <a href="{% url 'studio_home' %}" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/60 transition-colors shrink-0">
+      ← Back to Studio
+    </a>
+  </div>
+
+  <!-- Status bar: channel + whisper -->
+  <div class="flex flex-col sm:flex-row gap-3">
+    {% if default_account %}
+    <div class="flex-1 flex items-center gap-3 glass-panel px-4 py-3 rounded-2xl border border-emerald-500/20 bg-emerald-950/10">
+      {% if default_account.thumbnail_url %}
+      <img src="{{ default_account.thumbnail_url }}" class="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-700">
+      {% else %}
+      <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+        <i data-lucide="youtube" class="w-4 h-4 text-red-400"></i>
+      </div>
+      {% endif %}
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-white truncate">{{ default_account.channel_title }}</p>
+        <p class="text-[10px] text-emerald-400">✓ Connected</p>
+      </div>
+      <a href="{% url 'publishing_dashboard' %}" class="ml-auto shrink-0 text-[10px] text-zinc-400 hover:text-white transition-colors">Manage →</a>
+    </div>
+    {% else %}
+    <div class="flex-1 flex items-center gap-3 glass-panel px-4 py-3 rounded-2xl border border-amber-500/30 bg-amber-950/10">
+      <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-amber-300">No channel connected</p>
+      </div>
+      <a href="{% url 'publishing_dashboard' %}" class="ml-auto shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-bold rounded-lg transition-colors">Connect →</a>
+    </div>
+    {% endif %}
+    {% if whisper_available %}
+    <div class="flex items-center gap-3 glass-panel px-4 py-3 rounded-2xl border border-purple-500/20 bg-purple-950/10">
+      <i data-lucide="mic" class="w-4 h-4 text-purple-400 shrink-0"></i>
+      <p class="text-xs font-semibold text-white">Whisper AI <span class="text-purple-400">✓</span></p>
+    </div>
+    {% else %}
+    <div class="flex items-center gap-3 glass-panel px-4 py-3 rounded-2xl border border-zinc-700 bg-zinc-900/50">
+      <i data-lucide="mic-off" class="w-4 h-4 text-zinc-500 shrink-0"></i>
+      <p class="text-xs font-semibold text-zinc-500">Whisper AI <span class="text-[10px]">off</span></p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Build form -->
+  <form method="POST" action="{% url 'automation_create' %}" enctype="multipart/form-data" id="automationForm">
+    {% csrf_token %}
+
+    <div class="glass-panel p-5 rounded-2xl space-y-4 mb-5">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- Pipeline name -->
+        <div class="sm:col-span-2">
+          <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Pipeline Name</label>
+          <input type="text" name="name" placeholder="e.g. Chill Beats Batch — May 2025"
+                 class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors">
+        </div>
+        <!-- Song count -->
+        <div>
+          <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Number of Songs</label>
+          <select id="songCountSelect" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+            {% for n in "12345678910"|make_list %}
+            <option value="{{ forloop.counter }}" {% if forloop.counter == 1 %}selected{% endif %}>{{ forloop.counter }} song{{ forloop.counter|pluralize }}</option>
+            {% endfor %}
+            <option value="11">11 songs</option>
+            <option value="12">12 songs</option>
+            <option value="15">15 songs</option>
+            <option value="20">20 songs</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Pipeline steps -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+          <i data-lucide="download" class="w-4 h-4 text-blue-400 shrink-0"></i>
+          <p class="text-[11px] font-semibold text-zinc-300 flex-1">Download</p>
+          <span class="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+            <i data-lucide="check" class="w-2.5 h-2.5 text-white"></i>
+          </span>
+          <input type="hidden" name="do_download" value="1">
+        </div>
+        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-950 border border-zinc-800 cursor-pointer hover:border-purple-500/40 transition-colors">
+          <i data-lucide="film" class="w-4 h-4 text-purple-400 shrink-0"></i>
+          <p class="text-[11px] font-semibold text-zinc-300 flex-1">Render</p>
+          <input type="checkbox" name="do_render" value="1" checked class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+        </label>
+        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-950 border border-zinc-800 cursor-pointer hover:border-emerald-500/40 transition-colors">
+          <i data-lucide="upload-cloud" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <p class="text-[11px] font-semibold text-zinc-300 flex-1">Publish</p>
+          <input type="checkbox" name="do_publish" value="1" checked class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+        </label>
+      </div>
+    </div>
+
+    <div class="glass-panel px-5 py-3.5 rounded-2xl flex items-center justify-between gap-4 mb-5" id="sameForAllBar">
+      <p class="text-sm font-bold text-white">Same settings for all songs</p>
+      <label class="relative inline-flex items-center cursor-pointer shrink-0">
+        <input type="checkbox" id="sameForAllToggle" checked class="sr-only peer">
+        <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer
+                    peer-checked:after:translate-x-full peer-checked:after:border-white
+                    after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                    after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                    peer-checked:bg-emerald-500"></div>
+      </label>
+    </div>
+
+    <div class="space-y-4" id="songCardsContainer">
+      <!-- JS renders song cards here -->
+    </div>
+
+    <!-- Submit -->
+    <div class="mt-5">
+      <button type="submit" id="runBtn"
+              class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-sm font-bold rounded-2xl transition-colors flex items-center justify-center gap-2">
+        <i data-lucide="zap" class="w-5 h-5"></i>
+        <span id="runBtnLabel">Run Automation — 1 Song</span>
+      </button>
+    </div>
+  </form>
+
+  <!-- ── Pipeline history ────────────────────────────────────────────────── -->
+  <div class="glass-panel p-5 rounded-2xl space-y-4">
+    <div class="flex items-center gap-2 border-b border-zinc-800 pb-3">
+      <i data-lucide="history" class="w-4 h-4 text-zinc-400"></i>
+      <h3 class="text-sm font-bold text-white">Pipeline History</h3>
+      <span class="ml-auto text-xs text-zinc-500">{{ pipelines|length }} pipeline{{ pipelines|length|pluralize }}</span>
+    </div>
+    {% if pipelines %}
+    <div class="space-y-3">
+      {% for pipeline in pipelines %}
+      {% with total=pipeline.youtube_urls|length %}
+      <div class="border border-zinc-800 rounded-2xl overflow-hidden" id="prow-{{ pipeline.pk }}">
+        <div class="flex items-center gap-3 px-4 py-3 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer transition-colors select-none"
+             onclick="toggleRow({{ pipeline.pk }})">
+          <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+            {% if pipeline.status == 'RUNNING' %}bg-blue-500/15 text-blue-400 border border-blue-500/30
+            {% elif pipeline.status == 'COMPLETED' %}bg-emerald-500/15 text-emerald-400 border border-emerald-500/30
+            {% elif pipeline.status == 'FAILED' %}bg-red-500/15 text-red-400 border border-red-500/30
+            {% else %}bg-zinc-700/40 text-zinc-400 border border-zinc-700{% endif %}"
+            id="badge-{{ pipeline.pk }}">
+            {% if pipeline.status == 'RUNNING' %}<span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>{% endif %}
+            {{ pipeline.status }}
+          </span>
+          <span class="text-sm font-semibold text-white truncate flex-1">{{ pipeline.name }}</span>
+          <span class="text-xs text-zinc-500 shrink-0" id="prog-{{ pipeline.pk }}">{{ total }} song{{ total|pluralize }}</span>
+          <span class="text-xs text-zinc-600 shrink-0 hidden sm:block">{{ pipeline.created_at|naturaltime }}</span>
+          <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+            <form method="POST" action="{% url 'automation_run' pipeline.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" title="Re-run" class="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 transition-colors">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              </button>
+            </form>
+            <form method="POST" action="{% url 'automation_delete' pipeline.pk %}" class="inline"
+                  data-delete-confirm="Delete pipeline '{{ pipeline.name|escapejs }}'?">
+              {% csrf_token %}
+              <button type="submit" title="Delete" class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </form>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-zinc-600 transition-transform duration-200" id="chev-{{ pipeline.pk }}"></i>
+          </div>
+        </div>
+        <div id="panel-{{ pipeline.pk }}" class="hidden border-t border-zinc-800 bg-zinc-900/60 p-4 space-y-3">
+          <div class="space-y-2" id="songCards-{{ pipeline.pk }}">
+            {% for r in pipeline.results %}
+            {% include 'studio/_automation_song_card.html' with r=r pipeline_id=pipeline.pk %}
+            {% empty %}
+            {% for url in pipeline.youtube_urls %}
+            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
+              <i data-lucide="link" class="w-3.5 h-3.5 text-zinc-600 shrink-0"></i>
+              <span class="text-xs text-zinc-500 truncate font-mono">{{ url }}</span>
+              <span class="ml-auto text-[10px] text-zinc-600 shrink-0">Pending</span>
+            </div>
+            {% endfor %}
+            {% endfor %}
+          </div>
+          {% if pipeline.log %}
+          <details class="mt-2">
+            <summary class="text-[11px] text-zinc-500 cursor-pointer hover:text-zinc-300 select-none">▸ Global pipeline log</summary>
+            <pre id="globalLog-{{ pipeline.pk }}" class="mt-2 text-[11px] font-mono text-zinc-400 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto bg-zinc-950 rounded-xl p-3 border border-zinc-800">{{ pipeline.log }}</pre>
+          </details>
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-10 text-zinc-600 text-xs">No pipelines yet.</div>
+    {% endif %}
+  </div>
+
+</div><!-- /space-y-6 -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SONG CARD TEMPLATE (cloned by JS for each song slot)
+════════════════════════════════════════════════════════════════════════ -->
+<template id="songCardTemplate">
+  <div class="glass-panel rounded-2xl border border-zinc-800 overflow-hidden song-card" data-song-index="">
+
+    <!-- Card header -->
+    <div class="flex items-center gap-3 px-5 py-3 bg-zinc-950/60 border-b border-zinc-800 cursor-pointer select-none song-card-header">
+      <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-black flex items-center justify-center shrink-0 song-number">1</span>
+      <span class="text-sm font-bold text-white flex-1 song-title-label">Song 1</span>
+      <!-- "Inherited" badge — shown when sameForAll is ON and this isn't song 1 -->
+      <span class="hidden inherited-badge px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+        <i data-lucide="link" class="w-3 h-3 inline"></i> Using Song 1 settings
+      </span>
+      <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-500 card-chevron transition-transform duration-200"></i>
+    </div>
+
+    <!-- Card body -->
+    <div class="card-body p-5 space-y-5">
+
+      <!-- YouTube URL -->
+      <div>
+        <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">YouTube URL <span class="text-red-400">*</span></label>
+        <input type="text" name="url" placeholder="https://www.youtube.com/watch?v=..."
+               class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 transition-colors song-url-input">
+      </div>
+
+      <!-- Audio format -->
+      <div>
+        <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Download Format</label>
+        <select name="audio_format" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+          <option value="wav" selected>WAV — Lossless (best for rendering)</option>
+          <option value="mp3_320">MP3 320kbps</option>
+        </select>
+      </div>
+
+      <!-- Visual preset -->
+      <div class="space-y-3">
+        <p class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 pb-1.5">Visual</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Cover Image</label>
+            <input type="file" name="background_image" accept="image/jpeg,image/png,image/webp"
+                   class="w-full text-[11px] text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 cursor-pointer">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Background Video</label>
+            <input type="file" name="background_video" accept="video/mp4,video/quicktime,video/webm"
+                   class="w-full text-[11px] text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Animation + Font -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Animation Style</label>
+            <select name="animation_style" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <option value="KARAOKE_WIPE" selected>Karaoke Color Wipe</option>
+              <option value="ROLLING_3LINE">3-Line Rolling</option>
+              <option value="PLAYFUL_POP">Playful Pop</option>
+              <option value="BUBBLE_BOUNCE">Bubble Bounce</option>
+              <option value="DREAMY_DRIFT">Dreamy Drift</option>
+              <option value="NEON_GLOW">Neon Glow</option>
+              <option value="HANDWRITTEN_INK">Handwritten Ink</option>
+              <option value="RETRO_VHS">Retro VHS</option>
+              <option value="VINTAGE_COUNTRY">Vintage Country</option>
+              <option value="CYBER_NEON">Cyber Neon</option>
+              <option value="CINEMATIC">Cinematic Minimal</option>
+              <option value="BOUNCE_IN">Bounce Pop-In</option>
+              <option value="TYPEWRITER">Typewriter Reveal</option>
+              <option value="WAVE_PULSE">Wave Color Pulse</option>
+              <option value="SLIDE_UP">Smooth Slide Up</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Font Family</label>
+            <select name="font_family" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <option value="Arial" selected>Arial</option>
+              <option value="Impact">Impact</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+              <option value="DynaPuff">DynaPuff</option>
+              <option value="Ranchers">Ranchers</option>
+              <option value="Slackey">Slackey</option>
+              <option value="Press Start 2P">Press Start 2P</option>
+              <option value="Limelight">Limelight</option>
+              <option value="Monoton">Monoton</option>
+              <option value="Nosifer">Nosifer</option>
+              <option value="Creepster">Creepster</option>
+              <option value="Rubik Iso">Rubik Iso</option>
+              <option value="Rubik 80s Fade">Rubik 80s Fade</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Colors + size -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Highlight</label>
+            <input type="color" name="highlight_color" value="#00E5FF" class="w-full h-8 rounded-lg border border-zinc-800 bg-transparent cursor-pointer">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Text Color</label>
+            <input type="color" name="text_color" value="#FFFFFF" class="w-full h-8 rounded-lg border border-zinc-800 bg-transparent cursor-pointer">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Font Size</label>
+            <input type="number" name="font_size" value="48" min="18" max="120"
+                   class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <!-- Aspect + Position -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Aspect Ratio</label>
+            <select name="aspect_ratio" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <option value="16:9" selected>16:9 Landscape (YouTube)</option>
+              <option value="9:16">9:16 Vertical (Shorts)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Lyrics Position</label>
+            <select name="position_mode" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <option value="CENTER" selected>Center</option>
+              <option value="BOTTOM">Bottom Third</option>
+              <option value="TOP">Top</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Live Preview Canvas ── -->
+        <div class="flex flex-col items-center">
+          <p class="text-[11px] font-semibold text-zinc-400 mb-1.5 self-start">Preview</p>
+          <div class="preview-wrapper relative rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 w-full" style="aspect-ratio:16/9; max-width:360px;">
+            <canvas class="preview-canvas w-full h-full block"></canvas>
+            <!-- video element used to grab a frame for video backgrounds -->
+            <video class="preview-video absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none" muted playsinline preload="metadata"></video>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lyrics -->
+      <div class="space-y-3">
+        <p class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 pb-1.5">Lyrics</p>
+        <textarea name="lyrics_text" rows="3"
+                  placeholder="Paste fallback lyrics (optional)…"
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 resize-y"></textarea>
+        <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+          <div class="flex items-center gap-2">
+            <i data-lucide="mic" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span class="text-xs font-semibold text-white">Whisper AI</span>
+            {% if not whisper_available %}
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-zinc-500 border border-zinc-700">OFF</span>
+            {% endif %}
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="use_whisper" value="1"
+                   {% if whisper_available %}checked{% endif %}
+                   {% if not whisper_available %}disabled{% endif %}
+                   class="sr-only peer">
+            <div class="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Publish settings -->
+      <div class="space-y-3">
+        <p class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 pb-1.5">Publish</p>
+        <div>
+          <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Channel</label>
+          <select name="account_id" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+            {% for acc in oauth_accounts %}
+            <option value="{{ acc.pk }}" {% if acc.is_default %}selected{% endif %}>
+              {{ acc.channel_title }}{% if acc.is_default %} ★ Default{% endif %}
+            </option>
+            {% empty %}
+            <option value="">— No channels connected —</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Privacy</label>
+            <select name="privacy_status" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <option value="private" selected>Private Draft</option>
+              <option value="unlisted">Unlisted</option>
+              <option value="public">Public</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Category</label>
+            <select name="category_id" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <option value="10" selected>Music</option>
+              <option value="24">Entertainment</option>
+              <option value="22">People &amp; Blogs</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Tags</label>
+          <input type="text" name="tags" value="lyrics, lyricvideo, music, official"
+                 class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-semibold text-zinc-400 mb-1 block">Description</label>
+          <textarea name="description" rows="2"
+                    placeholder="Auto-generated if blank."
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 resize-y"></textarea>
+        </div>
+      </div>
+
+    </div><!-- /card-body -->
+  </div><!-- /song-card -->
+</template>
+
+<!-- ═══ SCRIPT ═══════════════════════════════════════════════════════════ -->
+<script>
+// ── History helpers ───────────────────────────────────────────────────────
+function toggleRow(pk) {
+  const panel = document.getElementById('panel-' + pk);
+  const chev  = document.getElementById('chev-' + pk);
+  if (!panel) return;
+  const nowHidden = panel.classList.toggle('hidden');
+  chev.style.transform = nowHidden ? '' : 'rotate(180deg)';
+}
+
+const STATUS_COLORS = {
+  PENDING:     'bg-zinc-700/40 text-zinc-400 border-zinc-700',
+  DOWNLOADING: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  RENDERING:   'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  PUBLISHING:  'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  DONE:        'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  FAILED:      'bg-red-500/15 text-red-400 border-red-500/30',
+};
+const STATUS_LABELS = {
+  PENDING:'Pending', DOWNLOADING:'Downloading', RENDERING:'Rendering',
+  PUBLISHING:'Uploading', DONE:'✓ Done', FAILED:'✗ Failed',
+};
+function buildSongCard(r, pipelineId) {
+  const status   = r.status || 'PENDING';
+  const pct      = r.progress || 0;
+  const colors   = STATUS_COLORS[status] || STATUS_COLORS.PENDING;
+  const label    = STATUS_LABELS[status] || status;
+  const pulse    = ['DOWNLOADING','RENDERING','PUBLISHING'].includes(status)
+                   ? '<span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>' : '';
+  const ytLink   = r.youtube_url
+                   ? `<a href="${r.youtube_url}" target="_blank" class="ml-auto text-[10px] text-emerald-400 hover:underline shrink-0">▶ Watch</a>` : '';
+  const lyricLink= r.lyric_project_id
+                   ? `<a href="/studio/lyrics/${r.lyric_project_id}/" class="text-[10px] text-zinc-400 hover:underline shrink-0">View project</a>` : '';
+  const title    = r.title  ? `<span class="font-semibold text-white">${r.title}</span>` : `<span class="font-mono text-zinc-500 text-[10px] truncate">${r.url}</span>`;
+  const artist   = r.artist ? ` — <span class="text-zinc-500">${r.artist}</span>` : '';
+  const barColor = status === 'DONE' ? 'bg-emerald-500' : status === 'FAILED' ? 'bg-red-500' : 'bg-zinc-300';
+  const logHtml  = r.log
+    ? `<details class="mt-2"><summary class="text-[10px] text-zinc-600 cursor-pointer hover:text-zinc-400 select-none">▸ Log</summary>
+       <pre class="mt-1 text-[10px] font-mono text-zinc-500 whitespace-pre-wrap max-h-32 overflow-y-auto bg-zinc-900 rounded-lg p-2">${r.log}</pre></details>` : '';
+  return `<div class="rounded-xl border ${status==='FAILED'?'border-red-500/30':status==='DONE'?'border-emerald-500/20':'border-zinc-800'} bg-zinc-950 p-3 space-y-2" id="songCard-${pipelineId}-${r.index}">
+  <div class="flex items-center gap-2 min-w-0">
+    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${colors} shrink-0">${pulse}${label}</span>
+    <div class="min-w-0 flex-1">${title}${artist}</div>
+    ${lyricLink}${ytLink}
+  </div>
+  <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+    <div class="${barColor} h-full rounded-full transition-all duration-500" style="width:${pct}%"></div>
+  </div>
+  <div class="flex justify-between text-[10px] text-zinc-600">
+    <span>${pct}%${!['DONE','FAILED','PENDING'].includes(status)?' — '+label+'...':''}</span>
+    <span class="font-mono">${r.url.length>45?r.url.slice(0,45)+'…':r.url}</span>
+  </div>${logHtml}</div>`;
+}
+
+// ── Live polling ──────────────────────────────────────────────────────────
+const RUNNING_PKS = [{% for p in pipelines %}{% if p.status == 'RUNNING' %}{{ p.pk }},{% endif %}{% endfor %}];
+const pollers = {};
+function startPoller(pk) {
+  if (pollers[pk]) return;
+  const panel = document.getElementById('panel-'+pk);
+  const chev  = document.getElementById('chev-'+pk);
+  if (panel && panel.classList.contains('hidden')) {
+    panel.classList.remove('hidden');
+    if (chev) chev.style.transform = 'rotate(180deg)';
+  }
+  pollers[pk] = setInterval(() => pollPipeline(pk), 2000);
+}
+async function pollPipeline(pk) {
+  try {
+    const data = await fetch(`/studio/automation/${pk}/status/`).then(r=>r.json());
+    const badge = document.getElementById('badge-'+pk);
+    if (badge) {
+      const s = data.status;
+      const c = s==='RUNNING'?'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+               :s==='COMPLETED'?'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+               :s==='FAILED'?'bg-red-500/15 text-red-400 border border-red-500/30'
+               :'bg-zinc-700/40 text-zinc-400 border border-zinc-700';
+      badge.className=`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${c}`;
+      badge.innerHTML=(s==='RUNNING'?'<span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>':'')+s;
+    }
+    const prog = document.getElementById('prog-'+pk);
+    if (prog && data.total_songs) {
+      const done=(data.results||[]).filter(r=>r.status==='DONE').length;
+      prog.textContent=`${done}/${data.total_songs} done`;
+    }
+    const container = document.getElementById('songCards-'+pk);
+    if (container && data.results && data.results.length)
+      container.innerHTML = data.results.map(r=>buildSongCard(r,pk)).join('');
+    const logEl = document.getElementById('globalLog-'+pk);
+    if (logEl && data.log) { logEl.textContent=data.log; logEl.scrollTop=logEl.scrollHeight; }
+    if (data.status==='COMPLETED'||data.status==='FAILED') { clearInterval(pollers[pk]); delete pollers[pk]; }
+  } catch(e) { console.warn('Poll error',pk,e); }
+}
+RUNNING_PKS.forEach(pk => { if (pk) startPoller(pk); });
+
+// ══════════════════════════════════════════════════════════════════════════
+// FORM BUILDER
+// ══════════════════════════════════════════════════════════════════════════
+const songCountSelect  = document.getElementById('songCountSelect');
+const sameForAllToggle = document.getElementById('sameForAllToggle');
+const cardsContainer   = document.getElementById('songCardsContainer');
+const runBtnLabel      = document.getElementById('runBtnLabel');
+const tmpl             = document.getElementById('songCardTemplate');
+
+let currentCount = 1;
+let sameForAll   = true;
+
+// ── Clone a fresh card from the <template> ────────────────────────────────
+function cloneCard(index) {
+  const node = tmpl.content.cloneNode(true);
+  const card = node.querySelector('.song-card');
+  card.dataset.songIndex = index;
+
+  const num   = index + 1;
+  card.querySelector('.song-number').textContent     = num;
+  card.querySelector('.song-title-label').textContent = `Song ${num}`;
+
+  // Prefix all input/select/textarea names with songs[i][...]
+  card.querySelectorAll('[name]').forEach(el => {
+    el.name = `songs[${index}][${el.name}]`;
+  });
+
+  // Collapsible header
+  const header = card.querySelector('.song-card-header');
+  const body   = card.querySelector('.card-body');
+  const chev   = card.querySelector('.card-chevron');
+  // Song 1 starts expanded, others start collapsed
+  if (index > 0) {
+    body.classList.add('hidden');
+    chev.style.transform = '';
+  } else {
+    chev.style.transform = 'rotate(180deg)';
+  }
+  header.addEventListener('click', () => {
+    const hidden = body.classList.toggle('hidden');
+    chev.style.transform = hidden ? '' : 'rotate(180deg)';
+  });
+
+  // Wire up live preview for this card
+  attachPreview(card);
+
+  return card;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// LIVE PREVIEW ENGINE
+// Each song card has a <canvas class="preview-canvas"> and a hidden
+// <video class="preview-video">. We draw onto the canvas whenever any
+// visual setting changes.
+// ══════════════════════════════════════════════════════════════════════════
+
+// Local font map: family name → filename stem under /static/fonts/
+const LOCAL_FONTS = {
+  'DynaPuff':       'DynaPuff',
+  'Ranchers':       'Ranchers',
+  'Slackey':        'Slackey',
+  'Press Start 2P': 'PressStart2P',
+  'Limelight':      'Limelight',
+  'Monoton':        'Monoton',
+  'Nosifer':        'Nosifer',
+  'Creepster':      'Creepster',
+  'Rubik Iso':      'RubikIso',
+  'Rubik 80s Fade': 'Rubik80sFade',
+};
+const _loadedFonts = new Set();
+
+function loadGoogleFont(family) {
+  if (!LOCAL_FONTS[family] || _loadedFonts.has(family)) return Promise.resolve();
+  _loadedFonts.add(family);
+  return new Promise(resolve => {
+    const style = document.createElement('style');
+    style.textContent = `@font-face{font-family:"${family}";src:url("/static/fonts/${LOCAL_FONTS[family]}.ttf") format("truetype");font-display:swap;}`;
+    document.head.appendChild(style);
+    // Use FontFace API to know exactly when it's ready
+    document.fonts.load(`1em "${family}"`).then(() => resolve()).catch(() => resolve());
+  });
+}
+
+// Sample lyric lines shown in the preview (cycles through styles)
+const PREVIEW_LINES = {
+  KARAOKE_WIPE:    ['♪  Every word lit up', 'as the music plays  ♪'],
+  ROLLING_3LINE:   ['Verse one right here', 'and the next line', 'keeps on rolling'],
+  CYBER_NEON:      ['NEON DREAMS', 'ELECTRIC NIGHT'],
+  CINEMATIC:       ['In the silence of dusk', 'she found her voice'],
+  RETRO_VHS:       ['[ Rewind the tape ]', '[ Play it again ]'],
+  _default:        ['Sample lyric line one', 'Another line of the song'],
+};
+
+function getPreviewLines(style) {
+  return PREVIEW_LINES[style] || PREVIEW_LINES._default;
+}
+
+function attachPreview(card) {
+  const canvas  = card.querySelector('.preview-canvas');
+  const vidEl   = card.querySelector('.preview-video');
+  if (!canvas) return;
+
+  // Collect all visual control elements inside this card
+  const get = sel => card.querySelector(sel);
+  const fontSel      = get('[name$="[font_family]"]');
+  const styleSel     = get('[name$="[animation_style]"]');
+  const highlightInp = get('[name$="[highlight_color]"]');
+  const textColorInp = get('[name$="[text_color]"]');
+  const fontSizeInp  = get('[name$="[font_size]"]');
+  const aspectSel    = get('[name$="[aspect_ratio]"]');
+  const positionSel  = get('[name$="[position_mode]"]');
+  const coverInp     = get('[name$="[background_image]"]');
+  const videoInp     = get('[name$="[background_video]"]');
+  const wrapper      = card.querySelector('.preview-wrapper');
+
+  let bgImage  = null;   // HTMLImageElement
+  let bgVideo  = null;   // object URL string
+  let rafId    = null;
+
+  // ── Update aspect ratio of the wrapper ───────────────────────────────────
+  function syncAspect() {
+    const ar = aspectSel ? aspectSel.value : '16:9';
+    wrapper.style.aspectRatio = ar === '9:16' ? '9/16' : '16/9';
+  }
+
+  // ── Main draw function ────────────────────────────────────────────────────
+  function draw() {
+    const W = canvas.offsetWidth  || 320;
+    const H = canvas.offsetHeight || 180;
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const font        = fontSel        ? fontSel.value        : 'Arial';
+    const style       = styleSel       ? styleSel.value       : 'KARAOKE_WIPE';
+    const highlight   = highlightInp   ? highlightInp.value   : '#00E5FF';
+    const textColor   = textColorInp   ? textColorInp.value   : '#FFFFFF';
+    const fontSize    = fontSizeInp    ? parseInt(fontSizeInp.value) || 48 : 48;
+    const position    = positionSel    ? positionSel.value    : 'CENTER';
+
+    // Scale font size to canvas (video is 1920×1080, canvas is smaller)
+    const scale       = W / 1920;
+    const scaledSize  = Math.max(10, Math.round(fontSize * scale * 2.2));
+
+    // ── 1. Background ──────────────────────────────────────────────────────
+    if (bgImage) {
+      // Cover-fit the image
+      const iW = bgImage.naturalWidth  || W;
+      const iH = bgImage.naturalHeight || H;
+      const iAR = iW / iH;
+      const cAR = W / H;
+      let sx=0,sy=0,sw=iW,sh=iH;
+      if (iAR > cAR) { sw = iH * cAR; sx = (iW - sw) / 2; }
+      else           { sh = iW / cAR; sy = (iH - sh) / 2; }
+      ctx.drawImage(bgImage, sx, sy, sw, sh, 0, 0, W, H);
+    } else if (vidEl && vidEl.src && vidEl.readyState >= 2) {
+      // Draw current video frame
+      ctx.drawImage(vidEl, 0, 0, W, H);
+    } else {
+      // Dark gradient background
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#0f0f13');
+      grad.addColorStop(1, '#1a1a24');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // ── 2. Dark vignette overlay ───────────────────────────────────────────
+    const vignette = ctx.createRadialGradient(W/2, H/2, H*0.1, W/2, H/2, H*0.85);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.72)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── 3. Lyric text ──────────────────────────────────────────────────────
+    const lines = getPreviewLines(style);
+
+    // Y anchor based on position
+    let yAnchor;
+    if (position === 'TOP')    yAnchor = H * 0.22;
+    else if (position === 'BOTTOM') yAnchor = H * 0.78;
+    else                             yAnchor = H * 0.50;
+
+    const lineGap = scaledSize * 1.45;
+    const totalH  = lines.length * lineGap;
+    let startY    = yAnchor - totalH / 2 + scaledSize * 0.5;
+
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+
+    lines.forEach((line, li) => {
+      const y = startY + li * lineGap;
+
+      // Shadow / outline
+      ctx.shadowColor   = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur    = scaledSize * 0.3;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      // For karaoke: show first line half-highlighted, second in text color
+      let color = textColor;
+      if (style === 'KARAOKE_WIPE' && li === 0) {
+        // Split: first half highlight, second half text color
+        ctx.font = `bold ${scaledSize}px "${font}", Arial`;
+        const half = Math.floor(line.length / 2);
+        const part1 = line.slice(0, half);
+        const part2 = line.slice(half);
+        const w1 = ctx.measureText(part1).width;
+        const w2 = ctx.measureText(part2).width;
+        const totalW = w1 + w2;
+        const startX = W / 2 - totalW / 2;
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        ctx.fillStyle = highlight;
+        ctx.fillText(part1, startX + w1 / 2, y);
+        ctx.fillStyle = textColor;
+        ctx.fillText(part2, startX + w1 + w2 / 2, y);
+        return;
+      }
+
+      // Neon glow styles
+      if (['CYBER_NEON','NEON_GLOW','WAVE_PULSE'].includes(style)) {
+        ctx.shadowColor = highlight;
+        ctx.shadowBlur  = scaledSize * 0.6;
+        color = highlight;
+      }
+
+      ctx.font      = `bold ${scaledSize}px "${font}", Arial`;
+      ctx.fillStyle = color;
+      ctx.fillText(line, W / 2, y);
+      ctx.shadowColor = 'transparent';
+    });
+
+    // ── 4. Animation style label (bottom-right watermark) ─────────────────
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur  = 0;
+    ctx.font        = `${Math.max(9, Math.round(W * 0.022))}px Arial`;
+    ctx.fillStyle   = 'rgba(255,255,255,0.25)';
+    ctx.textAlign   = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(style.replace(/_/g,' '), W - 8, H - 6);
+  }
+
+  // ── Debounced redraw ──────────────────────────────────────────────────────
+  function schedDraw() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(draw);
+  }
+
+  // ── Video background: grab first frame once metadata loads ───────────────
+  function setupVideoPreview(file) {
+    const url = URL.createObjectURL(file);
+    vidEl.src = url;
+    bgImage   = null;
+    vidEl.addEventListener('loadeddata', () => { schedDraw(); }, { once: true });
+    vidEl.addEventListener('seeked',     () => { schedDraw(); }, { once: true });
+    vidEl.currentTime = 0.5;
+  }
+
+  // ── File input handlers ───────────────────────────────────────────────────
+  if (coverInp) {
+    coverInp.addEventListener('change', () => {
+      const file = coverInp.files[0];
+      if (!file) { bgImage = null; schedDraw(); return; }
+      const img = new Image();
+      img.onload = () => { bgImage = img; vidEl.src = ''; schedDraw(); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  if (videoInp) {
+    videoInp.addEventListener('change', () => {
+      const file = videoInp.files[0];
+      if (!file) { vidEl.src = ''; schedDraw(); return; }
+      bgImage = null;
+      setupVideoPreview(file);
+    });
+  }
+
+  // ── Visual control change listeners ──────────────────────────────────────
+  [fontSel, styleSel, highlightInp, textColorInp, fontSizeInp, positionSel].forEach(el => {
+    if (el) el.addEventListener('change', () => {
+      if (el === fontSel) {
+        loadGoogleFont(el.value).then(schedDraw);
+      } else {
+        schedDraw();
+      }
+    });
+    if (el && el.tagName === 'INPUT' && el.type !== 'color') {
+      el.addEventListener('input', schedDraw);
+    }
+  });
+
+  if (aspectSel) {
+    aspectSel.addEventListener('change', () => { syncAspect(); schedDraw(); });
+  }
+
+  // ── Initial draw (after fonts/icons settle) ───────────────────────────────
+  syncAspect();
+  requestAnimationFrame(() => requestAnimationFrame(draw));
+}
+
+// ── Render N song cards ───────────────────────────────────────────────────
+function renderCards(count) {
+  cardsContainer.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    cardsContainer.appendChild(cloneCard(i));
+  }
+  applySameForAll(sameForAll);
+  updateRunLabel(count);
+  if (window.lucide) lucide.createIcons();
+}
+
+// ── Apply / remove "same for all" lock ───────────────────────────────────
+function applySameForAll(on) {
+  const cards = cardsContainer.querySelectorAll('.song-card');
+  cards.forEach((card, i) => {
+    const body    = card.querySelector('.card-body');
+    const badge   = card.querySelector('.inherited-badge');
+    const header  = card.querySelector('.song-card-header');
+    if (i === 0) {
+      // Master card — always fully interactive
+      body.querySelectorAll('input,select,textarea').forEach(el => el.disabled = false);
+      badge.classList.add('hidden');
+      return;
+    }
+    if (on) {
+      // Lock non-master cards: hide body, show inherited badge, collapse
+      body.classList.add('hidden');
+      badge.classList.remove('hidden');
+      card.querySelector('.card-chevron').style.transform = '';
+    } else {
+      // Unlock: show body, hide badge
+      badge.classList.add('hidden');
+      body.querySelectorAll('input,select,textarea').forEach(el => el.disabled = false);
+    }
+  });
+}
+
+// ── Update run button label ───────────────────────────────────────────────
+function updateRunLabel(count) {
+  runBtnLabel.textContent = `Run Automation — ${count} Song${count > 1 ? 's' : ''}`;
+}
+
+// ── Wire controls ─────────────────────────────────────────────────────────
+songCountSelect.addEventListener('change', () => {
+  currentCount = parseInt(songCountSelect.value, 10);
+  renderCards(currentCount);
+});
+
+sameForAllToggle.addEventListener('change', () => {
+  sameForAll = sameForAllToggle.checked;
+  applySameForAll(sameForAll);
+});
+
+// ── Initial render ────────────────────────────────────────────────────────
+renderCards(1);
+</script>
+{% endblock %}

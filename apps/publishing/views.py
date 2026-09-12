@@ -39,11 +39,31 @@ def publisher_dashboard_view(request):
     # Recent completed/queued jobs
     recent_jobs = PublishingJob.objects.select_related('account').all().order_by('-created_at')[:15]
 
-    # Available studio projects ready for publishing
-    rendered_loops = VideoProject.objects.filter(render_status=VideoProject.Status.COMPLETED).order_by('-created_at')[:6]
-    rendered_mixes = LongMixProject.objects.filter(render_status=LongMixProject.Status.COMPLETED).order_by('-created_at')[:6]
-    rendered_shorts = ShortVideoProject.objects.filter(render_status=ShortVideoProject.Status.COMPLETED).order_by('-created_at')[:6]
-    rendered_lyrics = LyricVideoProject.objects.filter(render_status=LyricVideoProject.Status.COMPLETED).order_by('-created_at')[:6]
+    # Dismissed project IDs stored in session (per source_type)
+    dismissed = request.session.get('dismissed_projects', {})
+
+    def _dismissed_ids(source_type_key):
+        return set(dismissed.get(source_type_key, []))
+
+    # Available studio projects ready for publishing (exclude dismissed)
+    rendered_loops = VideoProject.objects.filter(render_status=VideoProject.Status.COMPLETED).exclude(
+        pk__in=_dismissed_ids('VIDEO_LOOP')).order_by('-created_at')[:12]
+    rendered_mixes = LongMixProject.objects.filter(render_status=LongMixProject.Status.COMPLETED).exclude(
+        pk__in=_dismissed_ids('LONG_MIX')).order_by('-created_at')[:12]
+    rendered_shorts = ShortVideoProject.objects.filter(render_status=ShortVideoProject.Status.COMPLETED).exclude(
+        pk__in=_dismissed_ids('SHORT_VIDEO')).order_by('-created_at')[:12]
+    rendered_lyrics = LyricVideoProject.objects.filter(render_status=LyricVideoProject.Status.COMPLETED).exclude(
+        pk__in=_dismissed_ids('LYRIC_VIDEO')).order_by('-created_at')[:12]
+
+    # Build sets of source IDs that have a SUCCESS publishing job (uploaded to YouTube)
+    success_jobs = PublishingJob.objects.filter(
+        status=PublishingJob.Status.SUCCESS,
+        source_id__isnull=False
+    ).values('source_type', 'source_id')
+
+    uploaded_ids = {}
+    for job in success_jobs:
+        uploaded_ids.setdefault(job['source_type'], set()).add(job['source_id'])
 
     return render(request, 'publishing/dashboard.html', {
         'accounts': accounts,
@@ -59,6 +79,10 @@ def publisher_dashboard_view(request):
         'rendered_mixes': rendered_mixes,
         'rendered_shorts': rendered_shorts,
         'rendered_lyrics': rendered_lyrics,
+        'uploaded_loop_ids': uploaded_ids.get('VIDEO_LOOP', set()),
+        'uploaded_mix_ids': uploaded_ids.get('LONG_MIX', set()),
+        'uploaded_short_ids': uploaded_ids.get('SHORT_VIDEO', set()),
+        'uploaded_lyric_ids': uploaded_ids.get('LYRIC_VIDEO', set()),
         'privacy_choices': PublishingJob.PrivacyStatus.choices,
     })
 
@@ -455,3 +479,25 @@ def delete_job_view(request, job_id):
     job.delete()
     messages.success(request, "Publishing job record deleted.")
     return redirect(request.META.get('HTTP_REFERER') or 'publishing_queue')
+
+
+@login_required
+@require_POST
+def dismiss_project_view(request, source_type, source_id):
+    """
+    Removes a studio project card from the Ready for YouTube section by storing
+    its ID in the session. Does not delete the project from the database.
+    """
+    valid_types = {'VIDEO_LOOP', 'LONG_MIX', 'SHORT_VIDEO', 'LYRIC_VIDEO'}
+    if source_type not in valid_types:
+        return redirect('publishing_dashboard')
+
+    dismissed = request.session.get('dismissed_projects', {})
+    ids = dismissed.get(source_type, [])
+    if source_id not in ids:
+        ids.append(source_id)
+    dismissed[source_type] = ids
+    request.session['dismissed_projects'] = dismissed
+    request.session.modified = True
+
+    return redirect('publishing_dashboard')

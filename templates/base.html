@@ -231,9 +231,19 @@
                     <span class="nav-text">1-Hour Loop Studio</span>
                 </a>
 
+                <a href="{% url 'automation_dashboard' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'automation' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="cpu" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">Automation</span>
+                </a>
+
                 <a href="{% url 'radar_feed' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'radar' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
                     <i data-lucide="radio" class="w-4 h-4 text-white shrink-0"></i>
                     <span class="nav-text">AI Music Radar</span>
+                </a>
+
+                <a href="{% url 'downloader_home' %}" class="sidebar-nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if 'downloader' in request.resolver_match.url_name %}bg-zinc-800 text-white shadow-sm{% else %}text-zinc-400 hover:text-white hover:bg-zinc-800/50{% endif %}">
+                    <i data-lucide="download-cloud" class="w-4 h-4 text-white shrink-0"></i>
+                    <span class="nav-text">YT Downloader</span>
                 </a>
 
                 <div class="sidebar-section-title pt-4 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-200">

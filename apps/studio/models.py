@@ -1,3 +1,4 @@
+import os
 from django.db import models
 
 class VideoProject(models.Model):
@@ -437,6 +438,60 @@ class LyricVideoProject(models.Model):
         return f"{minutes:02d}m {seconds:02d}s"
 
     @property
+    def thumbnail_image_url(self):
+        """
+        Returns the best available thumbnail URL for dashboard display.
+        Priority: background_image → extracted frame from output_video → None.
+        Extracted frames are cached in media/studio/lyrics_thumbs/ by project id.
+        """
+        if self.background_image:
+            try:
+                return self.background_image.url
+            except Exception:
+                pass
+
+        if not self.output_video:
+            return None
+
+        try:
+            video_path = self.output_video.path
+        except Exception:
+            return None
+
+        if not os.path.exists(video_path):
+            return None
+
+        import subprocess
+        from django.conf import settings
+
+        thumb_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'lyrics_thumbs')
+        os.makedirs(thumb_dir, exist_ok=True)
+        thumb_filename = f"lyric_{self.id}_thumb.jpg"
+        thumb_path = os.path.join(thumb_dir, thumb_filename)
+
+        if not os.path.exists(thumb_path):
+            try:
+                subprocess.run(
+                    [
+                        'ffmpeg', '-y',
+                        '-ss', '3',
+                        '-i', video_path,
+                        '-frames:v', '1',
+                        '-q:v', '3',
+                        thumb_path,
+                    ],
+                    capture_output=True,
+                    timeout=15,
+                )
+            except Exception:
+                return None
+
+        if os.path.exists(thumb_path):
+            return f"{settings.MEDIA_URL}studio/lyrics_thumbs/{thumb_filename}"
+
+        return None
+
+    @property
     def artwork_layout_display(self):
         return self.get_cover_layout_display()
 
@@ -477,3 +532,40 @@ class LyricVideoProject(models.Model):
             f"#lyrics #lyricvideo #karaoke #newmusic"
         )
 
+
+
+class AutomationPipeline(models.Model):
+    class Status(models.TextChoices):
+        IDLE = 'IDLE', 'Idle'
+        RUNNING = 'RUNNING', 'Running'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+
+    # Pipeline identity
+    name = models.CharField(max_length=255, default='My Automation')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.IDLE)
+
+    # List of YouTube URLs to process
+    youtube_urls = models.JSONField(default=list)
+
+    # Shared render + publish preset applied to every song
+    shared_config = models.JSONField(default=dict)
+
+    # Per-song results — list of dicts, one per URL
+    # Each dict: {url, title, artist, status, log, download_job_id,
+    #             lyric_project_id, publishing_job_id, youtube_url}
+    results = models.JSONField(default=list)
+
+    # Overall log + progress
+    log = models.TextField(blank=True, default='')
+    current_song_index = models.IntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Automation Pipeline'
+
+    def __str__(self):
+        return f"{self.name} [{self.status}] — {len(self.youtube_urls)} song(s)"

@@ -212,163 +212,271 @@
     {% endif %}
 
     <!-- Studio Projects Ready for YouTube -->
-    <div class="space-y-3">
-        <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-white">Ready for YouTube (Studio Projects)</h3>
+    <div class="space-y-6">
+        <h3 class="text-sm font-bold text-white">Ready for YouTube (Studio Projects)</h3>
+
+        <!-- Lyrics Videos -->
+        {% if rendered_lyrics %}
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-zinc-400"></i>
+                <span class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Lyrics Videos</span>
+                <span class="text-[10px] text-zinc-600">({{ rendered_lyrics|length }})</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for lyric in rendered_lyrics %}
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors relative group">
+                    <!-- Remove button -->
+                    <form method="POST" action="{% url 'publishing_dismiss_project' 'LYRIC_VIDEO' lyric.id %}" class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% csrf_token %}
+                        <button type="submit" title="Remove from list" class="p-1 rounded-lg bg-zinc-900/90 border border-zinc-700 text-zinc-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </form>
+
+                    <div class="space-y-2">
+                        <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 cursor-pointer"
+                             onclick="previewVideo('{% if lyric.output_video %}{{ lyric.output_video.url|escapejs }}{% endif %}', '{{ lyric.title|escapejs }}')">
+                            {% with thumb=lyric.thumbnail_image_url %}
+                            {% if thumb %}
+                            <img src="{{ thumb }}" alt="{{ lyric.title }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <i data-lucide="sparkles" class="w-6 h-6 text-zinc-600"></i>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                            <!-- Play overlay -->
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                                    <i data-lucide="play" class="w-5 h-5 text-white ml-0.5"></i>
+                                </div>
+                            </div>
+                            <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-zinc-300">{{ lyric.duration_formatted }}</span>
+                            {% if lyric.id in uploaded_lyric_ids %}
+                            <span class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/90 text-[10px] font-bold text-zinc-950">
+                                <i data-lucide="check" class="w-2.5 h-2.5"></i> Uploaded
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-500 uppercase font-semibold">Lyrics</span>
+                            <h4 class="text-xs font-bold text-white truncate" title="{{ lyric.title }}">{{ lyric.title }}</h4>
+                            {% if lyric.artist_name %}<p class="text-[11px] text-zinc-500 truncate">{{ lyric.artist_name }}</p>{% endif %}
+                        </div>
+                    </div>
+                    <button type="button"
+                            onclick="openPublishModal({
+                                sourceType: 'LYRIC_VIDEO',
+                                sourceId: {{ lyric.id }},
+                                title: `{{ lyric.youtube_title|escapejs }}`,
+                                description: `{{ lyric.youtube_description|escapejs }}`,
+                                tags: 'lyrics, lyricvideo, karaoke, newmusic',
+                                videoFilePath: `{{ lyric.output_video.path|escapejs }}`,
+                                thumbnailPath: `{% if lyric.background_image %}{{ lyric.background_image.path|escapejs }}{% endif %}`,
+                                thumbnailUrl: `{{ lyric.thumbnail_image_url|default:'' }}`
+                            })"
+                            class="w-full py-1.5 {% if lyric.id in uploaded_lyric_ids %}bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400{% else %}bg-zinc-800 hover:bg-zinc-700 text-white{% endif %} text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                        <span>{% if lyric.id in uploaded_lyric_ids %}Upload Again{% else %}Send to YouTube{% endif %}</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
         </div>
+        {% endif %}
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Non-Stop Mixes -->
-            {% for mix in rendered_mixes %}
-            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
-                <div class="space-y-2">
-                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800">
-                        {% if mix.cover_image %}
-                        <img src="{{ mix.cover_image.url }}" alt="{{ mix.title }}" class="w-full h-full object-cover">
-                        {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
-                            <i data-lucide="disc" class="w-6 h-6 text-zinc-500"></i>
+        <!-- Non-Stop Mixes -->
+        {% if rendered_mixes %}
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="disc" class="w-3.5 h-3.5 text-zinc-400"></i>
+                <span class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Non-Stop Mixes</span>
+                <span class="text-[10px] text-zinc-600">({{ rendered_mixes|length }})</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for mix in rendered_mixes %}
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors relative group">
+                    <form method="POST" action="{% url 'publishing_dismiss_project' 'LONG_MIX' mix.id %}" class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% csrf_token %}
+                        <button type="submit" title="Remove from list" class="p-1 rounded-lg bg-zinc-900/90 border border-zinc-700 text-zinc-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </form>
+                    <div class="space-y-2">
+                        <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 cursor-pointer"
+                             onclick="previewVideo('{% if mix.output_video %}{{ mix.output_video.url|escapejs }}{% endif %}', '{{ mix.title|escapejs }}')">
+                            {% if mix.cover_image %}
+                            <img src="{{ mix.cover_image.url }}" alt="{{ mix.title }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <i data-lucide="disc" class="w-6 h-6 text-zinc-600"></i>
+                            </div>
+                            {% endif %}
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                                    <i data-lucide="play" class="w-5 h-5 text-white ml-0.5"></i>
+                                </div>
+                            </div>
+                            <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-zinc-300">{{ mix.duration_formatted }}</span>
+                            {% if mix.id in uploaded_mix_ids %}
+                            <span class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/90 text-[10px] font-bold text-zinc-950">
+                                <i data-lucide="check" class="w-2.5 h-2.5"></i> Uploaded
+                            </span>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
-                            {{ mix.duration_formatted }}
-                        </span>
-                    </div>
-
-                    <div>
-                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">Mix</span>
-                        <h4 class="text-xs font-bold text-white truncate">{{ mix.title }}</h4>
-                    </div>
-                </div>
-
-                <button type="button" 
-                        onclick="openPublishModal({
-                            sourceType: 'LONG_MIX',
-                            sourceId: {{ mix.id }},
-                            title: `{{ mix.title|escapejs }} [Continuous DJ Mix]`,
-                            description: `{{ mix.youtube_description|escapejs }}`,
-                            tags: 'djmix, continuousmix, nonstopmix, chillbeats',
-                            videoFilePath: `{{ mix.output_video.path|escapejs }}`,
-                            thumbnailPath: `{% if mix.cover_image %}{{ mix.cover_image.path|escapejs }}{% endif %}`,
-                            thumbnailUrl: `{% if mix.cover_image %}{{ mix.cover_image.url }}{% endif %}`
-                        })"
-                        class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
-                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-white"></i>
-                    <span>Send to YouTube</span>
-                </button>
-            </div>
-            {% endfor %}
-
-            <!-- Lyrics Videos -->
-            {% for lyric in rendered_lyrics %}
-            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
-                <div class="space-y-2">
-                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800">
-                        {% if lyric.background_image %}
-                        <img src="{{ lyric.background_image.url }}" alt="{{ lyric.title }}" class="w-full h-full object-cover">
-                        {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
-                            <i data-lucide="sparkles" class="w-6 h-6 text-zinc-500"></i>
+                        <div>
+                            <span class="text-[10px] text-zinc-500 uppercase font-semibold">Mix</span>
+                            <h4 class="text-xs font-bold text-white truncate" title="{{ mix.title }}">{{ mix.title }}</h4>
+                            <p class="text-[11px] text-zinc-500">{{ mix.track_count }} tracks</p>
                         </div>
-                        {% endif %}
-                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
-                            {{ lyric.duration_formatted }}
-                        </span>
                     </div>
-
-                    <div>
-                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">Lyrics</span>
-                        <h4 class="text-xs font-bold text-white truncate">{{ lyric.title }}</h4>
-                    </div>
+                    <button type="button"
+                            onclick="openPublishModal({
+                                sourceType: 'LONG_MIX',
+                                sourceId: {{ mix.id }},
+                                title: `{{ mix.title|escapejs }} [Continuous DJ Mix]`,
+                                description: `{{ mix.youtube_description|escapejs }}`,
+                                tags: 'djmix, continuousmix, nonstopmix, chillbeats',
+                                videoFilePath: `{{ mix.output_video.path|escapejs }}`,
+                                thumbnailPath: `{% if mix.cover_image %}{{ mix.cover_image.path|escapejs }}{% endif %}`,
+                                thumbnailUrl: `{% if mix.cover_image %}{{ mix.cover_image.url }}{% endif %}`
+                            })"
+                            class="w-full py-1.5 {% if mix.id in uploaded_mix_ids %}bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400{% else %}bg-zinc-800 hover:bg-zinc-700 text-white{% endif %} text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                        <span>{% if mix.id in uploaded_mix_ids %}Upload Again{% else %}Send to YouTube{% endif %}</span>
+                    </button>
                 </div>
-
-                <button type="button" 
-                        onclick="openPublishModal({
-                            sourceType: 'LYRIC_VIDEO',
-                            sourceId: {{ lyric.id }},
-                            title: `{{ lyric.youtube_title|escapejs }}`,
-                            description: `{{ lyric.youtube_description|escapejs }}`,
-                            tags: 'lyrics, lyricvideo, karaoke, newmusic',
-                            videoFilePath: `{{ lyric.output_video.path|escapejs }}`,
-                            thumbnailPath: `{% if lyric.background_image %}{{ lyric.background_image.path|escapejs }}{% endif %}`,
-                            thumbnailUrl: `{% if lyric.background_image %}{{ lyric.background_image.url }}{% endif %}`
-                        })"
-                        class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
-                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-white"></i>
-                    <span>Send to YouTube</span>
-                </button>
+                {% endfor %}
             </div>
-            {% endfor %}
-
-            <!-- 1-Hour Loops -->
-            {% for loop in rendered_loops %}
-            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
-                <div class="space-y-2">
-                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800">
-                        {% if loop.cover_image %}
-                        <img src="{{ loop.cover_image.url }}" alt="{{ loop.title }}" class="w-full h-full object-cover">
-                        {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-zinc-600">
-                            <i data-lucide="video" class="w-6 h-6 text-zinc-500"></i>
-                        </div>
-                        {% endif %}
-                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
-                            60:00
-                        </span>
-                    </div>
-
-                    <div>
-                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">1-Hour Loop</span>
-                        <h4 class="text-xs font-bold text-white truncate">{{ loop.title }}</h4>
-                    </div>
-                </div>
-
-                <button type="button" 
-                        onclick="openPublishModal({
-                            sourceType: 'VIDEO_LOOP',
-                            sourceId: {{ loop.id }},
-                            title: `{{ loop.youtube_title|escapejs }}`,
-                            description: `{{ loop.youtube_description|escapejs }}`,
-                            tags: 'studybeats, 1hourloop, chillvibes, focusmusic',
-                            videoFilePath: `{{ loop.output_video.path|escapejs }}`,
-                            thumbnailPath: `{% if loop.cover_image %}{{ loop.cover_image.path|escapejs }}{% endif %}`,
-                            thumbnailUrl: `{% if loop.cover_image %}{{ loop.cover_image.url }}{% endif %}`
-                        })"
-                        class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
-                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-white"></i>
-                    <span>Send to YouTube</span>
-                </button>
-            </div>
-            {% endfor %}
-
-            <!-- Shorts & Chops -->
-            {% for short in rendered_shorts %}
-            <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors">
-                <div class="space-y-2">
-                    <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 flex items-center justify-center">
-                        {% if short.cover_image %}
-                        <img src="{{ short.cover_image.url }}" alt="{{ short.title }}" class="w-full h-full object-cover">
-                        {% else %}
-                        <i data-lucide="scissors" class="w-6 h-6 text-zinc-500"></i>
-                        {% endif %}
-                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded bg-black/80 text-[10px] font-mono text-zinc-300">
-                            {{ short.completed_chops_count }} Chops
-                        </span>
-                    </div>
-
-                    <div>
-                        <span class="text-[10px] text-zinc-500 uppercase font-semibold">Shorts</span>
-                        <h4 class="text-xs font-bold text-white truncate">{{ short.title }}</h4>
-                    </div>
-                </div>
-
-                <a href="{% url 'shorts_detail' short.id %}" class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
-                    <i data-lucide="layers" class="w-3.5 h-3.5 text-white"></i>
-                    <span>Batch Queue</span>
-                </a>
-            </div>
-            {% endfor %}
         </div>
+        {% endif %}
+
+        <!-- 1-Hour Loops -->
+        {% if rendered_loops %}
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="repeat" class="w-3.5 h-3.5 text-zinc-400"></i>
+                <span class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">1-Hour Loops</span>
+                <span class="text-[10px] text-zinc-600">({{ rendered_loops|length }})</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for loop in rendered_loops %}
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors relative group">
+                    <form method="POST" action="{% url 'publishing_dismiss_project' 'VIDEO_LOOP' loop.id %}" class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% csrf_token %}
+                        <button type="submit" title="Remove from list" class="p-1 rounded-lg bg-zinc-900/90 border border-zinc-700 text-zinc-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </form>
+                    <div class="space-y-2">
+                        <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 cursor-pointer"
+                             onclick="previewVideo('{% if loop.output_video %}{{ loop.output_video.url|escapejs }}{% endif %}', '{{ loop.title|escapejs }}')">
+                            {% if loop.cover_image %}
+                            <img src="{{ loop.cover_image.url }}" alt="{{ loop.title }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <i data-lucide="video" class="w-6 h-6 text-zinc-600"></i>
+                            </div>
+                            {% endif %}
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                                    <i data-lucide="play" class="w-5 h-5 text-white ml-0.5"></i>
+                                </div>
+                            </div>
+                            <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-zinc-300">60:00</span>
+                            {% if loop.id in uploaded_loop_ids %}
+                            <span class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/90 text-[10px] font-bold text-zinc-950">
+                                <i data-lucide="check" class="w-2.5 h-2.5"></i> Uploaded
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-500 uppercase font-semibold">1-Hour Loop</span>
+                            <h4 class="text-xs font-bold text-white truncate" title="{{ loop.title }}">{{ loop.title }}</h4>
+                        </div>
+                    </div>
+                    <button type="button"
+                            onclick="openPublishModal({
+                                sourceType: 'VIDEO_LOOP',
+                                sourceId: {{ loop.id }},
+                                title: `{{ loop.youtube_title|escapejs }}`,
+                                description: `{{ loop.youtube_description|escapejs }}`,
+                                tags: 'studybeats, 1hourloop, chillvibes, focusmusic',
+                                videoFilePath: `{{ loop.output_video.path|escapejs }}`,
+                                thumbnailPath: `{% if loop.cover_image %}{{ loop.cover_image.path|escapejs }}{% endif %}`,
+                                thumbnailUrl: `{% if loop.cover_image %}{{ loop.cover_image.url }}{% endif %}`
+                            })"
+                            class="w-full py-1.5 {% if loop.id in uploaded_loop_ids %}bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400{% else %}bg-zinc-800 hover:bg-zinc-700 text-white{% endif %} text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                        <span>{% if loop.id in uploaded_loop_ids %}Upload Again{% else %}Send to YouTube{% endif %}</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Shorts & Chops -->
+        {% if rendered_shorts %}
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="scissors" class="w-3.5 h-3.5 text-zinc-400"></i>
+                <span class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Shorts & Chops</span>
+                <span class="text-[10px] text-zinc-600">({{ rendered_shorts|length }})</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for short in rendered_shorts %}
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors relative group">
+                    <form method="POST" action="{% url 'publishing_dismiss_project' 'SHORT_VIDEO' short.id %}" class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% csrf_token %}
+                        <button type="submit" title="Remove from list" class="p-1 rounded-lg bg-zinc-900/90 border border-zinc-700 text-zinc-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </form>
+                    <div class="space-y-2">
+                        <div class="w-full aspect-video rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 cursor-pointer"
+                             onclick="previewVideo('{% if short.output_video %}{{ short.output_video.url|escapejs }}{% endif %}', '{{ short.title|escapejs }}')">
+                            {% if short.cover_image %}
+                            <img src="{{ short.cover_image.url }}" alt="{{ short.title }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <i data-lucide="scissors" class="w-6 h-6 text-zinc-600"></i>
+                            </div>
+                            {% endif %}
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                                    <i data-lucide="play" class="w-5 h-5 text-white ml-0.5"></i>
+                                </div>
+                            </div>
+                            <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-zinc-300">{{ short.completed_chops_count }} Chops</span>
+                            {% if short.id in uploaded_short_ids %}
+                            <span class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/90 text-[10px] font-bold text-zinc-950">
+                                <i data-lucide="check" class="w-2.5 h-2.5"></i> Uploaded
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-500 uppercase font-semibold">Shorts</span>
+                            <h4 class="text-xs font-bold text-white truncate" title="{{ short.title }}">{{ short.title }}</h4>
+                            <p class="text-[11px] text-zinc-500">{{ short.completed_chops_count }} chop{{ short.completed_chops_count|pluralize }} ready</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'shorts_detail' short.id %}" class="w-full py-1.5 {% if short.id in uploaded_short_ids %}bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400{% else %}bg-zinc-800 hover:bg-zinc-700 text-white{% endif %} text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                        <span>Batch Queue</span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not rendered_lyrics and not rendered_mixes and not rendered_loops and not rendered_shorts %}
+        <div class="glass-panel p-8 rounded-2xl text-center text-zinc-500 text-xs">
+            No completed studio projects ready for YouTube yet. Render a project in Studio first.
+        </div>
+        {% endif %}
     </div>
 
     <!-- Direct Upload Card -->
@@ -450,8 +558,188 @@
 
 </div>
 
+<!-- Video Preview Modal -->
+<div id="videoPreviewModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="closePreview(event)">
+    <div class="relative w-full max-w-3xl bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+            <span id="videoPreviewTitle" class="text-xs font-bold text-white truncate max-w-[80%]"></span>
+            <button type="button" onclick="closePreviewModal()" class="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <!-- Video -->
+        <div class="w-full aspect-video bg-black">
+            <video id="videoPreviewPlayer" class="w-full h-full" preload="metadata"></video>
+        </div>
+        <!-- Custom Controls -->
+        <div class="px-4 pt-3 pb-4 space-y-2 bg-zinc-950">
+            <!-- Seek bar -->
+            <div class="relative w-full h-2 bg-zinc-800 rounded-full cursor-pointer group" id="seekBar">
+                <div id="seekBuffered" class="absolute left-0 top-0 h-full bg-zinc-600 rounded-full pointer-events-none" style="width:0%"></div>
+                <div id="seekProgress" class="absolute left-0 top-0 h-full bg-white rounded-full pointer-events-none" style="width:0%"></div>
+                <div id="seekThumb" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style="left:0%"></div>
+            </div>
+            <!-- Buttons + time -->
+            <div class="flex items-center gap-3">
+                <!-- Play/Pause -->
+                <button type="button" id="playPauseBtn" onclick="vpTogglePlay()" class="text-white hover:text-zinc-300 transition-colors shrink-0">
+                    <i data-lucide="play" id="playIcon" class="w-5 h-5"></i>
+                    <i data-lucide="pause" id="pauseIcon" class="w-5 h-5 hidden"></i>
+                </button>
+                <!-- Skip back 10s -->
+                <button type="button" onclick="vpSkip(-10)" class="text-zinc-400 hover:text-white transition-colors shrink-0" title="Back 10s">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+                <!-- Skip forward 10s -->
+                <button type="button" onclick="vpSkip(10)" class="text-zinc-400 hover:text-white transition-colors shrink-0" title="Forward 10s">
+                    <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                </button>
+                <!-- Time -->
+                <span class="text-[11px] font-mono text-zinc-400 shrink-0">
+                    <span id="vpCurrentTime">0:00</span> / <span id="vpDuration">0:00</span>
+                </span>
+                <!-- Volume -->
+                <div class="flex items-center gap-1.5 ml-auto">
+                    <button type="button" onclick="vpToggleMute()" class="text-zinc-400 hover:text-white transition-colors shrink-0">
+                        <i data-lucide="volume-2" id="volIcon" class="w-4 h-4"></i>
+                        <i data-lucide="volume-x" id="muteIcon" class="w-4 h-4 hidden"></i>
+                    </button>
+                    <input id="vpVolume" type="range" min="0" max="1" step="0.02" value="1"
+                           class="w-20 accent-white cursor-pointer"
+                           oninput="vpSetVolume(this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Include Publishing Modal -->
 {% include 'publishing/_publish_modal.html' with oauth_accounts=accounts %}
+
+<script>
+(function () {
+    const vp = () => document.getElementById('videoPreviewPlayer');
+
+    function fmtTime(s) {
+        if (!isFinite(s)) return '0:00';
+        s = Math.floor(s);
+        const m = Math.floor(s / 60), sec = s % 60;
+        return `${m}:${String(sec).padStart(2, '0')}`;
+    }
+
+    function vpUpdateBar() {
+        const v = vp();
+        if (!v.duration) return;
+        const pct = (v.currentTime / v.duration) * 100;
+        document.getElementById('seekProgress').style.width = pct + '%';
+        document.getElementById('seekThumb').style.left = pct + '%';
+        document.getElementById('vpCurrentTime').textContent = fmtTime(v.currentTime);
+        // buffered
+        if (v.buffered.length) {
+            const bpct = (v.buffered.end(v.buffered.length - 1) / v.duration) * 100;
+            document.getElementById('seekBuffered').style.width = bpct + '%';
+        }
+    }
+
+    function vpUpdateDuration() {
+        document.getElementById('vpDuration').textContent = fmtTime(vp().duration);
+    }
+
+    function vpSyncPlayPause() {
+        const paused = vp().paused;
+        document.getElementById('playIcon').classList.toggle('hidden', !paused);
+        document.getElementById('pauseIcon').classList.toggle('hidden', paused);
+    }
+
+    // Seek bar interaction — supports click AND drag
+    let seeking = false;
+    function vpSeekTo(e) {
+        const v = vp();
+        if (!v.duration) return;
+        const bar = document.getElementById('seekBar');
+        const rect = bar.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        v.currentTime = ratio * v.duration;
+        vpUpdateBar();
+    }
+
+    document.getElementById('seekBar').addEventListener('mousedown', e => { seeking = true; vpSeekTo(e); });
+    document.getElementById('seekBar').addEventListener('touchstart', e => { seeking = true; vpSeekTo(e); }, { passive: true });
+    document.addEventListener('mousemove', e => { if (seeking) vpSeekTo(e); });
+    document.addEventListener('touchmove', e => { if (seeking) vpSeekTo(e); }, { passive: true });
+    document.addEventListener('mouseup', () => { seeking = false; });
+    document.addEventListener('touchend', () => { seeking = false; });
+
+    // Wire video events — script is at bottom of body so DOM is already ready
+    const v = vp();
+    v.addEventListener('timeupdate', vpUpdateBar);
+    v.addEventListener('loadedmetadata', vpUpdateDuration);
+    v.addEventListener('play', vpSyncPlayPause);
+    v.addEventListener('pause', vpSyncPlayPause);
+
+    window.vpTogglePlay = function () {
+        const v = vp();
+        v.paused ? v.play().catch(() => {}) : v.pause();
+    };
+    window.vpSkip = function (sec) {
+        const v = vp();
+        v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + sec));
+    };
+    window.vpToggleMute = function () {
+        const v = vp();
+        v.muted = !v.muted;
+        document.getElementById('volIcon').classList.toggle('hidden', v.muted);
+        document.getElementById('muteIcon').classList.toggle('hidden', !v.muted);
+    };
+    window.vpSetVolume = function (val) {
+        vp().volume = val;
+        const muted = val == 0;
+        document.getElementById('volIcon').classList.toggle('hidden', muted);
+        document.getElementById('muteIcon').classList.toggle('hidden', !muted);
+    };
+})();
+
+function previewVideo(url, title) {
+    if (!url) return;
+    const modal = document.getElementById('videoPreviewModal');
+    const v = document.getElementById('videoPreviewPlayer');
+    v.src = url;
+    document.getElementById('videoPreviewTitle').textContent = title || '';
+    document.getElementById('seekProgress').style.width = '0%';
+    document.getElementById('seekThumb').style.left = '0%';
+    document.getElementById('seekBuffered').style.width = '0%';
+    document.getElementById('vpCurrentTime').textContent = '0:00';
+    document.getElementById('vpDuration').textContent = '0:00';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    v.play().catch(() => {});
+}
+
+function closePreviewModal() {
+    const modal = document.getElementById('videoPreviewModal');
+    const v = document.getElementById('videoPreviewPlayer');
+    v.pause();
+    v.src = '';
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function closePreview(e) {
+    if (e.target === document.getElementById('videoPreviewModal')) closePreviewModal();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePreviewModal();
+    if (e.key === ' ' && document.getElementById('videoPreviewModal').classList.contains('flex')) {
+        e.preventDefault();
+        vpTogglePlay();
+    }
+    if (e.key === 'ArrowLeft') vpSkip(-10);
+    if (e.key === 'ArrowRight') vpSkip(10);
+});
+</script>
 
 <script>
 // Auto-poll status of active jobs
@@ -459,24 +747,31 @@
     const cards = document.querySelectorAll('.job-card');
     if (!cards.length) return;
 
+    // Collect all visible job IDs to poll them explicitly
+    const jobIds = Array.from(cards).map(c => c.dataset.jobId).join(',');
+
     setInterval(async () => {
         try {
-            const res = await fetch("{% url 'publishing_job_status_api' %}");
+            const res = await fetch(`{% url 'publishing_job_status_api' %}?ids=${jobIds}`);
             const data = await res.json();
-            if (data && data.jobs) {
-                data.jobs.forEach(job => {
-                    const card = document.querySelector(`.job-card[data-job-id="${job.id}"]`);
-                    if (card) {
-                        const percentElem = card.querySelector('.job-percent');
-                        const barElem = card.querySelector('.job-bar');
-                        if (percentElem) percentElem.innerText = job.progress_percent + '%';
-                        if (barElem) barElem.style.width = job.progress_percent + '%';
-                        
-                        if (job.status === 'SUCCESS' || job.status === 'FAILED') {
-                            window.location.reload();
-                        }
-                    }
-                });
+            if (!data || !data.jobs) return;
+
+            const activeIds = new Set(data.jobs.map(j => String(j.id)));
+
+            data.jobs.forEach(job => {
+                const card = document.querySelector(`.job-card[data-job-id="${job.id}"]`);
+                if (!card) return;
+                const percentElem = card.querySelector('.job-percent');
+                const barElem = card.querySelector('.job-bar');
+                if (percentElem) percentElem.innerText = job.progress_percent + '%';
+                if (barElem) barElem.style.width = job.progress_percent + '%';
+            });
+
+            // If any card's job ID is missing from the response, it has completed/failed
+            // — reload so the dashboard reflects the real final state
+            const anyFinished = Array.from(cards).some(c => !activeIds.has(c.dataset.jobId));
+            if (anyFinished) {
+                window.location.reload();
             }
         } catch (e) {
             console.warn("Poll error:", e);

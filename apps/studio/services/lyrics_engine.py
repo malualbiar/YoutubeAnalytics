@@ -428,12 +428,100 @@ class LyricsEngineService:
 
         return {'success': False, 'message': f'No synced lyrics found for "{title}". You can use Vocal Frequency Auto-Sync instead.'}
 
+    # ---------------------------------------------------------------------------
+    # Filler / annotation normalisation applied before bar-building.
+    #
+    # Two categories:
+    #   STRIP  — pure speech disfluencies or Whisper annotation artifacts that
+    #            have no place in song lyrics (uh, um, [music], etc.)
+    #   NORMALISE — real sung sounds that Whisper stretches with extra letters;
+    #            collapsed to their canonical lyric spelling so the canvas
+    #            renders them cleanly (ohhhh → Oh, hmmm → Hmm, etc.)
+    # ---------------------------------------------------------------------------
+    _FILLER_STRIP = {
+        # Speech disfluencies
+        'uh', 'um', 'er', 'err', 'uhh', 'umm', 'uhm',
+        # Whisper annotation tokens
+        '[music]', '[singing]', '[applause]', '[laughter]',
+        '[noise]', '[silence]', '[inaudible]', '(music)',
+        '(singing)', '(applause)', '(laughter)', '(inaudible)',
+        # Bare music-note Unicode (shouldn't reach here but belt-and-braces)
+        '\u266a', '\u266b',
+    }
+
+    # Maps a normalised lowercase stem → canonical display form.
+    # Applied after collapsing repeated characters (ohhhh → oh → Oh).
+    _FILLER_NORMALISE = {
+        'oh':   'Oh',
+        'ohh':  'Oh',
+        'ooh':  'Ooh',
+        'ah':   'Ah',
+        'ahh':  'Ah',
+        'aah':  'Ah',
+        'hmm':  'Hmm',
+        'hm':   'Hmm',
+        'mm':   'Mm',
+        'mmm':  'Mmm',
+        'na':   'Na',
+        'la':   'La',
+        'hey':  'Hey',
+        'woah': 'Woah',
+        'whoa': 'Woah',
+        'yeah': 'Yeah',
+        'yah':  'Yeah',
+        'ya':   'Ya',
+        'yo':   'Yo',
+        'oo':   'Ooh',
+        'ooo':  'Ooh',
+    }
+
+    @classmethod
+    def _normalise_word(cls, word):
+        """
+        Normalise a single Whisper output word:
+        - Returns None  → caller should drop the word entirely (filler/artifact)
+        - Returns str   → cleaned display form to use instead
+
+        Steps:
+        1. Strip surrounding punctuation/brackets to get a clean token.
+        2. Check the strip list (exact match, case-insensitive).
+        3. Collapse runs of 3+ identical letters to 2 (ohhhh → ohh, hmmm → hmm).
+        4. Check the normalise map; if found, return the canonical form.
+        5. Otherwise return the original word unchanged.
+        """
+        import re
+        stripped = word.strip().strip('[](){}.,!?;:\'"').lower()
+        if not stripped:
+            return None
+        if stripped in cls._FILLER_STRIP:
+            return None
+        # Collapse triple-or-more repeated characters: "ohhhh" → "ohh", "hmmm" → "hmm"
+        collapsed = re.sub(r'(.)\1{2,}', r'\1\1', stripped)
+        if collapsed in cls._FILLER_NORMALISE:
+            return cls._FILLER_NORMALISE[collapsed]
+        # Also try single-char collapse for cases like "ooh" vs "oooh"
+        single = re.sub(r'(.)\1+', r'\1', stripped)
+        if single in cls._FILLER_NORMALISE:
+            return cls._FILLER_NORMALISE[single]
+        return word  # unchanged — not a known filler
+
     @classmethod
     def format_words_into_lyric_bars(cls, words, max_words=7, max_chars=36, max_duration=4.2, min_pause=0.35):
         """
         Splits a continuous stream of timestamped words into clean, rhythmic song lyric bars (short lines).
         Uses vocal breath pauses, punctuation, word counts, and max duration to create optimal song bars.
         """
+        if not words:
+            return []
+
+        # Pre-pass: normalise / strip filler words before building bars
+        cleaned = []
+        for w in words:
+            result = cls._normalise_word(w['word'])
+            if result is None:
+                continue  # strip this word
+            cleaned.append({**w, 'word': result})
+        words = cleaned
         if not words:
             return []
 
@@ -483,7 +571,7 @@ class LyricsEngineService:
         # longer than this threshold — these are intros, solos, and bridges
         # where no vocals are present. Without this, the screen is blank for
         # potentially 20–30 seconds with no feedback to the viewer.
-        INSTRUMENTAL_GAP_THRESHOLD = 4.0  # seconds
+        INSTRUMENTAL_GAP_THRESHOLD = 12.0  # seconds — raised from 4s; short missed sections shouldn't become instrumentals
 
         filled = []
         for idx in range(len(bars)):
@@ -518,7 +606,72 @@ class LyricsEngineService:
         return filled
 
     @classmethod
-    def transcribe_and_sync_with_whisper(cls, audio_path, model_size='base', initial_prompt=None):
+    def separate_vocals_with_demucs(cls, audio_path, output_dir=None):
+        """
+        Runs Facebook Demucs (htdemucs model) to separate the vocal stem from
+        a mixed audio/video track.  Returns (vocals_path, diagnostics_dict).
+        vocals_path is None if separation failed; diagnostics carries the reason.
+
+        Demucs writes its output under:
+            <output_dir>/htdemucs/<track_name>/vocals.wav
+        """
+        import tempfile
+
+        audio_path = os.path.abspath(str(audio_path))
+        diag = {'stdout': '', 'stderr': '', 'returncode': None, 'error': None}
+
+        if not os.path.exists(audio_path):
+            diag['error'] = f'Input file not found: {audio_path}'
+            return None, diag
+
+        if output_dir is None:
+            output_dir = tempfile.mkdtemp(prefix='demucs_')
+
+        try:
+            cmd = [
+                sys.executable, '-m', 'demucs',
+                '-n', 'htdemucs',
+                '--two-stems', 'vocals',
+                '--out', output_dir,
+                audio_path
+            ]
+            proc = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                errors='ignore',
+                **cls.get_subprocess_kwargs()
+            )
+            diag['returncode'] = proc.returncode
+            diag['stdout'] = proc.stdout[-2000:] if proc.stdout else ''
+            diag['stderr'] = proc.stderr[-2000:] if proc.stderr else ''
+
+            # Demucs places output at: <out>/htdemucs/<stem_name>/vocals.wav
+            stem_name = os.path.splitext(os.path.basename(audio_path))[0]
+            vocals_path = os.path.join(output_dir, 'htdemucs', stem_name, 'vocals.wav')
+
+            if os.path.exists(vocals_path):
+                return vocals_path, diag
+
+            # Fallback: search recursively in case the model subfolder name differs
+            matches = glob.glob(os.path.join(output_dir, '**', 'vocals.wav'), recursive=True)
+            if matches:
+                return matches[0], diag
+
+            diag['error'] = (
+                f'vocals.wav not found after Demucs ran '
+                f'(exit {proc.returncode}). '
+                f'stderr tail: {diag["stderr"][-500:]}'
+            )
+
+        except Exception as exc:
+            diag['error'] = str(exc)
+
+        return None, diag
+
+    @classmethod
+    def transcribe_and_sync_with_whisper(cls, audio_path, model_size='base', initial_prompt=None, use_demucs=False):
         """
         Uses local Whisper AI (faster-whisper) with word-level timestamping
         to automatically transcribe speech/singing and generate short, rhythmic song lyric bars.
@@ -533,12 +686,13 @@ class LyricsEngineService:
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
+        import tempfile
+
         # If input is a video file, pre-extract audio to a clean 16kHz mono WAV.
         # This avoids codec issues and ensures Whisper processes the complete audio track.
         _video_exts = {'.mp4', '.mov', '.mkv', '.webm', '.avi', '.m4v', '.flv'}
         extracted_wav = None
         if os.path.splitext(audio_path)[1].lower() in _video_exts:
-            import tempfile
             ffmpeg = cls.get_ffmpeg_binary()
             tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
             tmp.close()
@@ -553,38 +707,182 @@ class LyricsEngineService:
             ]
             result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             if result.returncode != 0 or not os.path.exists(extracted_wav):
-                # Fallback: pass the original file directly
                 extracted_wav = None
             else:
                 audio_path = extracted_wav
 
+        # --- Demucs vocal separation ----------------------------------------
+        # When enabled, run the full mix through Demucs before Whisper.
+        # Demucs isolates the vocal stem so Whisper only hears singing — no
+        # drums, bass, guitars, or reverb tails.  This dramatically reduces
+        # hallucinations and missed words, especially on dense productions.
+        demucs_dir = None
+        vocals_wav = None
+        demucs_diag = {}
+        if use_demucs:
+            demucs_dir = tempfile.mkdtemp(prefix='demucs_')
+            vocals_wav, demucs_diag = cls.separate_vocals_with_demucs(
+                audio_path, output_dir=demucs_dir
+            )
+            if vocals_wav and os.path.exists(vocals_wav):
+                audio_path = vocals_wav
+            # Separation failed — fall through to the raw mix so the user still
+            # gets *something*, but we record the reason so it surfaces in the
+            # API response and the frontend can warn the user.
+
         try:
             from difflib import SequenceMatcher
 
-            # Choose efficient INT8 quantization on CPU
-            model = WhisperModel(model_size, device="cpu", compute_type="int8")
+            # ----------------------------------------------------------------
+            # Model & decode settings — tuned separately for two operating
+            # modes:
+            #
+            #   MIXED (no Demucs): Whisper hears full song mix — drums, bass,
+            #   reverb, and instruments all compete with the vocal.  We must
+            #   keep conservative settings to avoid hallucination explosions.
+            #
+            #   DEMUCS (clean vocal stem): Whisper only hears the isolated
+            #   singer.  We can push quality settings much harder because the
+            #   ambiguity that causes hallucinations is gone.
+            # ----------------------------------------------------------------
 
-            # VAD filter is disabled for music — it silences instrumental sections,
-            # reverb tails, and quiet passages, causing whole verses to be dropped.
-            # condition_on_previous_text=False prevents hallucination loops.
-            # no_speech_threshold lowered to 0.3 so filler vocalizations (hmm, ohh,
-            # ah) are not silently dropped — they sit at the edge of Whisper's
-            # speech/music classifier and a threshold of 0.5 kills them.
-            prompt_text = initial_prompt if initial_prompt else "Lyrics:"
-            segments, info = model.transcribe(
-                audio_path,
-                beam_size=5,
+            if use_demucs and vocals_wav:
+                # Clean vocal stem — keep the user-requested model size.
+                # Do NOT silently upgrade to medium/large: those models are
+                # ~1-1.5 GB and trigger a download on first use, adding
+                # 5-10 minutes to the first transcription.  base (145 MB,
+                # already cached from normal use) is excellent on a clean
+                # isolated vocal stem — the accuracy boost from medium is
+                # marginal and the time cost is enormous on CPU-only machines.
+                effective_model  = model_size   # respect what the user chose
+                effective_beam   = 5    # beam 10 on CPU doubles transcription time for tiny gain
+                # VAD MUST stay off even on a clean stem.  Whisper's internal
+                # speech classifier was trained on speech, not singing.  Sung
+                # syllables, falsetto, breathy verses, and held notes all score
+                # below VAD's threshold and get silently dropped — exactly the
+                # "missing lyrics" symptom being reported.
+                effective_vad    = False
+                # 0.45 is the sweet spot for singing:
+                #   - rejects true silence on the clean stem (better than 0.3)
+                #   - keeps breathy/quiet sung passages (better than 0.6)
+                effective_thresh = 0.45
+                # Small fallback temperatures let Whisper attempt a lower-
+                # confidence decode rather than silently skipping a hard segment.
+                effective_temp   = [0.0, 0.2, 0.4]
+                effective_cratio = 1.8
+                prompt_text = (
+                    initial_prompt if initial_prompt else
+                    "Song lyrics. Transcribe every sung word exactly as heard, "
+                    "including repeated phrases, chorus lines, and ad-libs. "
+                    "Do not summarise or paraphrase."
+                )
+            else:
+                # Conservative settings for a noisy full mix.
+                effective_model  = model_size
+                effective_beam   = 5
+                effective_vad    = False  # VAD kills quiet vocal passages on a mix
+                effective_thresh = 0.2    # lowered from 0.3 — keeps quiet/breathy vocal passages
+                effective_temp   = None   # Whisper's default fallback schedule
+                effective_cratio = 2.4
+                prompt_text      = initial_prompt if initial_prompt else "Lyrics:"
+
+            model = WhisperModel(effective_model, device="cpu", compute_type="int8")
+
+            transcribe_kwargs = dict(
+                beam_size=effective_beam,
                 word_timestamps=True,
-                vad_filter=False,
+                vad_filter=effective_vad,
                 condition_on_previous_text=False,
-                no_speech_threshold=0.3,
-                initial_prompt=prompt_text
+                no_speech_threshold=effective_thresh,
+                compression_ratio_threshold=effective_cratio,
+                initial_prompt=prompt_text,
+                # 25-second chunks instead of the default 30.
+                # Shorter windows mean vocal phrases are less likely to land
+                # exactly on a chunk boundary and get split mid-word.
+                chunk_length=25,
+                prepend_punctuations="\"'\u00bf([{-",
+                append_punctuations="\"'.,\uff0c!\uff01?\uff1f:\uff1a\u201d)}\u3001",
             )
+            if effective_temp is not None:
+                transcribe_kwargs['temperature'] = tuple(effective_temp) if isinstance(effective_temp, list) else effective_temp
+
+            # ---- helper: extract a time slice from the audio file -----------
+            def _extract_slice(src, t_start, t_end, suffix='.wav'):
+                """Cut [t_start, t_end] from src into a temp file. Returns path."""
+                tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+                tmp.close()
+                ffmpeg = cls.get_ffmpeg_binary()
+                duration = max(0.5, t_end - t_start)
+                cmd = [
+                    ffmpeg, '-y',
+                    '-ss', str(round(t_start, 3)),
+                    '-t',  str(round(duration, 3)),
+                    '-i',  src,
+                    '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le',
+                    tmp.name
+                ]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               **cls.get_subprocess_kwargs())
+                return tmp.name if os.path.exists(tmp.name) else None
+
+            # ---- helper: run Whisper on a single slice ----------------------
+            def _transcribe_slice(slice_path, t_offset, relaxed=True):
+                """
+                Transcribe a short audio slice and return words with times
+                offset by t_offset so they align with the full track.
+                Uses more permissive thresholds to catch quiet/breathy segments
+                that the first pass rejected.
+                """
+                slice_kwargs = dict(
+                    beam_size=effective_beam,
+                    word_timestamps=True,
+                    vad_filter=False,
+                    condition_on_previous_text=False,
+                    # Much more permissive — accept almost anything
+                    no_speech_threshold=0.15 if relaxed else effective_thresh,
+                    compression_ratio_threshold=2.4,
+                    initial_prompt=prompt_text,
+                    chunk_length=25,
+                    prepend_punctuations="\"'\u00bf([{-",
+                    append_punctuations="\"'.,\uff0c!\uff01?\uff1f:\uff1a\u201d)}\u3001",
+                    temperature=(0.0, 0.2, 0.4, 0.6),
+                )
+                recovered = []
+                try:
+                    s_segs, _ = model.transcribe(slice_path, **slice_kwargs)
+                    for seg in s_segs:
+                        if not seg.text or not seg.text.strip():
+                            continue
+                        if seg.words:
+                            for w in seg.words:
+                                rw = w.word.strip()
+                                if rw and rw not in ('♪', '♫', '🎵', '🎶'):
+                                    recovered.append({
+                                        'word':  rw,
+                                        'start': round(w.start + t_offset, 2),
+                                        'end':   round(w.end   + t_offset, 2),
+                                    })
+                        else:
+                            words_list = seg.text.strip().split()
+                            dur  = max(0.5, seg.end - seg.start)
+                            slot = dur / max(1, len(words_list))
+                            for s_i, wt in enumerate(words_list):
+                                if wt.strip() and wt not in ('♪', '♫'):
+                                    recovered.append({
+                                        'word':  wt,
+                                        'start': round(seg.start + s_i * slot + t_offset, 2),
+                                        'end':   round(seg.start + (s_i + 1) * slot + t_offset, 2),
+                                    })
+                except Exception:
+                    pass
+                return recovered
+
+            segments, info = model.transcribe(audio_path, **transcribe_kwargs)
 
             all_words = []
             _prompt_lower = prompt_text.lower().strip().rstrip(':').strip()
 
-            # Known Whisper hallucination phrases — only exact full-segment matches
+            # Known Whisper hallucination phrases — exact full-segment matches only
             _HALLUCINATION_PHRASES = {
                 "song lyrics formatted in short musical bars and rhyming verse lines",
                 "lyrics formatted in short musical bars and rhyming verse lines",
@@ -604,13 +902,14 @@ class LyricsEngineService:
                     return True
                 return False
 
-            # Fuzzy repeat suppression — real hallucination loops repeat 10-20+
-            # times with near-identical text. Real choruses repeat 2-4 times and
-            # often have minor variation. We suppress only when:
-            #   - similarity ratio > 0.92 (nearly identical text)
-            #   - AND the run has repeated 5+ consecutive times
-            # This prevents the old threshold-of-3 from killing genuine chorus lines.
-            _repeat_text = None
+            # Fuzzy repeat suppression — hallucination loops repeat 10-20+ times
+            # with near-identical text. Real choruses repeat 2-4 times with minor
+            # variation. Suppress only when similarity > 0.92 AND 5+ consecutive runs.
+            # With Demucs we tighten to 0.95 / 6 repeats — a clean stem rarely
+            # produces false positives so we can be slightly more aggressive.
+            _repeat_sim   = 0.95 if (use_demucs and vocals_wav) else 0.92
+            _repeat_limit = 6    if (use_demucs and vocals_wav) else 5
+            _repeat_text  = None
             _repeat_count = 0
 
             def _is_hallucination_loop(text):
@@ -620,67 +919,197 @@ class LyricsEngineService:
                     _repeat_count = 1
                     return False
                 ratio = SequenceMatcher(None, text.lower(), _repeat_text.lower()).ratio()
-                if ratio > 0.92:
+                if ratio > _repeat_sim:
                     _repeat_count += 1
                 else:
                     _repeat_text = text
                     _repeat_count = 1
-                return _repeat_count >= 5
+                return _repeat_count >= _repeat_limit
 
-            # Whisper emits music-note tokens (♪, ♫) and transcribes filler sounds
-            # like "hmm", "mm", "oh", "ah" as real words. We preserve them all —
-            # stripping them was the original cause of missing fillers.
-            # Only strip pure-whitespace tokens.
+            # On a clean Demucs vocal stem, Whisper sometimes outputs bare ♪/♫
+            # tokens for silent gaps (no instruments to fill the space).  We strip
+            # those here — format_words_into_lyric_bars inserts its own instrumental
+            # placeholders based on timing gaps, which are more accurate.
+            # On a mixed track we keep them (they mark real instrumental sections).
+            _strip_music_tokens = use_demucs and bool(vocals_wav)
+
             for seg in segments:
                 seg_text = seg.text.strip() if seg.text else ''
                 if not seg_text:
                     continue
-
                 if _is_hallucination(seg_text):
                     continue
-
                 if _is_hallucination_loop(seg_text):
                     continue
 
                 if seg.words:
                     for w in seg.words:
-                        # Preserve the raw token — only skip truly empty strings.
-                        # This keeps ♪, hmm, oh, ah, mm intact.
                         raw_w = w.word.strip()
-                        if raw_w:
-                            all_words.append({
-                                'word': raw_w,
-                                'start': round(w.start, 2),
-                                'end': round(w.end, 2)
-                            })
+                        if not raw_w:
+                            continue
+                        # Strip bare music-note tokens on the Demucs path
+                        if _strip_music_tokens and raw_w in ('♪', '♫', '🎵', '🎶'):
+                            continue
+                        all_words.append({
+                            'word': raw_w,
+                            'start': round(w.start, 2),
+                            'end': round(w.end, 2)
+                        })
                 else:
                     words_list = seg_text.split()
-                    dur = max(0.5, seg.end - seg.start)
+                    dur  = max(0.5, seg.end - seg.start)
                     slot = dur / len(words_list)
                     for s_idx, wt in enumerate(words_list):
+                        if _strip_music_tokens and wt in ('♪', '♫', '🎵', '🎶'):
+                            continue
                         all_words.append({
                             'word': wt,
                             'start': round(seg.start + s_idx * slot, 2),
                             'end': round(seg.start + (s_idx + 1) * slot, 2)
                         })
 
-            # Format all timestamped words into clean, short song lyric bars
-            lyrics_data = cls.format_words_into_lyric_bars(all_words, max_words=7, max_chars=36)
+            # -----------------------------------------------------------------
+            # WORD-DENSITY HALLUCINATION FILTER
+            # Whisper hallucinates a single short word ("Hey", "Yeah", "Oh")
+            # repeated dozens of times over an instrumental section.  The
+            # segment-level repeat suppressor above stops new segments once
+            # the limit fires, but the first 4-5 "allowed" repeats still land
+            # in all_words.  This pass catches the remaining loop debris:
+            #
+            # Rule: if the same normalised word appears 5+ times within any
+            # 3-second window, every occurrence of that word inside that window
+            # is removed.  Real lyrics don't repeat a single word 5 times in
+            # 3 seconds; hallucination loops always do.
+            # -----------------------------------------------------------------
+            _DENSITY_WINDOW  = 3.0   # seconds
+            _DENSITY_MAX     = 4     # max occurrences of same word in window
+
+            if all_words:
+                # Walk through all_words; build a set of indices to drop.
+                drop_indices = set()
+                n = len(all_words)
+                i = 0
+                while i < n:
+                    w_norm = all_words[i]['word'].strip().lower().strip('.,!?')
+                    if not w_norm:
+                        i += 1
+                        continue
+                    # Collect all words with same normalised form within window
+                    window = [i]
+                    j = i + 1
+                    while j < n and all_words[j]['start'] - all_words[i]['start'] <= _DENSITY_WINDOW:
+                        if all_words[j]['word'].strip().lower().strip('.,!?') == w_norm:
+                            window.append(j)
+                        j += 1
+                    if len(window) > _DENSITY_MAX:
+                        drop_indices.update(window)
+                    i += 1
+
+                if drop_indices:
+                    all_words = [w for k, w in enumerate(all_words) if k not in drop_indices]
+
+            # -----------------------------------------------------------------
+            # GAP-RETRY PASS
+            # After the first full transcription, scan all_words for any gap
+            # > 8 seconds between consecutive words.  These are sections
+            # Whisper silently skipped (quiet verse, falsetto, breathy passage,
+            # chunk-boundary misalignment).  Re-run Whisper on each gap slice
+            # with very permissive thresholds and merge recovered words in.
+            # Limit retries to avoid excessive processing on truly instrumental
+            # sections (e.g. a real 2-minute guitar solo).
+            # -----------------------------------------------------------------
+            GAP_RETRY_THRESHOLD  = 8.0  # seconds — retry any gap over 8s
+            GAP_RETRY_MAX_SLICES = 4    # max 4 retries — each is a full Whisper pass on CPU
+            total_duration_secs  = round(getattr(info, 'duration', 0.0), 2)
+            slice_temps = []  # track slice files for cleanup
+
+            if all_words and total_duration_secs > 0:
+                # Build candidate gaps from the word list
+                gap_ranges = []
+
+                # Gap before the first word (intro vocals missed?)
+                if all_words[0]['start'] > GAP_RETRY_THRESHOLD:
+                    gap_ranges.append((0.0, all_words[0]['start']))
+
+                # Gaps between consecutive words
+                for gi in range(len(all_words) - 1):
+                    g_end   = all_words[gi]['end']
+                    g_start = all_words[gi + 1]['start']
+                    if g_start - g_end > GAP_RETRY_THRESHOLD:
+                        gap_ranges.append((g_end, g_start))
+
+                # Gap after the last word (outro vocals missed?)
+                if total_duration_secs - all_words[-1]['end'] > GAP_RETRY_THRESHOLD:
+                    gap_ranges.append((all_words[-1]['end'], total_duration_secs))
+
+                # Process up to GAP_RETRY_MAX_SLICES gaps, largest first
+                gap_ranges.sort(key=lambda r: r[1] - r[0], reverse=True)
+                recovered_words = []
+
+                for gap_start, gap_end in gap_ranges[:GAP_RETRY_MAX_SLICES]:
+                    # Add a small overlap on each side so words right at the
+                    # boundary aren't missed by the slice extraction
+                    slice_start = max(0.0, gap_start - 0.5)
+                    slice_end   = min(total_duration_secs, gap_end + 0.5)
+                    t_offset    = slice_start
+
+                    slice_path = _extract_slice(audio_path, slice_start, slice_end)
+                    if not slice_path:
+                        continue
+                    slice_temps.append(slice_path)
+
+                    new_words = _transcribe_slice(slice_path, t_offset=t_offset)
+                    # Only keep words that fall inside the gap window
+                    # (the overlap padding can produce duplicates at the edges)
+                    for w in new_words:
+                        if w['start'] >= gap_start - 0.1 and w['end'] <= gap_end + 0.1:
+                            recovered_words.append(w)
+
+                if recovered_words:
+                    all_words.extend(recovered_words)
+                    all_words.sort(key=lambda w: w['start'])
+
+            # Format timestamped words into clean, short song lyric bars.
+            # With a clean Demucs stem we allow slightly longer bars (8 words /
+            # 42 chars) because word boundaries are crisp and reliable.
+            if use_demucs and vocals_wav:
+                lyrics_data = cls.format_words_into_lyric_bars(all_words, max_words=8, max_chars=42)
+            else:
+                lyrics_data = cls.format_words_into_lyric_bars(all_words, max_words=7, max_chars=36)
             plain_lines = [b['line'] for b in lyrics_data]
 
-            return {
+            result = {
                 'success': True,
                 'lyrics_data': lyrics_data,
                 'plain_lyrics': "\n".join(plain_lines),
                 'detected_language': info.language,
                 'language_probability': round(getattr(info, 'language_probability', 1.0), 2),
-                'duration': round(getattr(info, 'duration', 0.0), 2)
+                'duration': round(getattr(info, 'duration', 0.0), 2),
+                # Surface Demucs status so the API can report it accurately
+                'demucs_applied': bool(use_demucs and vocals_wav),
+                'demucs_failed': bool(use_demucs and not vocals_wav),
+                'demucs_error': demucs_diag.get('error') if (use_demucs and not vocals_wav) else None,
+                'whisper_model': effective_model,
             }
+            return result
         finally:
             # Clean up temp extracted WAV if we created one from a video file
             if extracted_wav and os.path.exists(extracted_wav):
                 try:
                     os.remove(extracted_wav)
+                except Exception:
+                    pass
+            # Clean up the entire Demucs temp directory (vocals.wav + no_vocals.wav)
+            if demucs_dir and os.path.isdir(demucs_dir):
+                try:
+                    shutil.rmtree(demucs_dir, ignore_errors=True)
+                except Exception:
+                    pass
+            # Clean up gap-retry slice temp files
+            for _sp in slice_temps if 'slice_temps' in dir() else []:
+                try:
+                    if os.path.exists(_sp):
+                        os.remove(_sp)
                 except Exception:
                     pass
 
@@ -738,12 +1167,50 @@ class LyricsEngineService:
         text_shadow_depth=2.0,
         font_scale_x=100,
         font_scale_y=100,
-        bg_opacity=0
+        bg_opacity=0,
+        title='',
+        artist='',
+        video_duration=0.0,
     ):
         """
         Generates Advanced SubStation Alpha (.ass) subtitle file with karaoke wipes,
         glowing typography, drop shadows, and multi-line animations.
         """
+        # Map CSS font-family name → (internal TTF name, safe filename stem).
+        # FFmpeg's ass= filter matches on the internal font name, not the filename.
+        # Mismatches cause silent fallback to Arial.
+        _FONT_NAME_MAP = {
+            'DynaPuff':       ('DynaPuff',        'DynaPuff'),
+            'Ranchers':       ('Ranchers',         'Ranchers'),
+            'Slackey':        ('Slackey',          'Slackey'),
+            'Rubik 80s Fade': ('Rubik 80s Fade',   'Rubik80sFade'),
+            'Rubik Iso':      ('Rubik Iso',         'RubikIso'),
+            'Press Start 2P': ('Press Start 2P',    'PressStart2P'),
+            'Limelight':      ('Limelight',         'Limelight'),
+            'Monoton':        ('Monoton',           'Monoton'),
+            'Nosifer':        ('Nosifer',           'Nosifer'),
+            'Creepster':      ('Creepster',         'Creepster'),
+        }
+        if font_family in _FONT_NAME_MAP:
+            _internal_name, _file_stem = _FONT_NAME_MAP[font_family]
+            font_family = _internal_name
+            # Auto-download the TTF if it was deleted or never downloaded
+            try:
+                _fonts_dir = os.path.join(settings.BASE_DIR, 'static', 'fonts')
+                os.makedirs(_fonts_dir, exist_ok=True)
+                _ttf_path = os.path.join(_fonts_dir, f'{_file_stem}.ttf')
+                if not os.path.exists(_ttf_path):
+                    import urllib.request
+                    _api_url = f"https://fonts.googleapis.com/css2?family={font_family.replace(' ', '+')}&display=swap"
+                    _req = urllib.request.Request(_api_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    _css = urllib.request.urlopen(_req, timeout=15).read().decode('utf-8')
+                    import re as _re
+                    _ttf_url = _re.search(r'url\((https://fonts\.gstatic\.com/[^)]+\.ttf)\)', _css)
+                    if _ttf_url:
+                        urllib.request.urlretrieve(_ttf_url.group(1), _ttf_path)
+            except Exception:
+                pass  # Missing font → FFmpeg falls back to Arial silently
+
         is_vertical = (aspect_ratio == '9:16')
         res_x = 1080 if is_vertical else 1920
         res_y = 1920 if is_vertical else 1080
@@ -825,10 +1292,39 @@ class LyricsEngineService:
             f"Style: RollingDim,{font_family},{int(actual_font_size * 0.78)},{dimmed_ass},{dimmed_ass},{outline_ass},{bg_color_ass},{bold_val},{italic_val},0,0,{font_scale_x},{font_scale_y},{letter_spacing},0,{border_style},{max(0.5, outline_width*0.5)},{max(0.5, shadow_depth*0.5)},{alignment},{margin_lr},{margin_lr},{margin_v},1",
             # Neon Glow Style
             f"Style: NeonGlow,{font_family},{actual_font_size},{primary_ass},{secondary_ass},{outline_ass},{bg_color_ass},{bold_val},{italic_val},0,0,{font_scale_x},{font_scale_y},{letter_spacing},0,{border_style},{outline_width},{shadow_depth},{alignment},{margin_lr},{margin_lr},{margin_v},1",
+            # Title Card Style — same font family, smaller, top-left fixed position
+            f"Style: TitleCard,{font_family},{max(22, int(actual_font_size * 0.45))},{secondary_ass},{secondary_ass},{outline_ass},{bg_color_ass},0,{italic_val},0,0,{font_scale_x},{font_scale_y},0,0,1,{max(1.0, outline_width * 0.6)},{max(0.5, shadow_depth * 0.6)},7,{margin_lr},{margin_lr},{int(margin_v * 0.5)},1",
             "",
             "[Events]",
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
         ]
+
+        # Persistent title/artist card — top-left corner, fades in over 600ms then stays
+        _title_str = str(title or '').strip()
+        _artist_str = str(artist or '').strip()
+        if _title_str or _artist_str:
+            _tc_x = margin_lr + 10
+            _tc_y = int(margin_v * 0.5) + max(22, int(actual_font_size * 0.45))
+            if _artist_str and _title_str:
+                _card_text = f"{_artist_str}  \\N{_title_str}"
+            elif _title_str:
+                _card_text = _title_str
+            else:
+                _card_text = _artist_str
+            _end_sec = max(video_duration, 9999.0)
+            script_content.append(
+                f"Dialogue: 0,{cls.seconds_to_ass_time(0.0)},{cls.seconds_to_ass_time(_end_sec)},"
+                f"TitleCard,,0,0,0,,{{\\an7\\pos({_tc_x},{_tc_y})\\fad(600,0)}}{_card_text}"
+            )
+
+        # Pre-compute center positions used by both ♪ placeholders and regular lines
+        x_center = res_x // 2
+        if position_mode == 'TOP':
+            y_center = margin_v + int(actual_font_size * 1.5)
+        elif position_mode == 'CENTER':
+            y_center = res_y // 2
+        else:
+            y_center = res_y - margin_v - int(actual_font_size * 0.5)
 
         # Generate Dialogue Events
         for idx, item in enumerate(lyrics_data):
@@ -865,14 +1361,6 @@ class LyricsEngineService:
             end_time_str = cls.seconds_to_ass_time(end_sec)
             duration_cs = max(10, int((end_sec - start_sec) * 100))
 
-            # Helper for line positions
-            x_center = res_x // 2
-            if position_mode == 'TOP':
-                y_center = margin_v + int(actual_font_size * 1.5)
-            elif position_mode == 'CENTER':
-                y_center = res_y // 2
-            else:
-                y_center = res_y - margin_v - int(actual_font_size * 0.5)
             
             # Apply dynamic line_height setting
             y_prev = y_center - int(actual_font_size * line_height)
@@ -1423,9 +1911,8 @@ class LyricsEngineService:
                     resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
                     bg.paste(resized, (left, top))
 
-                if cover_blur > 0:
-                    bg = bg.filter(ImageFilter.GaussianBlur(radius=float(cover_blur)))
-
+                # FULL layout: no blur — matches canvas preview which never
+                # blurs in FULL mode regardless of the blur slider value.
                 bg = ImageEnhance.Brightness(bg).enhance(max(cover_brightness, 0.1))
                 bg = ImageEnhance.Contrast(bg).enhance(max(cover_contrast, 0.1))
                 bg = ImageEnhance.Color(bg).enhance(max(cover_saturation, 0.0))
@@ -1440,30 +1927,64 @@ class LyricsEngineService:
                     draw.rectangle((0, 0, width, height), fill=(0, 0, 0, alpha))
                     bg = Image.alpha_composite(bg.convert('RGBA'), vignette).convert('RGB')
             else:
-                # 1. Ambient blurred background
+                # AMBIENT layout:
+                # 1. Blurred + darkened full-canvas background using user controls
                 bg = img.resize((width, height), Image.Resampling.LANCZOS)
-                bg = bg.filter(ImageFilter.GaussianBlur(radius=30))
-                enhancer = ImageEnhance.Brightness(bg)
-                bg = enhancer.enhance(0.35)
+                if cover_blur > 0:
+                    bg = bg.filter(ImageFilter.GaussianBlur(radius=float(cover_blur)))
+                # Apply brightness/contrast/saturation from user sliders
+                dark_factor = max(0.1, min(cover_brightness, 2.0)) * 0.4  # ambient always darkened
+                bg = ImageEnhance.Brightness(bg).enhance(dark_factor)
+                bg = ImageEnhance.Contrast(bg).enhance(max(cover_contrast, 0.1))
+                bg = ImageEnhance.Color(bg).enhance(max(cover_saturation, 0.0))
 
-                # 2. Centered album artwork with rounded corner effect & shadow
-                target_art_size = int(min(width, height) * 0.42)
-                art_thumb = img.resize((target_art_size, target_art_size), Image.Resampling.LANCZOS)
+                if cover_opacity < 1.0:
+                    bg = Image.blend(Image.new('RGB', bg.size, (12, 12, 18)), bg,
+                                     float(max(min(cover_opacity, 1.0), 0.0)))
 
-                pos_x = (width - target_art_size) // 2
-                pos_y = int((height - target_art_size) * 0.30) if height > width else int((height - target_art_size) * 0.25)
+                # 2. Centered album artwork — preserve original aspect ratio,
+                #    sized by cover_size (1.0 = 42% of shorter canvas dimension)
+                base_size = int(min(width, height) * 0.42 * max(cover_size, 0.2))
+                img_ratio = img.width / max(img.height, 1)
+                if img_ratio >= 1.0:
+                    art_w = base_size
+                    art_h = int(base_size / img_ratio)
+                else:
+                    art_h = base_size
+                    art_w = int(base_size * img_ratio)
+
+                art_thumb = img.resize((art_w, art_h), Image.Resampling.LANCZOS)
+                # Apply brightness to the art itself too
+                art_thumb = ImageEnhance.Brightness(art_thumb).enhance(max(cover_brightness, 0.1))
+
+                pos_x = (width  - art_w) // 2 + int(cover_offset)
+                pos_y = int((height - art_h) * 0.30) if height > width else int((height - art_h) * 0.25)
+                # Clamp so art never pastes outside the canvas
+                pos_x = max(0, min(pos_x, width  - art_w))
+                pos_y = max(0, min(pos_y, height - art_h))
                 bg.paste(art_thumb, (pos_x, pos_y))
 
-            bg.save(output_frame_path, 'JPEG', quality=95)
+                if cover_vignette > 0:
+                    vignette = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+                    draw = ImageDraw.Draw(vignette)
+                    alpha = int(255 * min(max(cover_vignette, 0.0), 0.85))
+                    draw.rectangle((0, 0, width, height), fill=(0, 0, 0, alpha))
+                    bg = Image.alpha_composite(bg.convert('RGBA'), vignette).convert('RGB')
+
+            # Save as PNG — lossless, no colour-space ambiguity.
+            # FFmpeg's ass= subtitle filter composites cleanly over PNG;
+            # JPEG's YCbCr encoding causes block-colour corruption on the
+            # subtitle composite pass (the distorted cover art artifact).
+            bg.save(output_frame_path, 'PNG')
         else:
             # Generate sleek dark gradient background
             img = Image.new('RGB', (width, height), color=(10, 14, 23))
             draw = ImageDraw.Draw(img)
-            
+
             # Subtle radial glow
             center_x, center_y = width // 2, height // 2
             max_radius = int(math.hypot(center_x, center_y))
-            
+
             for r in range(max_radius, 0, -15):
                 alpha = int(35 * (1 - r / max_radius))
                 color = (15 + alpha // 2, 22 + alpha, 38 + int(alpha * 1.5))
@@ -1471,8 +1992,8 @@ class LyricsEngineService:
                     [center_x - r, center_y - r, center_x + r, center_y + r],
                     fill=color
                 )
-            
-            img.save(output_frame_path, 'JPEG', quality=95)
+
+            img.save(output_frame_path, 'PNG')
 
         return output_frame_path
 
@@ -1588,11 +2109,23 @@ class LyricsEngineService:
                 text_shadow_depth=text_shadow_depth,
                 font_scale_x=font_scale_x,
                 font_scale_y=font_scale_y,
-                bg_opacity=bg_opacity
+                bg_opacity=bg_opacity,
+                title=title,
+                artist=artist,
+                video_duration=duration,
             )
 
             # Escape subtitle path for FFmpeg filter on Windows
             escaped_ass_path = ass_path.replace('\\', '/').replace(':', '\\:')
+
+            # Fonts directory — contains downloaded Google Fonts TTFs so FFmpeg
+            # can render them when the ass= filter looks up the Fontname field.
+            _fonts_dir = os.path.join(settings.BASE_DIR, 'static', 'fonts')
+            if os.path.isdir(_fonts_dir):
+                _escaped_fonts_dir = _fonts_dir.replace('\\', '/').replace(':', '\\:')
+                _ass_filter = f"ass='{escaped_ass_path}':fontsdir='{_escaped_fonts_dir}'"
+            else:
+                _ass_filter = f"ass='{escaped_ass_path}'"
 
             if project_id:
                 RenderProcessTracker.set_progress('lyrics', project_id, 45, "Preparing visual composition & video layout...")
@@ -1605,7 +2138,7 @@ class LyricsEngineService:
                 vf_filter = (
                     f"scale={width}:{height}:force_original_aspect_ratio=increase,"
                     f"crop={width}:{height},"
-                    f"ass='{escaped_ass_path}'"
+                    f"{_ass_filter}"
                 )
 
                 stream_loop_args = ['-stream_loop', '-1'] if loop_video else []
@@ -1653,7 +2186,7 @@ class LyricsEngineService:
                     ]
             else:
                 # Prepare background image frame + audio
-                frame_path = os.path.join(temp_dir, "bg_frame.jpg")
+                frame_path = os.path.join(temp_dir, "bg_frame.png")
                 cls.generate_ambient_background_frame(
                     background_image_path=background_image_path,
                     width=width,
@@ -1670,7 +2203,7 @@ class LyricsEngineService:
                     cover_vignette=cover_vignette
                 )
 
-                vf_filter = f"ass='{escaped_ass_path}'"
+                vf_filter = _ass_filter
                 cmd = [
                     ffmpeg, '-y',
                     '-loop', '1',

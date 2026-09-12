@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'apps.studio.apps.StudioConfig',
     'apps.radar.apps.RadarConfig',
     'apps.publishing.apps.PublishingConfig',
+    'apps.downloader.apps.DownloaderConfig',
 ]
 
 MIDDLEWARE = [

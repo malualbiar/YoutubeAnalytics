@@ -932,14 +932,16 @@ def lyrics_render_view(request):
     text_color = request.POST.get('text_color', '#FFFFFF').strip()
     position_mode = request.POST.get('position_mode', 'CENTER').strip()
     cover_layout = request.POST.get('cover_layout', LyricVideoProject.CoverLayout.AMBIENT).strip()
-    cover_size = float(request.POST.get('cover_size') or 1.0)
-    cover_blur = float(request.POST.get('cover_blur') or 8.0)
-    cover_opacity = float(request.POST.get('cover_opacity') or 1.0)
-    cover_offset = float(request.POST.get('cover_offset') or 0.0)
-    cover_brightness = float(request.POST.get('cover_brightness') or 1.0)
-    cover_contrast = float(request.POST.get('cover_contrast') or 1.0)
-    cover_saturation = float(request.POST.get('cover_saturation') or 1.0)
-    cover_vignette = float(request.POST.get('cover_vignette') or 0.0)
+    # Sliders send integer percentages (e.g. 100, 150) — divide by 100 for the
+    # PIL/renderer which expects decimal multipliers (1.0, 1.5).
+    cover_size       = float(request.POST.get('cover_size')       or 100) / 100.0
+    cover_blur       = float(request.POST.get('cover_blur')       or 8.0)   # already px, no conversion
+    cover_opacity    = float(request.POST.get('cover_opacity')    or 100) / 100.0
+    cover_offset     = float(request.POST.get('cover_offset')     or 0.0)   # px offset, no conversion
+    cover_brightness = float(request.POST.get('cover_brightness') or 100) / 100.0
+    cover_contrast   = float(request.POST.get('cover_contrast')   or 100) / 100.0
+    cover_saturation = float(request.POST.get('cover_saturation') or 100) / 100.0
+    cover_vignette   = float(request.POST.get('cover_vignette')   or 0.0)  / 100.0
 
     # Advanced Typography Parameters
     font_weight = request.POST.get('font_weight', 'bold').strip()
@@ -1104,15 +1106,15 @@ def lyrics_render_view(request):
     highlight_color = request.POST.get('highlight_color', '#00E5FF').strip()
     text_color = request.POST.get('text_color', '#FFFFFF').strip()
     position_mode = request.POST.get('position_mode', LyricVideoProject.PositionMode.CENTER)
-    cover_layout = request.POST.get('cover_layout', LyricVideoProject.CoverLayout.AMBIENT)
-    cover_size = float(request.POST.get('cover_size') or 1.0)
-    cover_blur = float(request.POST.get('cover_blur') or 8.0)
-    cover_opacity = float(request.POST.get('cover_opacity') or 1.0)
-    cover_offset = float(request.POST.get('cover_offset') or 0.0)
-    cover_brightness = float(request.POST.get('cover_brightness') or 1.0)
-    cover_contrast = float(request.POST.get('cover_contrast') or 1.0)
-    cover_saturation = float(request.POST.get('cover_saturation') or 1.0)
-    cover_vignette = float(request.POST.get('cover_vignette') or 0.0)
+    cover_layout     = request.POST.get('cover_layout', LyricVideoProject.CoverLayout.AMBIENT)
+    cover_size       = float(request.POST.get('cover_size')       or 100) / 100.0
+    cover_blur       = float(request.POST.get('cover_blur')       or 8.0)
+    cover_opacity    = float(request.POST.get('cover_opacity')    or 100) / 100.0
+    cover_offset     = float(request.POST.get('cover_offset')     or 0.0)
+    cover_brightness = float(request.POST.get('cover_brightness') or 100) / 100.0
+    cover_contrast   = float(request.POST.get('cover_contrast')   or 100) / 100.0
+    cover_saturation = float(request.POST.get('cover_saturation') or 100) / 100.0
+    cover_vignette   = float(request.POST.get('cover_vignette')   or 0.0)  / 100.0
 
     # Advanced typography settings
     font_weight = request.POST.get('font_weight', 'bold').strip()
@@ -1253,11 +1255,29 @@ def lyrics_detail_view(request, pk):
 
     project = get_object_or_404(LyricVideoProject, pk=pk)
 
+    # (value, label, dot_color_class, sub_label) — mirrors the 11 preset cards in lyrics_maker.html
+    animation_style_cards = [
+        # Tier 1 · Core (4 cards)
+        ('KARAOKE_WIPE',    'Karaoke Wipe',    'bg-emerald-400', 'Classic'),
+        ('ROLLING_3LINE',   'Rolling 3-Line',  'bg-zinc-600',    'Smooth'),
+        ('PLAYFUL_POP',     'Playful Pop',     'bg-pink-400',    'Bouncy'),
+        ('BUBBLE_BOUNCE',   'Bubble Bounce',   'bg-cyan-400',    'Bubbly'),
+        # Tier 2 · Creative (4 cards)
+        ('DREAMY_DRIFT',    'Dreamy Drift',    'bg-violet-400',  'Soft'),
+        ('NEON_GLOW',       'Neon Glow',       'bg-cyan-400',    'Electric'),
+        ('HANDWRITTEN_INK', 'Handwritten Ink', 'bg-amber-400',   'Personal'),
+        ('RETRO_VHS',       'Retro VHS',       'bg-rose-400',    'Nostalgic'),
+        # Tier 3 · Signature (3 cards, last grid row padded with empty divs in maker)
+        ('CINEMATIC',       'Cinematic Serif', 'bg-amber-400',   'Epic'),
+        ('VINTAGE_COUNTRY', 'Vintage Country', 'bg-orange-400',  'Warm'),
+    ]
+
     return render(request, 'studio/lyrics_detail.html', {
         'project': project,
         'lrc_content': project.lrc_content,
         'youtube_title': project.youtube_title,
         'youtube_description': project.youtube_description,
+        'animation_style_cards': animation_style_cards,
     })
 
 
@@ -1524,6 +1544,7 @@ def lyrics_ai_transcribe_api(request):
 
     model_size = request.POST.get('model_size', 'base').strip() or 'base'
     initial_prompt = request.POST.get('initial_prompt', '').strip() or None
+    use_demucs = request.POST.get('use_demucs', '').lower() in ('1', 'true', 'yes')
 
     import tempfile
     ext = os.path.splitext(media_file.name)[1] or '.wav'
@@ -1536,9 +1557,31 @@ def lyrics_ai_transcribe_api(request):
         res = LyricsEngineService.transcribe_and_sync_with_whisper(
             temp_media_path,
             model_size=model_size,
-            initial_prompt=initial_prompt
+            initial_prompt=initial_prompt,
+            use_demucs=use_demucs
         )
-        res['message'] = f"Successfully transcribed {len(res.get('lyrics_data', []))} lyric lines with word-accurate timestamps!"
+        line_count = len(res.get('lyrics_data', []))
+        model_used = res.get('whisper_model', model_size)
+
+        if use_demucs:
+            if res.get('demucs_applied'):
+                res['message'] = (
+                    f"Transcribed {line_count} lines using Demucs vocal separation "
+                    f"+ Whisper {model_used}."
+                )
+            else:
+                # Demucs ran but failed — user needs to know
+                err = res.get('demucs_error') or 'unknown error'
+                res['message'] = (
+                    f"Transcribed {line_count} lines with Whisper {model_used} "
+                    f"(Demucs separation FAILED — fell back to full mix). "
+                    f"Reason: {err}"
+                )
+                res['success'] = True  # still return lyrics, just with a warning
+        else:
+            res['message'] = (
+                f"Transcribed {line_count} lines with Whisper {model_used}."
+            )
         return JsonResponse(res)
     except Exception as e:
         return JsonResponse({'error': f"AI Transcription error: {str(e)}"}, status=500)
@@ -1641,3 +1684,215 @@ def studio_render_progress_view(request, project_type, pk):
 
 
 
+
+
+# =========================================================================
+# AUTOMATION PIPELINE VIEWS
+# =========================================================================
+
+@login_required
+def automation_dashboard_view(request):
+    """Lists all AutomationPipeline objects."""
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    from .models import AutomationPipeline
+    from apps.publishing.models import YouTubeOAuthAccount
+
+    pipelines = AutomationPipeline.objects.all()
+    oauth_accounts = YouTubeOAuthAccount.objects.filter(is_active=True)
+    default_account = oauth_accounts.filter(is_default=True).first() or oauth_accounts.first()
+
+    # Check if faster-whisper is installed
+    try:
+        import faster_whisper  # noqa: F401
+        whisper_available = True
+    except ImportError:
+        whisper_available = False
+
+    return render(request, 'studio/automation.html', {
+        'pipelines': pipelines,
+        'oauth_accounts': oauth_accounts,
+        'default_account': default_account,
+        'whisper_available': whisper_available,
+    })
+
+
+@login_required
+def automation_create_view(request):
+    """GET: show builder form. POST: create pipeline and immediately run it."""
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        import uuid as _uuid
+        from .models import AutomationPipeline
+        from .services.automation_runner import AutomationRunnerService
+
+        name = request.POST.get('name', '').strip() or 'My Automation'
+
+        # Global pipeline step flags (from Step 1 panel)
+        do_render  = request.POST.get('do_render',  '1') in ('1', 'true', 'on')
+        do_publish = request.POST.get('do_publish', '1') in ('1', 'true', 'on')
+
+        # ── Collect per-song configs ──────────────────────────────────────
+        # Form sends: songs[0][url], songs[0][audio_format], songs[0][background_image], …
+        # Detect how many song slots were submitted by scanning the POST keys.
+        import re as _re
+        song_indices = sorted({
+            int(m.group(1))
+            for k in request.POST.keys()
+            for m in [_re.match(r'^songs\[(\d+)\]', k)]
+            if m
+        })
+
+        if not song_indices:
+            messages.error(request, "Please add at least one song URL.")
+            return redirect('automation_dashboard')
+
+        cover_dir = os.path.join(settings.MEDIA_ROOT, 'studio', 'automation_covers')
+        vid_dir   = os.path.join(settings.MEDIA_ROOT, 'studio', 'automation_bgvid')
+        os.makedirs(cover_dir, exist_ok=True)
+        os.makedirs(vid_dir,   exist_ok=True)
+
+        def _get(idx, field, default=''):
+            return request.POST.get(f'songs[{idx}][{field}]', default)
+
+        def _save_upload(file_obj, dest_dir, default_ext):
+            """Saves an uploaded file to dest_dir, returns abs path."""
+            ext  = os.path.splitext(file_obj.name)[1] or default_ext
+            path = os.path.join(dest_dir, f"{_uuid.uuid4().hex}{ext}")
+            with open(path, 'wb+') as f:
+                for chunk in file_obj.chunks():
+                    f.write(chunk)
+            return path
+
+        youtube_urls  = []
+        songs_configs = []   # one config dict per song, in URL order
+
+        for idx in song_indices:
+            url = _get(idx, 'url', '').strip()
+            if not url:
+                continue  # skip blank slots
+
+            cfg = {
+                'audio_format':      _get(idx, 'audio_format',    'wav'),
+                'animation_style':   _get(idx, 'animation_style', 'KARAOKE_WIPE'),
+                'font_family':       _get(idx, 'font_family',      'Arial'),
+                'font_size':         int(_get(idx, 'font_size', '48') or 48),
+                'highlight_color':   _get(idx, 'highlight_color', '#00E5FF'),
+                'text_color':        _get(idx, 'text_color',      '#FFFFFF'),
+                'font_weight':       _get(idx, 'font_weight',     'bold'),
+                'text_stroke_width': float(_get(idx, 'text_stroke_width', '2.5') or 2.5),
+                'text_shadow_depth': float(_get(idx, 'text_shadow_depth', '2.0') or 2.0),
+                'aspect_ratio':      _get(idx, 'aspect_ratio',    '16:9'),
+                'position_mode':     _get(idx, 'position_mode',   'CENTER'),
+                'lyrics_text':       _get(idx, 'lyrics_text',     ''),
+                'privacy_status':    _get(idx, 'privacy_status',  'private'),
+                'category_id':       _get(idx, 'category_id',     '10'),
+                'tags':              _get(idx, 'tags',             'lyrics, lyricvideo, music'),
+                'description':       _get(idx, 'description',     ''),
+                'account_id':        _get(idx, 'account_id',      ''),
+                'use_whisper':       _get(idx, 'use_whisper',      '0') in ('1', 'true', 'on'),
+                'do_render':         do_render,
+                'do_publish':        do_publish,
+            }
+
+            # Cover image upload for this song slot
+            cover_key = f'songs[{idx}][background_image]'
+            cover_file = request.FILES.get(cover_key)
+            if cover_file:
+                cfg['background_image_path'] = _save_upload(cover_file, cover_dir, '.jpg')
+
+            # Background video upload for this song slot
+            vid_key  = f'songs[{idx}][background_video]'
+            vid_file = request.FILES.get(vid_key)
+            if vid_file:
+                cfg['background_video_path'] = _save_upload(vid_file, vid_dir, '.mp4')
+
+            youtube_urls.append(url)
+            songs_configs.append(cfg)
+
+        if not youtube_urls:
+            messages.error(request, "Please add at least one YouTube URL.")
+            return redirect('automation_dashboard')
+
+        # shared_config holds the Song 0 settings as the "same for all" fallback
+        shared_config = songs_configs[0] if songs_configs else {}
+
+        pipeline = AutomationPipeline.objects.create(
+            name=name,
+            youtube_urls=youtube_urls,
+            shared_config=shared_config,
+            # Store per-song overrides under a dedicated key
+            results=[{'song_config': cfg} for cfg in songs_configs],
+            status=AutomationPipeline.Status.IDLE,
+        )
+        AutomationRunnerService.run_pipeline_async(pipeline.id)
+        messages.success(request, f"🚀 Pipeline '{name}' started for {len(youtube_urls)} song(s)!")
+        return redirect('automation_dashboard')
+
+    # GET — redirect to dashboard (form lives there)
+    return redirect('automation_dashboard')
+
+
+@login_required
+@require_POST
+def automation_run_view(request, pk):
+    """Reset a pipeline to IDLE/step 0 and re-run it."""
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    from .models import AutomationPipeline
+    from .services.automation_runner import AutomationRunnerService
+
+    pipeline = get_object_or_404(AutomationPipeline, pk=pk)
+    pipeline.status = AutomationPipeline.Status.IDLE
+    pipeline.current_song_index = 0
+    pipeline.log = ''
+    pipeline.results = []
+    pipeline.save()
+    AutomationRunnerService.run_pipeline_async(pipeline.id)
+    messages.success(request, f"Pipeline '{pipeline.name}' re-started!")
+    return redirect('automation_dashboard')
+
+
+@login_required
+def automation_status_api(request, pk):
+    """Returns JSON status for live polling."""
+    if not request.user.is_super_admin:
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+
+    from .models import AutomationPipeline
+    pipeline = get_object_or_404(AutomationPipeline, pk=pk)
+    return JsonResponse({
+        'status': pipeline.status,
+        'current_song_index': pipeline.current_song_index,
+        'total_songs': len(pipeline.youtube_urls),
+        'log': pipeline.log,
+        'results': pipeline.results,
+        'result_ids': {
+            'download_job_id': None,
+            'lyric_project_id': None,
+            'publishing_job_id': None,
+        },
+    })
+
+
+@login_required
+@require_POST
+def automation_delete_view(request, pk):
+    """Delete a pipeline record."""
+    if not request.user.is_super_admin:
+        messages.error(request, "Access denied. Super Admin privileges required.")
+        return redirect('dashboard')
+
+    from .models import AutomationPipeline
+    pipeline = get_object_or_404(AutomationPipeline, pk=pk)
+    name = pipeline.name
+    pipeline.delete()
+    messages.success(request, f"Pipeline '{name}' deleted.")
+    return redirect('automation_dashboard')

@@ -238,7 +238,7 @@
         <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-2 text-xs text-zinc-400">
                 <i data-lucide="info" class="w-4 h-4 text-zinc-400 shrink-0"></i>
-                <span>FFmpeg will normalize volume, apply smooth crossfades, and generate YouTube chapters.</span>
+                <span>Volume will be normalized, smooth crossfades applied, and YouTube chapters generated.</span>
             </div>
 
             <button type="submit" id="submitMixBtn" class="w-full sm:w-auto px-7 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer">
@@ -275,7 +275,7 @@
             <span id="elapsedTimer" class="font-mono">00:00</span>
             <span class="text-emerald-400 font-medium flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                FFmpeg Local Processing
+                Local Processing
             </span>
         </div>
 
@@ -825,7 +825,7 @@
         }) : confirm('Are you sure you want to cancel the mix rendering?');
 
         if (confirmed) {
-            document.getElementById('progressStep').textContent = "Cancelling mix and stopping FFmpeg processes...";
+            document.getElementById('progressStep').textContent = "Cancelling mix...";
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
             fetch(`/studio/cancel/mix/${activeRenderProjectId}/`, {
                 method: 'POST',

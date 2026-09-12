@@ -1,0 +1,756 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}YouTube Downloader — YT Quid{% endblock %}
+
+{% block extra_head %}
+<style>
+    .format-card { transition: border-color 0.15s, background 0.15s; }
+    .format-card.selected { border-color: #10b981; background: rgba(16,185,129,0.08); }
+    .job-row { transition: opacity 0.2s; }
+    .progress-bar-fill { transition: width 0.4s ease; }
+    .lyrics-panel { transition: max-height 0.25s ease, opacity 0.2s ease; overflow: hidden; }
+    .lyrics-panel.closed { max-height: 0; opacity: 0; pointer-events: none; }
+    .lyrics-panel.open   { max-height: 600px; opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6 max-w-5xl mx-auto">
+
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="download-cloud" class="w-5 h-5 text-emerald-400"></i>
+                YouTube Downloader
+            </h1>
+            <p class="text-sm text-zinc-400 mt-0.5">Download YouTube audio in high quality.</p>
+        </div>
+    </div>
+
+    <!-- Django messages -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for msg in messages %}
+        <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm
+            {% if msg.tags == 'error' %}bg-red-500/10 border border-red-500/30 text-red-300
+            {% elif msg.tags == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-300
+            {% else %}bg-zinc-800 border border-zinc-700 text-zinc-300{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Download Form Card -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-5">
+        <h2 class="text-sm font-semibold text-zinc-200 uppercase tracking-wide">New Download</h2>
+
+        <!-- URL input + Fetch Info -->
+        <div class="space-y-2">
+            <label class="text-xs font-medium text-zinc-400">YouTube URL</label>
+            <div class="flex gap-2">
+                <input
+                    id="urlInput"
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    autocomplete="off"
+                >
+                <button id="fetchInfoBtn" type="button" onclick="fetchInfo()"
+                    class="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    Fetch Info
+                </button>
+            </div>
+        </div>
+
+        <!-- Video Preview -->
+        <div id="videoPreview" class="hidden flex items-start gap-4 p-4 bg-zinc-950 border border-zinc-700 rounded-lg">
+            <img id="previewThumb" src="" alt="Thumbnail" class="w-32 h-20 object-cover rounded-lg shrink-0 bg-zinc-800">
+            <div class="min-w-0 flex-1">
+                <p id="previewTitle" class="text-sm font-semibold text-white truncate"></p>
+                <p id="previewUploader" class="text-xs text-zinc-400 mt-0.5"></p>
+                <p id="previewDuration" class="text-xs text-zinc-500 mt-0.5"></p>
+            </div>
+        </div>
+
+        <!-- Format Selection -->
+        <div class="space-y-2">
+            <label class="text-xs font-medium text-zinc-400">Download Format</label>
+            <div id="formatGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {% for value, label in format_choices %}
+                <label class="format-card border border-zinc-700 rounded-lg p-3 cursor-pointer select-none {% if value == 'mp3_320' %}selected{% endif %}">
+                    <input type="radio" name="format" value="{{ value }}" class="hidden" {% if value == 'mp3_320' %}checked{% endif %}>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="music" class="w-4 h-4 text-purple-400 shrink-0"></i>
+                        <span class="text-xs font-medium text-zinc-200">{{ label }}</span>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <button id="downloadBtn" type="button" onclick="startDownload()"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-bold rounded-lg transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Start Download
+        </button>
+    </div>
+
+    <!-- Recent Downloads -->
+    {% if jobs %}
+    <div class="space-y-3">
+        <h2 class="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Recent Downloads</h2>
+        <div id="jobList" class="space-y-3">
+            {% for job in jobs %}
+            <div id="job-{{ job.pk }}" class="job-row bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                <!-- Main row -->
+                <div class="p-4 flex items-start gap-4">
+                    <!-- Thumbnail -->
+                    <div class="w-20 h-14 rounded-lg bg-zinc-800 shrink-0 overflow-hidden">
+                        {% if job.thumbnail_url %}
+                        <img src="{{ job.thumbnail_url }}" alt="thumb" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center">
+                            <i data-lucide="music" class="w-5 h-5 text-zinc-600"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Info + Progress -->
+                    <div class="flex-1 min-w-0 space-y-1.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-white truncate">{{ job.title|default:job.url }}</p>
+                                <p class="text-xs text-zinc-500">
+                                    {{ job.get_format_display }}
+                                    {% if job.uploader %} · {{ job.uploader }}{% endif %}
+                                    {% if job.duration_seconds %} · {{ job.duration_formatted }}{% endif %}
+                                    {% if job.file_size_bytes %} · {{ job.file_size_formatted }}{% endif %}
+                                </p>
+                            </div>
+                            <span class="shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full
+                                {% if job.status == 'COMPLETED' %}bg-emerald-500/20 text-emerald-400
+                                {% elif job.status == 'FAILED' %}bg-red-500/20 text-red-400
+                                {% elif job.status == 'DOWNLOADING' %}bg-blue-500/20 text-blue-400
+                                {% else %}bg-zinc-700 text-zinc-400{% endif %}"
+                                data-status="{{ job.pk }}">{{ job.status }}</span>
+                        </div>
+
+                        <!-- Progress bar -->
+                        <div id="progress-wrap-{{ job.pk }}" class="{% if job.status != 'DOWNLOADING' %}hidden{% endif %}">
+                            <div class="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                <div class="progress-bar-fill bg-emerald-500 h-1.5 rounded-full" data-bar="{{ job.pk }}" style="width: {{ job.progress }}%"></div>
+                            </div>
+                            <p class="text-[11px] text-zinc-500 mt-1" data-progress-text="{{ job.pk }}">{{ job.progress_text }}</p>
+                        </div>
+
+                        {% if job.status == 'FAILED' and job.error_message %}
+                        <p class="text-[11px] text-red-400 truncate">{{ job.error_message }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-1.5 shrink-0 mt-0.5 actions-slot-{{ job.pk }}">
+                        {% if job.status == 'COMPLETED' and job.output_file %}
+                        <button type="button"
+                            onclick="toggleLyricsPanel({{ job.pk }})"
+                            class="lyrics-btn-{{ job.pk }} flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-semibold transition-colors"
+                            title="Generate cover prompt &amp; open in Lyrics Studio">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            <span class="hidden sm:inline">Lyrics Studio</span>
+                        </button>
+                        <a href="{% url 'downloader_file' job.pk %}"
+                           class="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                           title="Download file">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                        </a>
+                        {% endif %}
+                        <form method="post" action="{% url 'downloader_delete' job.pk %}" class="inline"
+                              onsubmit="return confirm('Remove this download?')">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors"
+                                title="Delete">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Lyrics Studio inline panel (collapsed by default) -->
+                <div id="lyrics-panel-{{ job.pk }}" class="lyrics-panel closed">
+                    <div class="px-4 pb-4 pt-0 border-t border-zinc-800 space-y-4 mt-0">
+                        <!-- Loading state -->
+                        <div id="lyrics-panel-loading-{{ job.pk }}" class="py-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
+                            <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+                            Generating…
+                        </div>
+                        <!-- Loaded content (hidden until API responds) -->
+                        <div id="lyrics-panel-content-{{ job.pk }}" class="hidden space-y-3 pt-3">
+                            <!-- Editable title + artist -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Clean Song Title</label>
+                                    <input type="text" id="lp-title-{{ job.pk }}"
+                                        class="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors"
+                                        placeholder="Song title">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Artist Name</label>
+                                    <input type="text" id="lp-artist-{{ job.pk }}"
+                                        class="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors"
+                                        placeholder="Artist name">
+                                </div>
+                            </div>
+
+                            <!-- Mood picker -->
+                            <div class="space-y-1.5">
+                                <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Song Mood / Scene</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    {% for tpl in prompt_moods %}
+                                    <button type="button"
+                                        onclick="setMood({{ job.pk }}, {{ forloop.counter0 }})"
+                                        class="mood-pill px-2 py-0.5 rounded-full border text-[10px] font-medium bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-purple-500/50 hover:text-purple-300 transition-colors">
+                                        {{ tpl }}
+                                    </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Cover art prompt -->
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide flex items-center gap-1.5">
+                                        <i data-lucide="image" class="w-3 h-3 text-purple-400"></i>
+                                        AI Cover Art Prompt
+                                    </label>
+                                    <button type="button" onclick="regeneratePrompt({{ job.pk }})"
+                                        class="text-[10px] text-zinc-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Regenerate
+                                    </button>
+                                </div>
+                                <div class="relative">
+                                    <textarea id="lp-prompt-{{ job.pk }}" rows="3"
+                                        class="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-[11px] text-zinc-300 font-mono resize-none focus:outline-none focus:border-purple-500 transition-colors leading-relaxed pr-20"></textarea>
+                                    <button type="button" onclick="copyPrompt({{ job.pk }})"
+                                        id="lp-copy-btn-{{ job.pk }}"
+                                        class="absolute top-2 right-2 px-2 py-1 bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 text-[10px] font-semibold rounded-md transition-colors flex items-center gap-1">
+                                        <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Open in Lyrics Studio -->
+                            <div class="flex items-center justify-between pt-1">
+                                <p class="text-[11px] text-zinc-500">Audio will be pre-loaded in the studio.</p>
+                                <button type="button" onclick="openInLyricsStudio({{ job.pk }})"
+                                    class="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition-colors">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                    Open in Lyrics Studio →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+// ── Format card selection ─────────────────────────────────────────────────
+document.querySelectorAll('#formatGrid label').forEach(label => {
+    label.addEventListener('click', () => {
+        document.querySelectorAll('#formatGrid label').forEach(l => l.classList.remove('selected'));
+        label.classList.add('selected');
+        label.querySelector('input[type=radio]').checked = true;
+    });
+});
+
+// ── Fetch video info ──────────────────────────────────────────────────────
+let fetchedTitle = '';
+
+async function fetchInfo() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) { showToast('Please enter a YouTube URL.', 'error'); return; }
+
+    const btn = document.getElementById('fetchInfoBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Fetching…';
+    lucide.createIcons();
+
+    try {
+        const res = await fetch(`{% url 'downloader_fetch_info' %}?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Failed to fetch info');
+
+        const info = data.info;
+        fetchedTitle = info.title || '';
+        document.getElementById('previewTitle').textContent = info.title || url;
+        document.getElementById('previewUploader').textContent = info.uploader ? `by ${info.uploader}` : '';
+        document.getElementById('previewDuration').textContent = info.duration_seconds ? formatDuration(info.duration_seconds) : '';
+        document.getElementById('previewThumb').src = info.thumbnail || '';
+        document.getElementById('videoPreview').classList.remove('hidden');
+    } catch(e) {
+        showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="search" class="w-3.5 h-3.5"></i> Fetch Info';
+        lucide.createIcons();
+    }
+}
+
+// ── Start download ────────────────────────────────────────────────────────
+async function startDownload() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) { showToast('Please enter a YouTube URL first.', 'error'); return; }
+
+    const fmt = document.querySelector('input[name="format"]:checked')?.value || 'mp3_320';
+    const btn = document.getElementById('downloadBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Starting…';
+    lucide.createIcons();
+
+    const body = new URLSearchParams({ url, format: fmt, title: fetchedTitle });
+
+    try {
+        const res = await fetch('{% url "downloader_start" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body.toString(),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Failed to start.');
+
+        showToast(`Download started: ${data.title || url}`, 'success');
+        insertJobRow(data.job_id, data.title, data.thumbnail, data.format, url);
+        pollJob(data.job_id);
+    } catch(e) {
+        showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i> Start Download';
+        lucide.createIcons();
+    }
+}
+
+// ── Poll a job until it finishes ──────────────────────────────────────────
+const _pollers = {};
+
+function pollJob(jobId) {
+    if (_pollers[jobId]) return;
+    _pollers[jobId] = setInterval(async () => {
+        try {
+            const res = await fetch(`/downloader/${jobId}/progress/`);
+            const d = await res.json();
+            updateJobRow(jobId, d);
+            if (d.status === 'COMPLETED' || d.status === 'FAILED') {
+                clearInterval(_pollers[jobId]);
+                delete _pollers[jobId];
+                if (d.status === 'COMPLETED') {
+                    const slot = document.querySelector(`.actions-slot-${jobId}`);
+                    if (slot) {
+                        slot.innerHTML = `
+                            <button type="button"
+                                onclick="toggleLyricsPanel(${jobId})"
+                                class="lyrics-btn-${jobId} flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-semibold transition-colors"
+                                title="Generate cover prompt &amp; open in Lyrics Studio">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span class="hidden sm:inline">Lyrics Studio</span>
+                            </button>
+                            <a href="/downloader/${jobId}/download/"
+                               class="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                               title="Download file">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </a>`;
+                        lucide.createIcons();
+                    }
+                }
+            }
+        } catch(e) { /* network blip */ }
+    }, 1200);
+}
+
+function updateJobRow(jobId, d) {
+    const statusEl = document.querySelector(`[data-status="${jobId}"]`);
+    const barEl    = document.querySelector(`[data-bar="${jobId}"]`);
+    const textEl   = document.querySelector(`[data-progress-text="${jobId}"]`);
+    const wrapEl   = document.getElementById(`progress-wrap-${jobId}`);
+
+    if (statusEl) {
+        statusEl.textContent = d.status;
+        statusEl.className = statusEl.className.replace(/bg-\S+\/\d+\s+text-\S+/g, '').trim();
+        if (d.status === 'COMPLETED')  statusEl.classList.add('bg-emerald-500/20', 'text-emerald-400');
+        else if (d.status === 'FAILED') statusEl.classList.add('bg-red-500/20',    'text-red-400');
+        else                            statusEl.classList.add('bg-blue-500/20',    'text-blue-400');
+    }
+    if (barEl)  barEl.style.width = `${d.progress}%`;
+    if (textEl) textEl.textContent = d.text || '';
+    if (wrapEl && (d.status === 'COMPLETED' || d.status === 'FAILED')) wrapEl.classList.add('hidden');
+}
+
+// ── Lyrics Studio inline panel ────────────────────────────────────────────
+const _panelLoaded = {};  // jobId → true once API data is fetched
+
+async function toggleLyricsPanel(jobId) {
+    const panel   = document.getElementById(`lyrics-panel-${jobId}`);
+    const loading = document.getElementById(`lyrics-panel-loading-${jobId}`);
+    const content = document.getElementById(`lyrics-panel-content-${jobId}`);
+    if (!panel) return;
+
+    const isOpen = panel.classList.contains('open');
+
+    if (isOpen) {
+        // Close
+        panel.classList.replace('open', 'closed');
+        return;
+    }
+
+    // Open panel
+    panel.classList.replace('closed', 'open');
+
+    // Only fetch once
+    if (_panelLoaded[jobId]) return;
+
+    loading?.classList.remove('hidden');
+    content?.classList.add('hidden');
+
+    try {
+        const res  = await fetch(`/downloader/${jobId}/prepare-lyrics/`);
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Failed to prepare.');
+
+        document.getElementById(`lp-title-${jobId}`).value  = data.title  || '';
+        document.getElementById(`lp-artist-${jobId}`).value = data.artist || '';
+        document.getElementById(`lp-prompt-${jobId}`).value = data.prompt || '';
+
+        // Store lyrics_url for later
+        panel.dataset.lyricsUrl = data.lyrics_url;
+
+        _panelLoaded[jobId] = true;
+        // Set a random starting mood
+        const startIdx = Math.floor(Math.random() * PROMPT_TEMPLATES.length);
+        _promptIndex[jobId] = startIdx;
+        // Re-render prompt with the random starting template
+        const startPrompt = PROMPT_TEMPLATES[startIdx].build(
+            document.getElementById(`lp-title-${jobId}`)?.value.trim() || data.title || '',
+            document.getElementById(`lp-artist-${jobId}`)?.value.trim() || data.artist || ''
+        );
+        document.getElementById(`lp-prompt-${jobId}`).value = startPrompt;
+
+        loading?.classList.add('hidden');
+        content?.classList.remove('hidden');
+        lucide.createIcons();
+        _highlightMoodPill(jobId, startIdx);
+
+        // Live prompt update when title or artist changes
+        const titleInput  = document.getElementById(`lp-title-${jobId}`);
+        const artistInput = document.getElementById(`lp-artist-${jobId}`);
+        const liveUpdate = () => regeneratePrompt(jobId, true);
+        titleInput?.addEventListener('input',  liveUpdate);
+        artistInput?.addEventListener('input', liveUpdate);
+    } catch(e) {
+        loading.innerHTML = `<span class="text-red-400 text-xs">${e.message}</span>`;
+    }
+}
+
+// ── Cover art prompt templates (20 cinematic scenes, each with a mood) ────
+const PROMPT_TEMPLATES = [
+    {
+        mood: '🌅 Nostalgic',
+        build: (t, a) => `Square album cover artwork for the song "${t}"${a ? ` by ${a}` : ''}. Cinematic countryside at golden hour, a lone figure standing on a quiet dirt road surrounded by open fields, warm sunlight, subtle film grain, atmospheric clouds, nostalgic and emotional mood, realistic photography, natural earthy tones, dramatic composition, shallow depth of field, premium music cover aesthetic, no text, no logos.`,
+    },
+    {
+        mood: '🛣️ Freedom',
+        build: (t, a) => `Square music cover for "${t}"${a ? ` by ${a}` : ''}. A long empty highway disappearing toward the horizon, lone vintage car traveling into the distance, beautiful sunset sky, soft warm light, nostalgic Americana atmosphere, cinematic photography, subtle grain, emotional feeling of freedom and longing, realistic details, elegant composition, no text.`,
+    },
+    {
+        mood: '🎸 Intimate',
+        build: (t, a) => `Square album artwork for "${t}"${a ? ` by ${a}` : ''}. Rustic wooden porch overlooking a peaceful landscape at sunset, acoustic guitar resting beside an old wooden chair, warm ambient lighting, intimate and nostalgic atmosphere, cinematic realism, subtle shadows, natural textures, sophisticated folk and country music aesthetic, no people, no text.`,
+    },
+    {
+        mood: '🌃 Mysterious',
+        build: (t, a) => `Square cinematic music artwork for "${t}"${a ? ` by ${a}` : ''}. Quiet small-town street at night, vintage diner glowing warmly in the distance, one person walking alone beneath streetlights, deep blue evening sky, subtle neon reflections, nostalgic Americana mood, realistic photography, atmospheric film grain, emotional and mysterious, no text.`,
+    },
+    {
+        mood: '🏔️ Hopeful',
+        build: (t, a) => `Square album cover for "${t}"${a ? ` by ${a}` : ''}. Solitary figure standing on a mountain overlook above a vast valley, dramatic sunrise breaking through clouds, soft atmospheric haze, feeling of hope, freedom and reflection, cinematic photography, realistic natural landscape, subtle film grain, premium contemporary folk aesthetic, no text.`,
+    },
+    {
+        mood: '🚚 Americana',
+        build: (t, a) => `Square music cover artwork for "${t}"${a ? ` by ${a}` : ''}. Classic vintage pickup truck parked beside an old rural barn, tall grass moving in the wind, late afternoon sunlight, warm nostalgic colors, cinematic Americana photography, authentic weathered textures, emotional storytelling, sophisticated country-folk aesthetic, no text.`,
+    },
+    {
+        mood: '🌧️ Heartbreak',
+        build: (t, a) => `Square album artwork for "${t}"${a ? ` by ${a}` : ''}. Emotional cinematic scene viewed through a rain-covered window, blurred city lights outside, solitary person sitting near the window, muted atmosphere, reflections and soft lighting, intimate feeling of heartbreak and memories, realistic photography, subtle film grain, modern folk-pop aesthetic, no text.`,
+    },
+    {
+        mood: '🌸 Romantic',
+        build: (t, a) => `Square music cover for "${t}"${a ? ` by ${a}` : ''}. Person walking through a vast field of wildflowers beneath a dramatic open sky, golden sunlight illuminating the landscape, gentle wind, dreamy but realistic atmosphere, themes of love, freedom and new beginnings, cinematic photography, rich natural textures, elegant composition, no text.`,
+    },
+    {
+        mood: '🚗 Road Trip',
+        build: (t, a) => `Square cinematic album artwork for "${t}"${a ? ` by ${a}` : ''}. Vintage roadside motel at dusk, glowing room signs, classic car parked outside, quiet empty surroundings, warm and faded colors, nostalgic road-trip atmosphere, subtle film grain, realistic photography, Americana and indie-folk aesthetic, visually striking composition, no text.`,
+    },
+    {
+        mood: '🪞 Reflective',
+        build: (t, a) => `Square album cover for "${t}"${a ? ` by ${a}` : ''}. Peaceful lake surrounded by forest and distant mountains, solitary person sitting near the water, perfect reflections, early morning mist, soft natural light, contemplative and emotional atmosphere, cinematic realism, subtle grain, timeless folk and acoustic music aesthetic, no text.`,
+    },
+    {
+        mood: '💃 Romance',
+        build: (t, a) => `Square romantic music cover for "${t}"${a ? ` by ${a}` : ''}. Couple slowly dancing together in an old countryside barn, warm string lights overhead, wooden textures, soft golden illumination, intimate atmosphere, cinematic photography, emotional storytelling, timeless country-folk and acoustic aesthetic, realistic details, no text.`,
+    },
+    {
+        mood: '🌆 Energetic',
+        build: (t, a) => `Square contemporary music cover for "${t}"${a ? ` by ${a}` : ''}. Stylish solitary figure walking through a vibrant city at night, colorful reflections on wet pavement, glowing storefronts and distant traffic, cinematic lighting, sophisticated modern pop aesthetic, atmospheric photography, subtle motion blur, emotional but energetic mood, premium editorial composition, no text.`,
+    },
+    {
+        mood: '🏜️ Escape',
+        build: (t, a) => `Square album artwork for "${t}"${a ? ` by ${a}` : ''}. Lone figure beside an old car in a vast desert landscape, enormous sunset sky, distant mountains, warm orange and dusty tones, cinematic Americana atmosphere, feeling of freedom and escape, realistic photography, subtle analog film grain, dramatic composition, no text.`,
+    },
+    {
+        mood: '📷 Memory',
+        build: (t, a) => `Square cinematic music cover for "${t}"${a ? ` by ${a}` : ''}. Intimate bedroom illuminated by soft morning sunlight through curtains, old photographs scattered across a wooden table, acoustic guitar nearby, peaceful nostalgic atmosphere, themes of memories and lost love, realistic photography, warm natural lighting, subtle film grain, sophisticated indie-folk aesthetic, no text.`,
+    },
+    {
+        mood: '🌲 Solitude',
+        build: (t, a) => `Square album cover for "${t}"${a ? ` by ${a}` : ''}. Isolated wooden cabin deep in a misty forest, warm light glowing from the windows, tall trees surrounding the scene, early morning atmosphere, mysterious yet peaceful mood, cinematic realism, atmospheric depth, natural earthy colors, premium folk and Americana aesthetic, no text.`,
+    },
+    {
+        mood: '🌇 Reflection',
+        build: (t, a) => `Square music artwork for "${t}"${a ? ` by ${a}` : ''}. Dramatic silhouette of a person standing on a hill beneath a huge colorful sunset, expansive landscape stretching into the distance, emotional feeling of reflection and hope, cinematic lighting, realistic photography, subtle film grain, timeless composition suitable for country, folk, pop or acoustic music, no text.`,
+    },
+    {
+        mood: '🎙️ Authentic',
+        build: (t, a) => `Square album cover for "${t}"${a ? ` by ${a}` : ''}. Cinematic portrait of a mysterious musician in a vintage recording studio, warm tungsten lights, analog equipment and microphones in the background, natural expression, subtle shadows, authentic documentary photography, timeless country, folk and singer-songwriter atmosphere, subtle film grain, sophisticated composition, no text.`,
+    },
+    {
+        mood: '🌙 Longing',
+        build: (t, a) => `Square cinematic album artwork for "${t}"${a ? ` by ${a}` : ''}. Solitary figure standing in an open field beneath a huge moonlit sky, distant trees and mountains, soft moonlight, atmospheric clouds, dreamy yet realistic visual style, emotional sense of loneliness and wonder, subtle film grain, elegant contemporary folk aesthetic, no text.`,
+    },
+    {
+        mood: '🎉 Carefree',
+        build: (t, a) => `Square music cover for "${t}"${a ? ` by ${a}` : ''}. Nostalgic summer evening in a small rural town, friends gathered around an old car near a roadside, warm sunset light, subtle lens flare, relaxed youthful atmosphere, cinematic photography, authentic vintage film texture, feeling of friendship, freedom and memories, suitable for country, folk and pop music, no text.`,
+    },
+    {
+        mood: '💔 Loss',
+        build: (t, a) => `Square premium album artwork for "${t}"${a ? ` by ${a}` : ''}. A single meaningful object representing love, memory or loss placed in a beautiful atmospheric environment, dramatic natural lighting, large amount of negative space, cinematic photography, subtle analog film grain, emotionally evocative, sophisticated modern music-cover aesthetic, realistic textures, visually simple but powerful, no text, no logos.`,
+    },
+    {
+        mood: '👤 My Photo',
+        build: (t, a) => `Use the provided reference photo of a person as the subject of this album cover. Square 1:1 album cover artwork for the song "${t}"${a ? ` by ${a}` : ''}. The person from the reference photo is the central figure — preserve their likeness, facial features, and expression accurately. Place them in a cinematic, atmospheric setting that matches the song's mood: dramatic natural lighting, shallow depth of field, subtle film grain, premium music-cover composition. The background should complement the song title and feel — golden hour countryside, moody city night, misty forest, desert sunset, or similar cinematic scene. No text, no logos, no additional people. Photorealistic, high detail, suitable for music streaming platforms.`,
+    },
+];
+
+// Per-job index tracker so Regenerate always picks a different template
+const _promptIndex = {};
+
+function regeneratePrompt(jobId, forceLive = false) {
+    const title  = document.getElementById(`lp-title-${jobId}`)?.value.trim()  || '';
+    const artist = document.getElementById(`lp-artist-${jobId}`)?.value.trim() || '';
+    if (!title) {
+        if (!forceLive) showToast('Enter a song title first.', 'error');
+        return;
+    }
+
+    // Live typing keeps the current style stable; Regenerate always shuffles to a new one.
+    if (!forceLive) {
+        const prev = _promptIndex[jobId] ?? -1;
+        let next;
+        do { next = Math.floor(Math.random() * PROMPT_TEMPLATES.length); }
+        while (next === prev && PROMPT_TEMPLATES.length > 1);
+        _promptIndex[jobId] = next;
+        _highlightMoodPill(jobId, next);
+    }
+
+    const idx = _promptIndex[jobId] ?? 0;
+    const prompt = PROMPT_TEMPLATES[idx].build(title, artist);
+    document.getElementById(`lp-prompt-${jobId}`).value = prompt;
+}
+
+function setMood(jobId, idx) {
+    _promptIndex[jobId] = idx;
+    _highlightMoodPill(jobId, idx);
+    regeneratePrompt(jobId, true);  // re-render with new template, live mode (no index shuffle)
+}
+
+function _highlightMoodPill(jobId, activeIdx) {
+    document.querySelectorAll(`#lyrics-panel-${jobId} .mood-pill`).forEach((pill, i) => {
+        if (i === activeIdx) {
+            pill.classList.add('bg-purple-500/30', 'text-purple-200', 'border-purple-500/50');
+            pill.classList.remove('bg-zinc-800', 'text-zinc-400', 'border-zinc-700');
+        } else {
+            pill.classList.remove('bg-purple-500/30', 'text-purple-200', 'border-purple-500/50');
+            pill.classList.add('bg-zinc-800', 'text-zinc-400', 'border-zinc-700');
+        }
+    });
+}
+
+function copyPrompt(jobId) {
+    const el  = document.getElementById(`lp-prompt-${jobId}`);
+    const btn = document.getElementById(`lp-copy-btn-${jobId}`);
+    if (!el) return;
+    navigator.clipboard.writeText(el.value).then(() => {
+        if (btn) {
+            btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i> Copied!';
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = '<i data-lucide="copy" class="w-3 h-3"></i> Copy';
+                lucide.createIcons();
+            }, 2000);
+        }
+    });
+}
+
+function openInLyricsStudio(jobId) {
+    const panel  = document.getElementById(`lyrics-panel-${jobId}`);
+    const title  = document.getElementById(`lp-title-${jobId}`)?.value.trim()  || '';
+    const artist = document.getElementById(`lp-artist-${jobId}`)?.value.trim() || '';
+    const prompt = document.getElementById(`lp-prompt-${jobId}`)?.value.trim() || '';
+
+    // Build fresh URL using the user's possibly-edited title/artist/prompt
+    const params = new URLSearchParams({
+        prefill_title:  title,
+        prefill_artist: artist,
+        prefill_prompt: prompt,
+        from_job:       jobId,
+    });
+    window.location.href = `/studio/lyrics/?${params.toString()}`;
+}
+
+// ── Insert a fresh job row (AJAX) ─────────────────────────────────────────
+function insertJobRow(jobId, title, thumbnail, fmt, url) {
+    let listEl = document.getElementById('jobList');
+    if (!listEl) {
+        const section = document.createElement('div');
+        section.className = 'space-y-3';
+        section.innerHTML = `<h2 class="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Recent Downloads</h2><div id="jobList" class="space-y-3"></div>`;
+        document.querySelector('.max-w-5xl').appendChild(section);
+        listEl = document.getElementById('jobList');
+    }
+
+    const row = document.createElement('div');
+    row.id = `job-${jobId}`;
+    row.className = 'job-row bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden';
+    row.innerHTML = `
+        <div class="p-4 flex items-start gap-4">
+            <div class="w-20 h-14 rounded-lg bg-zinc-800 shrink-0 overflow-hidden">
+                ${thumbnail
+                    ? `<img src="${thumbnail}" alt="thumb" class="w-full h-full object-cover">`
+                    : `<div class="w-full h-full flex items-center justify-center"><i data-lucide="music" class="w-5 h-5 text-zinc-600"></i></div>`}
+            </div>
+            <div class="flex-1 min-w-0 space-y-1.5">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-white truncate">${title || url}</p>
+                        <p class="text-xs text-zinc-500">${fmt}</p>
+                    </div>
+                    <span class="shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400" data-status="${jobId}">DOWNLOADING</span>
+                </div>
+                <div id="progress-wrap-${jobId}">
+                    <div class="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="progress-bar-fill bg-emerald-500 h-1.5 rounded-full" data-bar="${jobId}" style="width:0%"></div>
+                    </div>
+                    <p class="text-[11px] text-zinc-500 mt-1" data-progress-text="${jobId}">Starting download…</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 mt-0.5 actions-slot-${jobId}"></div>
+        </div>
+        <!-- Lyrics panel placeholder injected by pollJob on completion -->
+        <div id="lyrics-panel-${jobId}" class="lyrics-panel closed">
+            <div class="px-4 pb-4 pt-0 border-t border-zinc-800 space-y-4 mt-0">
+                <div id="lyrics-panel-loading-${jobId}" class="py-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
+                    <i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating…
+                </div>
+                <div id="lyrics-panel-content-${jobId}" class="hidden space-y-3 pt-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Clean Song Title</label>
+                            <input type="text" id="lp-title-${jobId}" class="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors" placeholder="Song title">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Artist Name</label>
+                            <input type="text" id="lp-artist-${jobId}" class="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors" placeholder="Artist name">
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Song Mood / Scene</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${PROMPT_TEMPLATES.map((tpl, i) => `<button type="button" onclick="setMood(${jobId},${i})" class="mood-pill px-2 py-0.5 rounded-full border text-[10px] font-medium bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-purple-500/50 hover:text-purple-300 transition-colors">${tpl.mood}</button>`).join('')}
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide flex items-center gap-1.5">
+                                <i data-lucide="image" class="w-3 h-3 text-purple-400"></i>
+                                AI Cover Art Prompt
+                            </label>
+                            <button type="button" onclick="regeneratePrompt(${jobId})" class="text-[10px] text-zinc-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Regenerate
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <textarea id="lp-prompt-${jobId}" rows="3" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-[11px] text-zinc-300 font-mono resize-none focus:outline-none focus:border-purple-500 transition-colors leading-relaxed pr-20"></textarea>
+                            <button type="button" onclick="copyPrompt(${jobId})" id="lp-copy-btn-${jobId}" class="absolute top-2 right-2 px-2 py-1 bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 text-[10px] font-semibold rounded-md transition-colors flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-1">
+                        <p class="text-[11px] text-zinc-500">Audio will be pre-loaded in the studio.</p>
+                        <button type="button" onclick="openInLyricsStudio(${jobId})" class="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition-colors">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Open in Lyrics Studio →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    listEl.prepend(row);
+    lucide.createIcons();
+}
+
+// ── Start polling for in-progress jobs on page load ───────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-status]').forEach(el => {
+        if (el.textContent.trim() === 'DOWNLOADING') pollJob(el.dataset.status);
+    });
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function formatDuration(s) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (h) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function showToast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg text-sm font-medium shadow-lg ${
+        type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+    }`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') fetchInfo();
+});
+</script>
+{% endblock %}

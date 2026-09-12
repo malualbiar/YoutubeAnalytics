@@ -113,7 +113,7 @@ def api_usage_view(request):
     
     # Calculate health status
     quota_used_today = today_usage.quota_used if today_usage else 0
-    quota_limit = 10000
+    quota_limit = 100000
     quota_percent = round((quota_used_today / quota_limit) * 100, 1)
 
     return render(request, 'system/api_usage.html', {

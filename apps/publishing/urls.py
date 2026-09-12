@@ -14,4 +14,5 @@ urlpatterns = [
     path('publishing/jobs/<int:job_id>/cancel/', views.cancel_job_view, name='publishing_cancel_job'),
     path('publishing/jobs/<int:job_id>/retry/', views.retry_job_view, name='publishing_retry_job'),
     path('publishing/jobs/<int:job_id>/delete/', views.delete_job_view, name='publishing_delete_job'),
+    path('publishing/dismiss/<str:source_type>/<int:source_id>/', views.dismiss_project_view, name='publishing_dismiss_project'),
 ]
